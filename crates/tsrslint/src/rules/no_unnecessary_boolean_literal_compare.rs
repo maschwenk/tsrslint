@@ -4,7 +4,9 @@ use tsrs_ast::{self as ast, Kind, Node};
 use tsrs_checker::TypeFlags;
 use tsrs_core::P;
 
-use crate::rule::{opt_bool, options_object, Ctx, Listener, Rule, RuleFix, RuleMessage, RuleVisitor};
+use crate::rule::{
+    opt_bool, options_object, Ctx, Listener, Rule, RuleFix, RuleMessage, RuleVisitor,
+};
 use crate::utils;
 
 fn comparing_nullable_to_false() -> RuleMessage {
@@ -34,8 +36,16 @@ pub struct NoUnnecessaryBooleanLiteralCompare {
 pub fn create(options: Option<&serde_json::Value>) -> Result<Box<dyn Rule>, String> {
     let m = options_object(options);
     Ok(Box::new(NoUnnecessaryBooleanLiteralCompare {
-        allow_comparing_nullable_booleans_to_false: opt_bool(&m, "allowComparingNullableBooleansToFalse", true),
-        allow_comparing_nullable_booleans_to_true: opt_bool(&m, "allowComparingNullableBooleansToTrue", true),
+        allow_comparing_nullable_booleans_to_false: opt_bool(
+            &m,
+            "allowComparingNullableBooleansToFalse",
+            true,
+        ),
+        allow_comparing_nullable_booleans_to_true: opt_bool(
+            &m,
+            "allowComparingNullableBooleansToTrue",
+            true,
+        ),
     }))
 }
 
@@ -90,8 +100,12 @@ fn is_conditional_test(mut node: P<Node>) -> bool {
             Kind::WhileStatement => return parent.as_while_statement().expression == node,
             Kind::DoStatement => return parent.as_do_statement().expression == node,
             Kind::ForStatement => return parent.as_for_statement().condition == Some(node),
-            Kind::ConditionalExpression => return parent.as_conditional_expression().condition == node,
-            Kind::PrefixUnaryExpression => return parent.as_prefix_unary_expression().operator == Kind::ExclamationToken,
+            Kind::ConditionalExpression => {
+                return parent.as_conditional_expression().condition == node
+            }
+            Kind::PrefixUnaryExpression => {
+                return parent.as_prefix_unary_expression().operator == Kind::ExclamationToken
+            }
             _ => return false,
         }
         node = parent;
@@ -114,7 +128,8 @@ fn get_boolean_comparison(ctx: &mut Ctx, node: P<Node>) -> Option<BooleanCompari
             _ => None,
         }
     };
-    let (literal_true, expression) = deconstruct(ast::skip_parentheses(b.right.get()), b.left).or_else(|| deconstruct(ast::skip_parentheses(b.left), b.right.get()))?;
+    let (literal_true, expression) = deconstruct(ast::skip_parentheses(b.right.get()), b.left)
+        .or_else(|| deconstruct(ast::skip_parentheses(b.left), b.right.get()))?;
     let t = ctx.checker.get_type_at_location(expression);
     let (constraint, is_type_parameter) = utils::get_constraint_info(ctx.checker, t);
     let constraint = match constraint {
@@ -122,7 +137,12 @@ fn get_boolean_comparison(ctx: &mut Ctx, node: P<Node>) -> Option<BooleanCompari
         None if is_type_parameter => return None,
         None => return None,
     };
-    let mut res = BooleanComparison { expression, literal_boolean_in_comparison: literal_true, negated, expression_is_nullable_boolean: false };
+    let mut res = BooleanComparison {
+        expression,
+        literal_boolean_in_comparison: literal_true,
+        negated,
+        expression_is_nullable_boolean: false,
+    };
     if utils::is_type_flag_set(constraint, TypeFlags::BooleanLike) {
         return Some(res);
     }
@@ -138,11 +158,15 @@ impl RuleVisitor for Visitor {
         LISTENERS
     }
     fn visit(&mut self, ctx: &mut Ctx, _l: Listener, node: P<Node>) {
-        let Some(cmp) = get_boolean_comparison(ctx, node) else { return };
+        let Some(cmp) = get_boolean_comparison(ctx, node) else {
+            return;
+        };
         let opts = self.rule;
         if cmp.expression_is_nullable_boolean
-            && ((cmp.literal_boolean_in_comparison && opts.allow_comparing_nullable_booleans_to_true)
-                || (!cmp.literal_boolean_in_comparison && opts.allow_comparing_nullable_booleans_to_false))
+            && ((cmp.literal_boolean_in_comparison
+                && opts.allow_comparing_nullable_booleans_to_true)
+                || (!cmp.literal_boolean_in_comparison
+                    && opts.allow_comparing_nullable_booleans_to_false))
         {
             return;
         }
@@ -166,12 +190,17 @@ impl RuleVisitor for Visitor {
             while ast::is_parenthesized_expression(parent) {
                 parent = parent.parent().unwrap();
             }
-            let is_unary_negation = ast::is_prefix_unary_expression(parent) && parent.as_prefix_unary_expression().operator == Kind::ExclamationToken;
+            let is_unary_negation = ast::is_prefix_unary_expression(parent)
+                && parent.as_prefix_unary_expression().operator == Kind::ExclamationToken;
             let should_negate = cmp.negated != cmp.literal_boolean_in_comparison;
             let mutated = if is_unary_negation { parent } else { node };
             let text = ctx.text();
             let expr_text = &text[cmp.expression.pos() as usize..cmp.expression.end() as usize];
-            if cmp.expression_is_nullable_boolean && cmp.literal_boolean_in_comparison && should_negate != is_unary_negation && !is_conditional_test(mutated) {
+            if cmp.expression_is_nullable_boolean
+                && cmp.literal_boolean_in_comparison
+                && should_negate != is_unary_negation
+                && !is_conditional_test(mutated)
+            {
                 let mut t = expr_text.trim().to_string();
                 if !utils::is_strong_precedence_node(cmp.expression) {
                     t = format!("({t})");

@@ -5,11 +5,16 @@ use tsrs_ast::{self as ast, Kind, Node};
 use tsrs_checker::{Checker, ObjectFlags, Type, TypeFlags};
 use tsrs_core::P;
 
-use crate::rule::{opt_bool, options_object, Ctx, Listener, Rule, RuleMessage, RuleSuggestion, RuleVisitor};
+use crate::rule::{
+    opt_bool, options_object, Ctx, Listener, Rule, RuleMessage, RuleSuggestion, RuleVisitor,
+};
 use crate::utils;
 
 fn missing_async() -> RuleMessage {
-    RuleMessage::new("missingAsync", "Functions that return promises must be async.")
+    RuleMessage::new(
+        "missingAsync",
+        "Functions that return promises must be async.",
+    )
 }
 fn missing_async_hybrid_return() -> RuleMessage {
     RuleMessage::with_help(
@@ -19,7 +24,10 @@ fn missing_async_hybrid_return() -> RuleMessage {
     )
 }
 fn missing_async_hybrid_return_suggestion() -> RuleMessage {
-    RuleMessage::new("missingAsyncHybridReturnSuggestion", "Add `async` keyword to the function.")
+    RuleMessage::new(
+        "missingAsyncHybridReturnSuggestion",
+        "Add `async` keyword to the function.",
+    )
 }
 
 pub struct PromiseFunctionAsync {
@@ -52,7 +60,11 @@ pub fn create(options: Option<&serde_json::Value>) -> Result<Box<dyn Rule>, Stri
     if opt_bool(&m, "checkMethodDeclarations", true) {
         listeners.push(Listener::Enter(Kind::MethodDeclaration));
     }
-    Ok(Box::new(PromiseFunctionAsync { allow_any: opt_bool(&m, "allowAny", true), allowed_promise_names, listeners }))
+    Ok(Box::new(PromiseFunctionAsync {
+        allow_any: opt_bool(&m, "allowAny", true),
+        allowed_promise_names,
+        listeners,
+    }))
 }
 
 impl Rule for PromiseFunctionAsync {
@@ -69,11 +81,18 @@ struct Visitor {
 }
 
 impl Visitor {
-    fn contains_all_types_by_name(&self, c: &mut Checker, mut t: P<Type>, match_any_instead: bool) -> bool {
+    fn contains_all_types_by_name(
+        &self,
+        c: &mut Checker,
+        mut t: P<Type>,
+        match_any_instead: bool,
+    ) -> bool {
         if utils::is_type_flag_set(t, TypeFlags::AnyOrUnknown) {
             return false;
         }
-        if utils::is_type_flag_set(t, TypeFlags::Object) && t.object_flags().intersects(ObjectFlags::Reference) {
+        if utils::is_type_flag_set(t, TypeFlags::Object)
+            && t.object_flags().intersects(ObjectFlags::Reference)
+        {
             t = t.target().unwrap();
         }
         if let Some(symbol) = t.symbol() {
@@ -84,9 +103,13 @@ impl Visitor {
         if utils::is_union_type(t) || utils::is_intersection_type(t) {
             let types = t.types();
             return if match_any_instead {
-                types.iter().all(|&t| self.contains_all_types_by_name(c, t, match_any_instead))
+                types
+                    .iter()
+                    .all(|&t| self.contains_all_types_by_name(c, t, match_any_instead))
             } else {
-                types.iter().any(|&t| self.contains_all_types_by_name(c, t, match_any_instead))
+                types
+                    .iter()
+                    .any(|&t| self.contains_all_types_by_name(c, t, match_any_instead))
             };
         }
         if !t.object_flags().intersects(ObjectFlags::ClassOrInterface) {
@@ -94,9 +117,14 @@ impl Visitor {
         }
         let bases = c.get_base_types(t);
         if match_any_instead {
-            bases.iter().any(|&b| self.contains_all_types_by_name(c, b, match_any_instead))
+            bases
+                .iter()
+                .any(|&b| self.contains_all_types_by_name(c, b, match_any_instead))
         } else {
-            !bases.is_empty() && bases.iter().all(|&b| self.contains_all_types_by_name(c, b, match_any_instead))
+            !bases.is_empty()
+                && bases
+                    .iter()
+                    .all(|&b| self.contains_all_types_by_name(c, b, match_any_instead))
         }
     }
 
@@ -117,7 +145,12 @@ impl Visitor {
                 ctx.report_node(node, missing_async());
                 return;
             }
-            every_signature_returns_promise = every_signature_returns_promise && self.contains_all_types_by_name(ctx.checker, return_type, has_explicit_return_type);
+            every_signature_returns_promise = every_signature_returns_promise
+                && self.contains_all_types_by_name(
+                    ctx.checker,
+                    return_type,
+                    has_explicit_return_type,
+                );
         }
         if !every_signature_returns_promise {
             return;
@@ -127,7 +160,10 @@ impl Visitor {
             for &sig in signatures {
                 let return_type = ctx.checker.get_return_type_of_signature(sig);
                 if utils::is_union_type(return_type) {
-                    let all = return_type.types().iter().all(|&p| self.contains_all_types_by_name(ctx.checker, p, true));
+                    let all = return_type
+                        .types()
+                        .iter()
+                        .all(|&p| self.contains_all_types_by_name(ctx.checker, p, true));
                     if !all {
                         is_hybrid_return_type = true;
                         break;
@@ -148,7 +184,10 @@ impl Visitor {
         };
         if is_hybrid_return_type {
             ctx.report_node_with_suggestions(node, missing_async_hybrid_return(), |ctx| {
-                vec![RuleSuggestion { message: missing_async_hybrid_return_suggestion(), fixes: vec![insert_async_fix(ctx)] }]
+                vec![RuleSuggestion {
+                    message: missing_async_hybrid_return_suggestion(),
+                    fixes: vec![insert_async_fix(ctx)],
+                }]
             });
         } else {
             ctx.report_node_with_fixes(node, missing_async(), |ctx| vec![insert_async_fix(ctx)]);
@@ -161,7 +200,9 @@ impl RuleVisitor for Visitor {
         &self.o.listeners
     }
     fn visit(&mut self, ctx: &mut Ctx, _l: Listener, node: P<Node>) {
-        if node.kind() == Kind::MethodDeclaration && utils::includes_modifier(node, Kind::AbstractKeyword) {
+        if node.kind() == Kind::MethodDeclaration
+            && utils::includes_modifier(node, Kind::AbstractKeyword)
+        {
             return;
         }
         self.validate_node(ctx, node);

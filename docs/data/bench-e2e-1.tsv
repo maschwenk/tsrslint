@@ -1,0 +1,8 @@
+mode	pair	impl	wall_s	user_s	sys_s	maxrss_gb	load1	exit
+e2e	1	stock	78.79	401.29	56.45	26.53	9.77	0
+e2e	1	tsrslint	75.03	266.15	78.73	7.81	16.50	0
+e2e	2	tsrslint	65.45	263.10	73.99	7.83	26.23	0
+e2e	2	stock	89.51	407.05	24.69	26.07	32.45	0
+e2e	3	stock	97.13	391.32	22.19	25.72	65.03	0
+e2e	3	tsrslint	27.98	232.17	27.76	7.74	54.24	0
+DONE

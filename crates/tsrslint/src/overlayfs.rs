@@ -15,7 +15,10 @@ pub struct OverlayFS {
 
 impl OverlayFS {
     pub fn new(base: Arc<dyn FS>, files: FxHashMap<String, String>) -> OverlayFS {
-        let files = files.into_iter().map(|(k, v)| (tspath::normalize_path(&k), v)).collect();
+        let files = files
+            .into_iter()
+            .map(|(k, v)| (tspath::normalize_path(&k), v))
+            .collect();
         OverlayFS { base, files }
     }
 }

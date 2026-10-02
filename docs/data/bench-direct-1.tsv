@@ -1,0 +1,10 @@
+mode	pair	impl	wall_s	user_s	sys_s	maxrss_gb	load1	exit
+direct	1	stock	38.11	176.50	16.82	26.62	12.04	0
+direct	1	tsrslint	12.80	35.15	18.72	7.73	13.05	0
+direct	2	tsrslint	12.41	35.98	17.13	7.78	12.33	0
+direct	2	stock	37.35	176.64	16.76	27.18	11.67	0
+direct	3	stock	33.56	172.76	14.54	26.71	11.32	0
+direct	3	tsrslint	11.06	34.83	15.88	7.80	10.04	0
+direct	4	tsrslint	10.87	34.96	15.79	7.81	10.58	0
+direct	4	stock	31.32	179.26	11.52	26.10	12.37	0
+DONE

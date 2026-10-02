@@ -8,7 +8,10 @@ fn main() {
     match args.first().map(String::as_str) {
         Some("headless") => {}
         Some("--version") | Some("version") => {
-            println!("tsrslint {} (tsgolint headless protocol v2)", env!("CARGO_PKG_VERSION"));
+            println!(
+                "tsrslint {} (tsgolint headless protocol v2)",
+                env!("CARGO_PKG_VERSION")
+            );
             return;
         }
         _ => {

@@ -7,15 +7,25 @@ use crate::rule::{Ctx, Listener, Rule, RuleMessage, RuleVisitor};
 use crate::utils;
 
 fn no_function_constructor() -> RuleMessage {
-    RuleMessage::new("noFunctionConstructor", "Implied eval. Do not use the Function constructor to create functions.")
+    RuleMessage::new(
+        "noFunctionConstructor",
+        "Implied eval. Do not use the Function constructor to create functions.",
+    )
 }
 fn no_implied_eval_error() -> RuleMessage {
-    RuleMessage::with_help("noImpliedEvalError", "Implied eval.", "Consider passing a function.")
+    RuleMessage::with_help(
+        "noImpliedEvalError",
+        "Implied eval.",
+        "Consider passing a function.",
+    )
 }
 
 const GLOBAL_CANDIDATES: &[&str] = &["global", "globalThis", "window"];
 const EVAL_LIKE_FUNCTIONS: &[&str] = &["execScript", "setImmediate", "setInterval", "setTimeout"];
-const LISTENERS: &[Listener] = &[Listener::Enter(Kind::CallExpression), Listener::Enter(Kind::NewExpression)];
+const LISTENERS: &[Listener] = &[
+    Listener::Enter(Kind::CallExpression),
+    Listener::Enter(Kind::NewExpression),
+];
 
 pub struct NoImpliedEval;
 
@@ -99,7 +109,12 @@ impl RuleVisitor for Visitor {
         if callee_name == "Function" {
             let t = ctx.checker.get_type_at_location(expression);
             if t.symbol().is_some() {
-                if utils::is_builtin_symbol_like(ctx.program, ctx.checker, t, &["FunctionConstructor"]) {
+                if utils::is_builtin_symbol_like(
+                    ctx.program,
+                    ctx.checker,
+                    t,
+                    &["FunctionConstructor"],
+                ) {
                     ctx.report_node(node, no_function_constructor());
                     return;
                 }
@@ -114,7 +129,11 @@ impl RuleVisitor for Visitor {
         let handler = args[0];
         if EVAL_LIKE_FUNCTIONS.contains(&callee_name.as_str()) && !is_function(ctx, handler) {
             let symbol = ctx.checker.get_symbol_at_location_exported(expression);
-            let declared_here = symbol.is_some_and(|s| s.declarations().iter().any(|&d| ast::get_source_file_of_node(d) == Some(ctx.file)));
+            let declared_here = symbol.is_some_and(|s| {
+                s.declarations()
+                    .iter()
+                    .any(|&d| ast::get_source_file_of_node(d) == Some(ctx.file))
+            });
             if !declared_here {
                 ctx.report_node(handler, no_implied_eval_error());
             }

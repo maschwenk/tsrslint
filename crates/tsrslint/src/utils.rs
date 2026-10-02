@@ -64,7 +64,12 @@ pub fn is_callback(c: &mut Checker, param: P<Symbol>, node: P<Node>) -> bool {
     let at = c.get_type_of_symbol_at_location(param, Some(node)).unwrap();
     let mut t = Some(c.get_apparent_type(at));
     if let Some(decl) = param.value_declaration() {
-        if ast::is_parameter_declaration(decl) && decl.as_parameter_declaration().dot_dot_dot_token().is_some() {
+        if ast::is_parameter_declaration(decl)
+            && decl
+                .as_parameter_declaration()
+                .dot_dot_dot_token()
+                .is_some()
+        {
             let number_type = c.number_type;
             t = c.get_index_type_of_type(t.unwrap(), number_type);
         }
@@ -83,7 +88,9 @@ pub fn is_thenable_type(c: &mut Checker, node: P<Node>, t: Option<P<Type>>) -> b
     let t = t.unwrap_or_else(|| c.get_type_at_location(node));
     let apparent = c.get_apparent_type(t);
     for part in union_type_parts(apparent) {
-        let Some(then) = c.get_property_of_type(part, "then") else { continue };
+        let Some(then) = c.get_property_of_type(part, "then") else {
+            continue;
+        };
         let then_type = c.get_type_of_symbol_at_location(then, Some(node)).unwrap();
         for sub in union_type_parts(then_type) {
             for &sig in c.get_signatures_of_type(sub, SignatureKind::Call) {
@@ -116,7 +123,11 @@ pub enum TypeAwaitable {
 pub fn needs_to_be_awaited(c: &mut Checker, node: P<Node>, t: P<Type>) -> TypeAwaitable {
     let (constraint, is_type_parameter) = get_constraint_info(c, t);
     let Some(constraint) = constraint else {
-        return if is_type_parameter { TypeAwaitable::May } else { TypeAwaitable::Never };
+        return if is_type_parameter {
+            TypeAwaitable::May
+        } else {
+            TypeAwaitable::Never
+        };
     };
     if is_type_any_type(constraint) || is_type_unknown_type(constraint) {
         return TypeAwaitable::May;
@@ -135,7 +146,11 @@ pub fn get_constrained_type_at_location(c: &mut Checker, node: P<Node>) -> P<Typ
 
 pub fn is_higher_precedence_than_await(node: P<Node>) -> bool {
     let node_precedence = ast::get_expression_precedence(node);
-    let await_precedence = ast::get_operator_precedence(Kind::AwaitExpression, Kind::Unknown, ast::OperatorPrecedenceFlags::None);
+    let await_precedence = ast::get_operator_precedence(
+        Kind::AwaitExpression,
+        Kind::Unknown,
+        ast::OperatorPrecedenceFlags::None,
+    );
     (node_precedence as i32) > (await_precedence as i32)
 }
 
@@ -161,7 +176,10 @@ pub fn is_strong_precedence_node(inner: P<Node>) -> bool {
 
 /// utils.go FindModifier.
 pub fn find_modifier(node: P<Node>, modifier: Kind) -> Option<P<Node>> {
-    node.modifier_nodes().iter().copied().find(|m| m.kind() == modifier)
+    node.modifier_nodes()
+        .iter()
+        .copied()
+        .find(|m| m.kind() == modifier)
 }
 pub fn includes_modifier(node: P<Node>, modifier: Kind) -> bool {
     find_modifier(node, modifier).is_some()
@@ -182,7 +200,10 @@ pub fn is_source_file_default_library(program: &Program, file: P<SourceFile>) ->
     }
     let lib_dir = program.host().default_library_path().to_string();
     let libs: Vec<String> = match &options.lib {
-        None => vec![tspath::combine_paths(&lib_dir, &[tsrs_tsoptions::get_default_lib_file_name(&options)])],
+        None => vec![tspath::combine_paths(
+            &lib_dir,
+            &[tsrs_tsoptions::get_default_lib_file_name(&options)],
+        )],
         Some(lib) => lib
             .iter()
             .filter_map(|l| tsrs_tsoptions::get_lib_file_name(l))
@@ -193,12 +214,16 @@ pub fn is_source_file_default_library(program: &Program, file: P<SourceFile>) ->
         current_directory: program.host().get_current_directory().to_string(),
         use_case_sensitive_file_names: program.host().fs().use_case_sensitive_file_names(),
     };
-    libs.iter().any(|lib| tspath::compare_paths(file.file_name(), lib, &opts) == 0)
+    libs.iter()
+        .any(|lib| tspath::compare_paths(file.file_name(), lib, &opts) == 0)
 }
 
 pub fn is_symbol_from_default_library(program: &Program, symbol: Option<P<Symbol>>) -> bool {
     let Some(symbol) = symbol else { return false };
-    symbol.declarations().iter().any(|&d| ast::get_source_file_of_node(d).is_some_and(|sf| is_source_file_default_library(program, sf)))
+    symbol.declarations().iter().any(|&d| {
+        ast::get_source_file_of_node(d)
+            .is_some_and(|sf| is_source_file_default_library(program, sf))
+    })
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -215,10 +240,14 @@ pub fn is_builtin_symbol_like_recurser(
     predicate: &mut dyn FnMut(&mut Checker, P<Type>) -> BuiltinMatch,
 ) -> bool {
     if is_intersection_type(t) {
-        return intersection_type_parts(t).into_iter().any(|t| is_builtin_symbol_like_recurser(program, c, t, predicate));
+        return intersection_type_parts(t)
+            .into_iter()
+            .any(|t| is_builtin_symbol_like_recurser(program, c, t, predicate));
     }
     if is_union_type(t) {
-        return union_type_parts(t).into_iter().all(|t| is_builtin_symbol_like_recurser(program, c, t, predicate));
+        return union_type_parts(t)
+            .into_iter()
+            .all(|t| is_builtin_symbol_like_recurser(program, c, t, predicate));
     }
     if is_type_parameter(t) {
         return match c.get_base_constraint_of_type(t) {
@@ -232,7 +261,11 @@ pub fn is_builtin_symbol_like_recurser(
         BuiltinMatch::Unknown => {}
     }
     if let Some(symbol) = t.symbol() {
-        if symbol.flags.get().intersects(SymbolFlags::Class | SymbolFlags::Interface) {
+        if symbol
+            .flags
+            .get()
+            .intersects(SymbolFlags::Class | SymbolFlags::Interface)
+        {
             let declared = c.get_declared_type_of_symbol(symbol);
             for &base in c.get_base_types(declared) {
                 if is_builtin_symbol_like_recurser(program, c, base, predicate) {
@@ -244,9 +277,16 @@ pub fn is_builtin_symbol_like_recurser(
     false
 }
 
-pub fn is_builtin_symbol_like(program: &Program, c: &mut Checker, t: P<Type>, names: &[&str]) -> bool {
+pub fn is_builtin_symbol_like(
+    program: &Program,
+    c: &mut Checker,
+    t: P<Type>,
+    names: &[&str],
+) -> bool {
     is_builtin_symbol_like_recurser(program, c, t, &mut |_c, sub| {
-        let Some(symbol) = sub.symbol() else { return BuiltinMatch::False };
+        let Some(symbol) = sub.symbol() else {
+            return BuiltinMatch::False;
+        };
         if names.contains(&symbol.name()) && is_symbol_from_default_library(program, Some(symbol)) {
             BuiltinMatch::True
         } else {

@@ -118,7 +118,11 @@ impl CompilerHost for CachedCompilerHost {
         SOURCE_FILE_CACHE.with(|c| c.borrow_mut().insert(key, sf));
         Some(sf)
     }
-    fn get_resolved_project_reference(&self, file_name: &str, path: Path) -> Option<P<ParsedCommandLine>> {
+    fn get_resolved_project_reference(
+        &self,
+        file_name: &str,
+        path: Path,
+    ) -> Option<P<ParsedCommandLine>> {
         self.inner.get_resolved_project_reference(file_name, path)
     }
 }
@@ -135,7 +139,15 @@ fn base_fs() -> Arc<dyn FS> {
     BASE.with(|b| b.clone())
 }
 
-fn run_linter(root: &str, tsconfig: &str, rule: &'static dyn Rule, code: &str, file_name: &str, tsx: bool, extra: &FxHashMap<String, String>) -> Result<(Vec<ReportedDiagnostic>, P<SourceFile>), String> {
+fn run_linter(
+    root: &str,
+    tsconfig: &str,
+    rule: &'static dyn Rule,
+    code: &str,
+    file_name: &str,
+    tsx: bool,
+    extra: &FxHashMap<String, String>,
+) -> Result<(Vec<ReportedDiagnostic>, P<SourceFile>), String> {
     let file_name = if !file_name.is_empty() {
         file_name.to_string()
     } else if tsx {
@@ -150,8 +162,17 @@ fn run_linter(root: &str, tsconfig: &str, rule: &'static dyn Rule, code: &str, f
         virtual_files.insert(tspath::resolve_path(root, &[k]), v.clone());
     }
     let fs: Arc<dyn FS> = Arc::new(OverlayFS::new(base_fs(), virtual_files));
-    let host: &'static ParseHost = Box::leak(Box::new(ParseHost { fs: fs.clone(), cwd: root.to_string() }));
-    let (parsed, errors) = tsoptions::get_parsed_command_line_of_config_file(tsconfig, Some(&CompilerOptions::default()), None, host, None);
+    let host: &'static ParseHost = Box::leak(Box::new(ParseHost {
+        fs: fs.clone(),
+        cwd: root.to_string(),
+    }));
+    let (parsed, errors) = tsoptions::get_parsed_command_line_of_config_file(
+        tsconfig,
+        Some(&CompilerOptions::default()),
+        None,
+        host,
+        None,
+    );
     if !errors.is_empty() {
         return Err(format!("tsconfig errors: {}", errors.len()));
     }
@@ -164,8 +185,17 @@ fn run_linter(root: &str, tsconfig: &str, rule: &'static dyn Rule, code: &str, f
     let program = new_program(popts);
     program.bind_source_files();
     let path = tspath::to_path(&resolved, root, host.fs.use_case_sensitive_file_names());
-    let sf = program.source_files().iter().copied().find(|sf| *sf.path() == path).ok_or_else(|| format!("{resolved} not in program"))?;
-    let opts = Options { fix: true, fix_suggestions: true, debug_timings: false };
+    let sf = program
+        .source_files()
+        .iter()
+        .copied()
+        .find(|sf| *sf.path() == path)
+        .ok_or_else(|| format!("{resolved} not in program"))?;
+    let opts = Options {
+        fix: true,
+        fix_suggestions: true,
+        debug_timings: false,
+    };
     Ok((lint_files(program, &[sf], &[rule], &opts), sf))
 }
 
@@ -176,20 +206,25 @@ fn line_col(file: P<SourceFile>, pos: i32) -> (i32, i32) {
 
 /// Runs every converted case of `rule`; returns (passed, failed descriptions, skipped).
 fn run_cases(rule_name: &str) -> (usize, Vec<String>, usize, usize) {
-    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join(format!("tests/cases/{rule_name}.json"));
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join(format!("tests/cases/{rule_name}.json"));
     let cases: Cases = serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
     let root = fixtures_root();
     let mut passed = 0;
     let mut skipped = 0;
     let mut failures = Vec::new();
-    let only_mode = cases.groups.iter().any(|g| g.valid.iter().chain(&g.invalid).any(|c| c.only));
+    let only_mode = cases
+        .groups
+        .iter()
+        .any(|g| g.valid.iter().chain(&g.invalid).any(|c| c.only));
     let mut rule_cache: FxHashMap<String, &'static dyn Rule> = FxHashMap::default();
     let mut get_rule = |options: &Option<serde_json::Value>| -> Result<&'static dyn Rule, String> {
         let key = options.as_ref().map(|o| o.to_string()).unwrap_or_default();
         if let Some(r) = rule_cache.get(&key) {
             return Ok(*r);
         }
-        let r: &'static dyn Rule = Box::leak(tsrslint::rules::create_rule(rule_name, options.as_ref())?);
+        let r: &'static dyn Rule =
+            Box::leak(tsrslint::rules::create_rule(rule_name, options.as_ref())?);
         rule_cache.insert(key, r);
         Ok(r)
     };
@@ -207,8 +242,20 @@ fn run_cases(rule_name: &str) -> (usize, Vec<String>, usize, usize) {
                     continue;
                 }
             };
-            let tsconfig = if c.tsconfig.is_empty() { &g.tsconfig } else { &c.tsconfig };
-            match run_linter(&root, tsconfig, rule, &c.code, &c.file_name, c.tsx, &c.files) {
+            let tsconfig = if c.tsconfig.is_empty() {
+                &g.tsconfig
+            } else {
+                &c.tsconfig
+            };
+            match run_linter(
+                &root,
+                tsconfig,
+                rule,
+                &c.code,
+                &c.file_name,
+                c.tsx,
+                &c.files,
+            ) {
                 Ok((diags, _)) if diags.is_empty() => passed += 1,
                 Ok((diags, _)) => failures.push(format!(
                     "valid-{gi}-{i}: expected no errors, got {:?}\n{}",
@@ -231,9 +278,21 @@ fn run_cases(rule_name: &str) -> (usize, Vec<String>, usize, usize) {
                     continue;
                 }
             };
-            let tsconfig = if c.tsconfig.is_empty() { &g.tsconfig } else { &c.tsconfig };
+            let tsconfig = if c.tsconfig.is_empty() {
+                &g.tsconfig
+            } else {
+                &c.tsconfig
+            };
             let mut problems = String::new();
-            let first = match run_linter(&root, tsconfig, rule, &c.code, &c.file_name, c.tsx, &c.files) {
+            let first = match run_linter(
+                &root,
+                tsconfig,
+                rule,
+                &c.code,
+                &c.file_name,
+                c.tsx,
+                &c.files,
+            ) {
                 Ok(r) => r,
                 Err(e) => {
                     failures.push(format!("invalid-{gi}-{i}: {e}"));
@@ -246,7 +305,15 @@ fn run_cases(rule_name: &str) -> (usize, Vec<String>, usize, usize) {
             let mut diags = first.0.clone();
             for pass in 0..10 {
                 if pass > 0 {
-                    diags = match run_linter(&root, tsconfig, rule, &code, &c.file_name, c.tsx, &c.files) {
+                    diags = match run_linter(
+                        &root,
+                        tsconfig,
+                        rule,
+                        &code,
+                        &c.file_name,
+                        c.tsx,
+                        &c.files,
+                    ) {
                         Ok(r) => r.0,
                         Err(e) => {
                             let _ = write!(problems, "fix pass {pass}: {e}; ");
@@ -254,7 +321,13 @@ fn run_cases(rule_name: &str) -> (usize, Vec<String>, usize, usize) {
                         }
                     };
                 }
-                let (fixed_code, fixed) = apply_rule_fixes(&code, diags.iter().map(|d| d.fixes.clone().unwrap_or_default()).collect());
+                let (fixed_code, fixed) = apply_rule_fixes(
+                    &code,
+                    diags
+                        .iter()
+                        .map(|d| d.fixes.clone().unwrap_or_default())
+                        .collect(),
+                );
                 if !fixed {
                     break;
                 }
@@ -262,30 +335,59 @@ fn run_cases(rule_name: &str) -> (usize, Vec<String>, usize, usize) {
                 outputs.push(code.clone());
             }
             if outputs != c.output {
-                let _ = write!(problems, "outputs differ: expected {:?}, got {:?}; ", c.output, outputs);
+                let _ = write!(
+                    problems,
+                    "outputs differ: expected {:?}, got {:?}; ",
+                    c.output, outputs
+                );
             }
             let (initial, file) = first;
             if initial.len() != c.errors.len() {
-                let _ = write!(problems, "expected {} errors, got {} {:?}; ", c.errors.len(), initial.len(), initial.iter().map(|d| d.message.id).collect::<Vec<_>>());
+                let _ = write!(
+                    problems,
+                    "expected {} errors, got {} {:?}; ",
+                    c.errors.len(),
+                    initial.len(),
+                    initial.iter().map(|d| d.message.id).collect::<Vec<_>>()
+                );
             } else {
                 for (j, (e, d)) in c.errors.iter().zip(&initial).enumerate() {
                     if e.message_id != d.message.id {
-                        let _ = write!(problems, "error {j}: message id {} != expected {}; ", d.message.id, e.message_id);
+                        let _ = write!(
+                            problems,
+                            "error {j}: message id {} != expected {}; ",
+                            d.message.id, e.message_id
+                        );
                     }
                     let (line, col) = line_col(file, d.pos);
                     let (end_line, end_col) = line_col(file, d.end);
-                    for (name, want, got) in [("line", e.line, line), ("column", e.column, col), ("endLine", e.end_line, end_line), ("endColumn", e.end_column, end_col)] {
+                    for (name, want, got) in [
+                        ("line", e.line, line),
+                        ("column", e.column, col),
+                        ("endLine", e.end_line, end_line),
+                        ("endColumn", e.end_column, end_col),
+                    ] {
                         if want != 0 && want != got {
-                            let _ = write!(problems, "error {j}: {name} {got} != expected {want}; ");
+                            let _ =
+                                write!(problems, "error {j}: {name} {got} != expected {want}; ");
                         }
                     }
                     let sugg = d.suggestions.clone().unwrap_or_default();
                     if sugg.len() != e.suggestions.len() {
-                        let _ = write!(problems, "error {j}: {} suggestions != expected {}; ", sugg.len(), e.suggestions.len());
+                        let _ = write!(
+                            problems,
+                            "error {j}: {} suggestions != expected {}; ",
+                            sugg.len(),
+                            e.suggestions.len()
+                        );
                     } else {
                         for (k, (es, s)) in e.suggestions.iter().zip(&sugg).enumerate() {
                             if es.message_id != s.message.id {
-                                let _ = write!(problems, "error {j} suggestion {k}: id {} != {}; ", s.message.id, es.message_id);
+                                let _ = write!(
+                                    problems,
+                                    "error {j} suggestion {k}: id {} != {}; ",
+                                    s.message.id, es.message_id
+                                );
                             } else {
                                 let (out, _) = apply_rule_fixes(&c.code, vec![s.fixes.clone()]);
                                 if out != es.output {
@@ -312,7 +414,11 @@ fn check(rule_name: &str) {
     for f in &failures {
         eprintln!("[{rule_name}] FAIL {f}\n");
     }
-    assert!(failures.is_empty(), "{rule_name}: {} failing cases", failures.len());
+    assert!(
+        failures.is_empty(),
+        "{rule_name}: {} failing cases",
+        failures.len()
+    );
 }
 
 macro_rules! rule_test {
@@ -320,13 +426,21 @@ macro_rules! rule_test {
         #[test]
         fn $fn_name() {
             // Type checking recurses deeply.
-            std::thread::Builder::new().stack_size(256 << 20).spawn(|| check($rule)).unwrap().join().unwrap();
+            std::thread::Builder::new()
+                .stack_size(256 << 20)
+                .spawn(|| check($rule))
+                .unwrap()
+                .join()
+                .unwrap();
         }
     };
 }
 
 rule_test!(no_floating_promises, "no-floating-promises");
 rule_test!(no_implied_eval, "no-implied-eval");
-rule_test!(no_unnecessary_boolean_literal_compare, "no-unnecessary-boolean-literal-compare");
+rule_test!(
+    no_unnecessary_boolean_literal_compare,
+    "no-unnecessary-boolean-literal-compare"
+);
 rule_test!(promise_function_async, "promise-function-async");
 rule_test!(return_await, "return-await");

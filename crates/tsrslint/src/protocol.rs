@@ -52,14 +52,20 @@ pub fn deserialize_payload(data: &[u8]) -> Result<Payload, String> {
         #[serde(default)]
         version: i32,
     }
-    let version = serde_json::from_slice::<VersionCheck>(data).map_err(|e| e.to_string())?.version;
+    let version = serde_json::from_slice::<VersionCheck>(data)
+        .map_err(|e| e.to_string())?
+        .version;
     if version == 2 {
-        return serde_json::from_slice::<Payload>(data).map_err(|e| format!("failed to deserialize V2 payload: {e}"));
+        return serde_json::from_slice::<Payload>(data)
+            .map_err(|e| format!("failed to deserialize V2 payload: {e}"));
     }
     if version != 0 {
-        return Err(format!("unsupported version `{version}`: expected `unset` or `2`"));
+        return Err(format!(
+            "unsupported version `{version}`: expected `unset` or `2`"
+        ));
     }
-    let v1: PayloadV1 = serde_json::from_slice(data).map_err(|e| format!("failed to deserialize V1 payload: {e}"))?;
+    let v1: PayloadV1 = serde_json::from_slice(data)
+        .map_err(|e| format!("failed to deserialize V1 payload: {e}"))?;
     if v1.files.is_empty() {
         return Err("V1 payload has no files".to_string());
     }
@@ -70,7 +76,14 @@ pub fn deserialize_payload(data: &[u8]) -> Result<Payload, String> {
             .into_iter()
             .map(|f| HeadlessConfig {
                 file_paths: vec![f.file_path],
-                rules: f.rules.into_iter().map(|name| HeadlessRule { name, options: None }).collect(),
+                rules: f
+                    .rules
+                    .into_iter()
+                    .map(|name| HeadlessRule {
+                        name,
+                        options: None,
+                    })
+                    .collect(),
             })
             .collect(),
         source_overrides: None,
@@ -152,7 +165,11 @@ pub struct TimingPayload {
 }
 
 /// `| payload length: u32 LE | message type: u8 | JSON payload |`
-pub fn write_message(w: &mut impl Write, ty: MessageType, payload: &impl Serialize) -> std::io::Result<()> {
+pub fn write_message(
+    w: &mut impl Write,
+    ty: MessageType,
+    payload: &impl Serialize,
+) -> std::io::Result<()> {
     let bytes = serde_json::to_vec(payload).expect("serializable payload");
     let mut header = [0u8; 5];
     header[..4].copy_from_slice(&(bytes.len() as u32).to_le_bytes());

@@ -10,8 +10,8 @@ use rustc_hash::FxHashMap;
 use tsrs_ast::{self as ast, Kind, Node, SourceFile};
 use tsrs_checker::Checker;
 use tsrs_compiler::{new_cached_fs_compiler_host, new_program, Program, ProgramOptions};
-use tsrs_core::CompilerOptions;
 use tsrs_core::tspath::{self, Path};
+use tsrs_core::CompilerOptions;
 use tsrs_core::{Tristate, P};
 use tsrs_vfs::{bundled, cachedvfs, osvfs, FS};
 
@@ -128,9 +128,17 @@ fn base_fs(payload: &Payload) -> Arc<dyn FS> {
     Arc::new(bundled::wrap_fs(cachedvfs::from(base)))
 }
 
-pub fn run(payload: Payload, cwd: &str, opts: &Options, log: &dyn Fn(String)) -> Result<(), String> {
+pub fn run(
+    payload: Payload,
+    cwd: &str,
+    opts: &Options,
+    log: &dyn Fn(String),
+) -> Result<(), String> {
     let fs = base_fs(&payload);
-    let host: &'static ParseHost = Box::leak(Box::new(ParseHost { fs: fs.clone(), cwd: cwd.to_string() }));
+    let host: &'static ParseHost = Box::leak(Box::new(ParseHost {
+        fs: fs.clone(),
+        cwd: cwd.to_string(),
+    }));
     let ext_cache: &'static ExtendedConfigCache = Box::leak(Box::default());
 
     // Rules: one instance per distinct (name, options); unknown rules are a hard error (Go panics).
@@ -139,7 +147,14 @@ pub fn run(payload: Payload, cwd: &str, opts: &Options, log: &dyn Fn(String)) ->
     for config in &payload.configs {
         let mut set = RuleSet { rules: Vec::new() };
         for r in &config.rules {
-            let key = format!("{}\u{0}{}", r.name, r.options.as_ref().map(|o| o.to_string()).unwrap_or_default());
+            let key = format!(
+                "{}\u{0}{}",
+                r.name,
+                r.options
+                    .as_ref()
+                    .map(|o| o.to_string())
+                    .unwrap_or_default()
+            );
             let rule = match rule_cache.get(&key) {
                 Some(r) => *r,
                 None => {
@@ -165,7 +180,10 @@ pub fn run(payload: Payload, cwd: &str, opts: &Options, log: &dyn Fn(String)) ->
             files.push(normalized);
         }
     }
-    log(format!("Starting to assign files to programs. Total files: {}", files.len()));
+    log(format!(
+        "Starting to assign files to programs. Total files: {}",
+        files.len()
+    ));
     let resolver = TsConfigResolver::new(host, ext_cache);
     let threads = std::thread::available_parallelism().map_or(4, |n| n.get());
     let assignment = resolver.resolve_all(&files, threads);
@@ -183,7 +201,11 @@ pub fn run(payload: Payload, cwd: &str, opts: &Options, log: &dyn Fn(String)) ->
             programs[i].1.push(file.clone());
         }
     }
-    log(format!("Done assigning files to programs. Total programs: {}. Unmatched files: {}", programs.len(), unmatched.len()));
+    log(format!(
+        "Done assigning files to programs. Total programs: {}. Unmatched files: {}",
+        programs.len(),
+        unmatched.len()
+    ));
 
     // Output thread (headless.go's diagnostics goroutine).
     let (tx, rx) = mpsc::sync_channel::<protocol::Diagnostic>(4096);
@@ -197,7 +219,15 @@ pub fn run(payload: Payload, cwd: &str, opts: &Options, log: &dyn Fn(String)) ->
     });
 
     let timings: Mutex<FxHashMap<&'static str, (Duration, u64)>> = Mutex::new(FxHashMap::default());
-    let ctx = LintCtx { opts, rule_sets: &rule_sets, file_rules: &file_rules, tx: &tx, timings: &timings, use_case_sensitive, cwd };
+    let ctx = LintCtx {
+        opts,
+        rule_sets: &rule_sets,
+        file_rules: &file_rules,
+        tx: &tx,
+        timings: &timings,
+        use_case_sensitive,
+        cwd,
+    };
 
     let mut result = Ok(());
     for (config_file_name, config_files) in &programs {
@@ -217,7 +247,13 @@ pub fn run(payload: Payload, cwd: &str, opts: &Options, log: &dyn Fn(String)) ->
             continue;
         }
         let dir = tspath::get_directory_path(config_file_name);
-        let compiler_host = new_cached_fs_compiler_host(&dir, fs.clone(), &bundled::lib_path(), Some(Arc::new(ProgramExtCache(ext_cache))), None);
+        let compiler_host = new_cached_fs_compiler_host(
+            &dir,
+            fs.clone(),
+            &bundled::lib_path(),
+            Some(Arc::new(ProgramExtCache(ext_cache))),
+            None,
+        );
         let mut popts = ProgramOptions::new(config, compiler_host);
         popts.use_source_of_project_reference = true;
         popts.single_threaded = Tristate::False;
@@ -230,36 +266,73 @@ pub fn run(payload: Payload, cwd: &str, opts: &Options, log: &dyn Fn(String)) ->
             continue;
         }
         program.bind_source_files();
-        log(format!("Program created with {} source files", program.source_files().len()));
-        let wanted: FxHashMap<Path, &String> = config_files.iter().map(|f| (tspath::to_path(f, &dir, use_case_sensitive), f)).collect();
-        let source_files: Vec<P<SourceFile>> = program.source_files().iter().copied().filter(|sf| wanted.contains_key(sf.path())).collect();
+        log(format!(
+            "Program created with {} source files",
+            program.source_files().len()
+        ));
+        let wanted: FxHashMap<Path, &String> = config_files
+            .iter()
+            .map(|f| (tspath::to_path(f, &dir, use_case_sensitive), f))
+            .collect();
+        let source_files: Vec<P<SourceFile>> = program
+            .source_files()
+            .iter()
+            .copied()
+            .filter(|sf| wanted.contains_key(sf.path()))
+            .collect();
         if source_files.len() != wanted.len() {
-            result = Err(format!("expected {} files in program {config_file_name}, found {}", wanted.len(), source_files.len()));
+            result = Err(format!(
+                "expected {} files in program {config_file_name}, found {}",
+                wanted.len(),
+                source_files.len()
+            ));
             break;
         }
         lint_program(program, &source_files, &payload, &ctx);
     }
 
     if result.is_ok() && !unmatched.is_empty() {
-        log(format!("Running linter on inferred program with {} files", unmatched.len()));
-        let compiler_host = new_cached_fs_compiler_host(cwd, fs.clone(), &bundled::lib_path(), Some(Arc::new(ProgramExtCache(ext_cache))), None);
+        log(format!(
+            "Running linter on inferred program with {} files",
+            unmatched.len()
+        ));
+        let compiler_host = new_cached_fs_compiler_host(
+            cwd,
+            fs.clone(),
+            &bundled::lib_path(),
+            Some(Arc::new(ProgramExtCache(ext_cache))),
+            None,
+        );
         let config = P::new(tsrs_tsoptions::new_parsed_command_line(
             P::new(inferred_compiler_options()),
             unmatched.clone(),
             Vec::new(),
-            tspath::ComparePathsOptions { use_case_sensitive_file_names: use_case_sensitive, current_directory: cwd.to_string() },
+            tspath::ComparePathsOptions {
+                use_case_sensitive_file_names: use_case_sensitive,
+                current_directory: cwd.to_string(),
+            },
         ));
         let mut popts = ProgramOptions::new(config, compiler_host);
         popts.single_threaded = Tristate::False;
         let program = new_program(popts);
         program.bind_source_files();
-        let wanted: FxHashMap<Path, ()> = unmatched.iter().map(|f| (tspath::to_path(f, cwd, use_case_sensitive), ())).collect();
-        let source_files: Vec<P<SourceFile>> = program.source_files().iter().copied().filter(|sf| wanted.contains_key(sf.path())).collect();
+        let wanted: FxHashMap<Path, ()> = unmatched
+            .iter()
+            .map(|f| (tspath::to_path(f, cwd, use_case_sensitive), ()))
+            .collect();
+        let source_files: Vec<P<SourceFile>> = program
+            .source_files()
+            .iter()
+            .copied()
+            .filter(|sf| wanted.contains_key(sf.path()))
+            .collect();
         lint_program(program, &source_files, &payload, &ctx);
     }
 
     drop(tx);
-    writer.join().map_err(|_| "output thread panicked".to_string())?;
+    writer
+        .join()
+        .map_err(|_| "output thread panicked".to_string())?;
     result?;
 
     if opts.debug_timings {
@@ -267,10 +340,19 @@ pub fn run(payload: Payload, cwd: &str, opts: &Options, log: &dyn Fn(String)) ->
             .into_inner()
             .unwrap()
             .into_iter()
-            .map(|(name, (d, calls))| protocol::RuleTiming { rule_name: name.to_string(), duration: d.as_nanos() as u64, calls })
+            .map(|(name, (d, calls))| protocol::RuleTiming {
+                rule_name: name.to_string(),
+                duration: d.as_nanos() as u64,
+                calls,
+            })
             .collect();
         let mut out = std::io::stdout().lock();
-        protocol::write_message(&mut out, MessageType::Timing, &protocol::TimingPayload { rules }).map_err(|e| e.to_string())?;
+        protocol::write_message(
+            &mut out,
+            MessageType::Timing,
+            &protocol::TimingPayload { rules },
+        )
+        .map_err(|e| e.to_string())?;
         out.flush().map_err(|e| e.to_string())?;
     }
     log("Linting Complete".to_string());
@@ -278,7 +360,8 @@ pub fn run(payload: Payload, cwd: &str, opts: &Options, log: &dyn Fn(String)) ->
 }
 
 fn suppress_program_diagnostics() -> bool {
-    std::env::var("OXLINT_TSGOLINT_DANGEROUSLY_SUPPRESS_PROGRAM_DIAGNOSTICS").is_ok_and(|v| v == "true")
+    std::env::var("OXLINT_TSGOLINT_DANGEROUSLY_SUPPRESS_PROGRAM_DIAGNOSTICS")
+        .is_ok_and(|v| v == "true")
 }
 
 struct ProgramExtCache(&'static ExtendedConfigCache);
@@ -291,7 +374,8 @@ impl tsrs_tsoptions::ExtendedConfigCache for ProgramExtCache {
         resolution_stack: &[Path],
         host: &'static dyn tsrs_tsoptions::ParseConfigHost,
     ) -> P<tsrs_tsoptions::ExtendedConfigCacheEntry> {
-        self.0.get_extended_config(file_name, path, resolution_stack, host)
+        self.0
+            .get_extended_config(file_name, path, resolution_stack, host)
     }
 }
 
@@ -319,17 +403,34 @@ fn diagnostic_text(d: P<tsrs_ast::Diagnostic>) -> String {
     tsrs_compiler::diagnosticwriter::flatten_diagnostic_message(d, "\n")
 }
 
-fn send_internal_tsconfig_diag(tx: &mpsc::SyncSender<protocol::Diagnostic>, d: P<tsrs_ast::Diagnostic>, config_file_name: &str) {
-    let file_path = d.file().map(|f| f.file_name().to_string()).filter(|f| !f.is_empty()).unwrap_or_else(|| config_file_name.to_string());
+fn send_internal_tsconfig_diag(
+    tx: &mpsc::SyncSender<protocol::Diagnostic>,
+    d: P<tsrs_ast::Diagnostic>,
+    config_file_name: &str,
+) {
+    let file_path = d
+        .file()
+        .map(|f| f.file_name().to_string())
+        .filter(|f| !f.is_empty())
+        .unwrap_or_else(|| config_file_name.to_string());
     let loc = d.loc();
     let mut help = diagnostic_text(d);
     if help.contains("Please remove it from your configuration.") {
-        help.push_str("\nSee https://github.com/oxc-project/tsgolint/issues/351 for more information.");
+        help.push_str(
+            "\nSee https://github.com/oxc-project/tsgolint/issues/351 for more information.",
+        );
     }
     let _ = tx.send(protocol::Diagnostic {
         kind: 1,
-        range: Some(protocol::Range { pos: loc.pos(), end: loc.end() }),
-        message: protocol::Message { id: "tsconfig-error".to_string(), description: "Invalid tsconfig".to_string(), help: Some(help) },
+        range: Some(protocol::Range {
+            pos: loc.pos(),
+            end: loc.end(),
+        }),
+        message: protocol::Message {
+            id: "tsconfig-error".to_string(),
+            description: "Invalid tsconfig".to_string(),
+            help: Some(help),
+        },
         file_path: Some(file_path),
         labeled_ranges: Vec::new(),
         rule: None,
@@ -348,7 +449,12 @@ struct LintCtx<'a> {
     cwd: &'a str,
 }
 
-fn report_typescript_diagnostics(program: &'static Program, files: &[P<SourceFile>], payload: &Payload, tx: &mpsc::SyncSender<protocol::Diagnostic>) {
+fn report_typescript_diagnostics(
+    program: &'static Program,
+    files: &[P<SourceFile>],
+    payload: &Payload,
+    tx: &mpsc::SyncSender<protocol::Diagnostic>,
+) {
     if !payload.report_syntactic && !payload.report_semantic {
         return;
     }
@@ -368,8 +474,15 @@ fn report_typescript_diagnostics(program: &'static Program, files: &[P<SourceFil
             let loc = d.loc();
             let _ = tx.send(protocol::Diagnostic {
                 kind: 1,
-                range: Some(protocol::Range { pos: loc.pos(), end: loc.end() }),
-                message: protocol::Message { id: format!("TS{}", d.code()), description: diagnostic_text(d), help: None },
+                range: Some(protocol::Range {
+                    pos: loc.pos(),
+                    end: loc.end(),
+                }),
+                message: protocol::Message {
+                    id: format!("TS{}", d.code()),
+                    description: diagnostic_text(d),
+                    help: None,
+                },
                 file_path: Some(file.file_name().to_string()),
                 labeled_ranges: Vec::new(),
                 rule: None,
@@ -380,7 +493,12 @@ fn report_typescript_diagnostics(program: &'static Program, files: &[P<SourceFil
     }
 }
 
-fn lint_program(program: &'static Program, files: &[P<SourceFile>], payload: &Payload, lctx: &LintCtx) {
+fn lint_program(
+    program: &'static Program,
+    files: &[P<SourceFile>],
+    payload: &Payload,
+    lctx: &LintCtx,
+) {
     report_typescript_diagnostics(program, files, payload, lctx.tx);
     let next = AtomicUsize::new(0);
     // linter.go makeCheckerWorkloadQueue: one worker per checker; all checkers pull from one file queue.
@@ -393,7 +511,10 @@ fn lint_program(program: &'static Program, files: &[P<SourceFile>], payload: &Pa
                 break;
             }
             let file = files[i];
-            let set = lctx.file_rules.get(file.path()).map(|&i| &lctx.rule_sets[i]);
+            let set = lctx
+                .file_rules
+                .get(file.path())
+                .map(|&i| &lctx.rule_sets[i]);
             let Some(set) = set else { continue };
             worker.lint_file(checker, program, file, &set.rules, lctx.opts, &mut out);
             for d in out.drain(..) {
@@ -414,7 +535,12 @@ fn lint_program(program: &'static Program, files: &[P<SourceFile>], payload: &Pa
 
 /// Lints `files` of `program` with `rules` and returns the diagnostics (used by the rule tests; the
 /// headless path streams instead).
-pub fn lint_files(program: &'static Program, files: &[P<SourceFile>], rules: &[&'static dyn Rule], opts: &Options) -> Vec<ReportedDiagnostic> {
+pub fn lint_files(
+    program: &'static Program,
+    files: &[P<SourceFile>],
+    rules: &[&'static dyn Rule],
+    opts: &Options,
+) -> Vec<ReportedDiagnostic> {
     let next = AtomicUsize::new(0);
     let all: Mutex<Vec<ReportedDiagnostic>> = Mutex::new(Vec::new());
     program.for_each_checker_parallel(|_idx, checker| {
@@ -433,12 +559,19 @@ pub fn lint_files(program: &'static Program, files: &[P<SourceFile>], rules: &[&
 }
 
 /// Go linter.ApplyRuleFixes: applies non-overlapping fixes in position order.
-pub fn apply_rule_fixes(code: &str, mut fix_sets: Vec<Vec<crate::rule::RuleFix>>) -> (String, bool) {
+pub fn apply_rule_fixes(
+    code: &str,
+    mut fix_sets: Vec<Vec<crate::rule::RuleFix>>,
+) -> (String, bool) {
     fix_sets.retain(|f| !f.is_empty());
     for f in &mut fix_sets {
         f.sort_by(|a, b| a.pos.cmp(&b.pos).then(a.end.cmp(&b.end)));
     }
-    fix_sets.sort_by(|a, b| a[0].pos.cmp(&b[0].pos).then(a[a.len() - 1].end.cmp(&b[b.len() - 1].end)));
+    fix_sets.sort_by(|a, b| {
+        a[0].pos
+            .cmp(&b[0].pos)
+            .then(a[a.len() - 1].end.cmp(&b[b.len() - 1].end))
+    });
     let mut out = String::with_capacity(code.len());
     let mut last = 0usize;
     let mut fixed = false;
@@ -467,7 +600,12 @@ struct Worker {
 
 impl Worker {
     fn new(timed: bool) -> Worker {
-        Worker { dispatch: vec![Vec::new(); 6 * KIND_SLOTS], touched: Vec::new(), timed, timings: FxHashMap::default() }
+        Worker {
+            dispatch: vec![Vec::new(); 6 * KIND_SLOTS],
+            touched: Vec::new(),
+            timed,
+            timings: FxHashMap::default(),
+        }
     }
 
     fn lint_file(
@@ -481,7 +619,15 @@ impl Worker {
     ) {
         let mut visitors: Vec<Box<dyn RuleVisitor>> = Vec::with_capacity(rules.len());
         for (idx, rule) in rules.iter().enumerate() {
-            let mut ctx = Ctx { checker: &mut *checker, program, file, fix: opts.fix, fix_suggestions: opts.fix_suggestions, rule_name: rule.name(), out: &mut *out };
+            let mut ctx = Ctx {
+                checker: &mut *checker,
+                program,
+                file,
+                fix: opts.fix,
+                fix_suggestions: opts.fix_suggestions,
+                rule_name: rule.name(),
+                out: &mut *out,
+            };
             let start = self.timed.then(Instant::now);
             let v = rule.create_visitor(&mut ctx);
             if let Some(s) = start {
@@ -498,7 +644,16 @@ impl Worker {
             }
             visitors.push(v);
         }
-        let mut walker = Walker { worker: self, checker, program, file, rules, visitors: &mut visitors, opts, out };
+        let mut walker = Walker {
+            worker: self,
+            checker,
+            program,
+            file,
+            rules,
+            visitors: &mut visitors,
+            opts,
+            out,
+        };
         walker.walk_file();
         for slot in self.touched.drain(..) {
             self.dispatch[slot].clear();

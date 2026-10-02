@@ -16,13 +16,21 @@ pub const RULE_NAMES: &[&str] = &[
     "return-await",
 ];
 
-pub fn create_rule(name: &str, options: Option<&serde_json::Value>) -> Result<Box<dyn Rule>, String> {
+pub fn create_rule(
+    name: &str,
+    options: Option<&serde_json::Value>,
+) -> Result<Box<dyn Rule>, String> {
     match name {
         "no-floating-promises" => no_floating_promises::create(options),
         "no-implied-eval" => Ok(Box::new(no_implied_eval::NoImpliedEval)),
-        "no-unnecessary-boolean-literal-compare" => no_unnecessary_boolean_literal_compare::create(options),
+        "no-unnecessary-boolean-literal-compare" => {
+            no_unnecessary_boolean_literal_compare::create(options)
+        }
         "promise-function-async" => promise_function_async::create(options),
         "return-await" => return_await::create(options),
-        _ => Err(format!("unknown rule: {name} (tsrslint implements only: {})", RULE_NAMES.join(", "))),
+        _ => Err(format!(
+            "unknown rule: {name} (tsrslint implements only: {})",
+            RULE_NAMES.join(", ")
+        )),
     }
 }

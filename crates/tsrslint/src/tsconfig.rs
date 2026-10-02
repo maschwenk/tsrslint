@@ -6,10 +6,12 @@ use std::collections::VecDeque;
 use std::sync::{Arc, Mutex};
 
 use rustc_hash::{FxHashMap, FxHashSet};
-use tsrs_core::CompilerOptions;
 use tsrs_core::tspath::{self, Path};
+use tsrs_core::CompilerOptions;
 use tsrs_core::P;
-use tsrs_tsoptions::{self as tsoptions, ExtendedConfigCacheEntry, ParseConfigHost, ParsedCommandLine};
+use tsrs_tsoptions::{
+    self as tsoptions, ExtendedConfigCacheEntry, ParseConfigHost, ParsedCommandLine,
+};
 use tsrs_vfs::FS;
 
 pub struct ParseHost {
@@ -43,7 +45,13 @@ impl tsoptions::ExtendedConfigCache for ExtendedConfigCache {
         if let Some(entry) = self.m.lock().unwrap().get(path) {
             return *entry;
         }
-        let entry = tsoptions::parse_extended_config(file_name, path.clone(), resolution_stack, host, Some(self));
+        let entry = tsoptions::parse_extended_config(
+            file_name,
+            path.clone(),
+            resolution_stack,
+            host,
+            Some(self),
+        );
         *self.m.lock().unwrap().entry(path.clone()).or_insert(entry)
     }
 }
@@ -60,8 +68,15 @@ pub struct TsConfigResolver {
 }
 
 impl TsConfigResolver {
-    pub fn new(host: &'static ParseHost, ext_cache: &'static ExtendedConfigCache) -> TsConfigResolver {
-        TsConfigResolver { host, ext_cache, configs: Mutex::new(FxHashMap::default()) }
+    pub fn new(
+        host: &'static ParseHost,
+        ext_cache: &'static ExtendedConfigCache,
+    ) -> TsConfigResolver {
+        TsConfigResolver {
+            host,
+            ext_cache,
+            configs: Mutex::new(FxHashMap::default()),
+        }
     }
 
     fn fs(&self) -> &dyn FS {
@@ -69,14 +84,23 @@ impl TsConfigResolver {
     }
 
     fn to_path(&self, file_name: &str) -> Path {
-        tspath::to_path(file_name, &self.host.cwd, self.fs().use_case_sensitive_file_names())
+        tspath::to_path(
+            file_name,
+            &self.host.cwd,
+            self.fs().use_case_sensitive_file_names(),
+        )
     }
 
     /// configfileregistrybuilder.go ComputeConfigFileName (no custom config file name).
-    pub fn compute_config_file_name(&self, file_name: &str, skip_search_in_directory_of_file: bool) -> String {
+    pub fn compute_config_file_name(
+        &self,
+        file_name: &str,
+        skip_search_in_directory_of_file: bool,
+    ) -> String {
         let search_path = tspath::get_directory_path(file_name);
         let mut skip_tsconfig = skip_search_in_directory_of_file;
-        let mut skip_jsconfig = skip_search_in_directory_of_file && !file_name.ends_with("/tsconfig.json");
+        let mut skip_jsconfig =
+            skip_search_in_directory_of_file && !file_name.ends_with("/tsconfig.json");
         tspath::for_each_ancestor_directory(&search_path, |directory| {
             if !skip_tsconfig {
                 let p = tspath::combine_paths(directory, &["tsconfig.json"]);
@@ -112,13 +136,27 @@ impl TsConfigResolver {
             self.host,
             Some(self.ext_cache),
         );
-        let entry = Arc::new(ParsedConfig { config: parsed.map(P::new), errors });
-        self.configs.lock().unwrap().entry(config_file_name.to_string()).or_insert(entry).clone()
+        let entry = Arc::new(ParsedConfig {
+            config: parsed.map(P::new),
+            errors,
+        });
+        self.configs
+            .lock()
+            .unwrap()
+            .entry(config_file_name.to_string())
+            .or_insert(entry)
+            .clone()
     }
 
     /// find_tsconfig.go findConfigWithReferences: breadth-first over the config and its project
     /// references for a config whose file list contains `path`; then the same from the next ancestor config.
-    fn find_config_with_references(&self, file_name: &str, path: &Path, config_file_name: &str, visited: &mut FxHashSet<String>) -> String {
+    fn find_config_with_references(
+        &self,
+        file_name: &str,
+        path: &Path,
+        config_file_name: &str,
+        visited: &mut FxHashSet<String>,
+    ) -> String {
         let mut level: VecDeque<String> = VecDeque::from([config_file_name.to_string()]);
         while !level.is_empty() {
             let mut next: Vec<String> = Vec::new();
@@ -127,8 +165,11 @@ impl TsConfigResolver {
                     continue;
                 }
                 let parsed = self.load(&node);
-                let Some(config) = parsed.config else { continue };
-                if !config.file_names().is_empty() && config.file_names_by_path().contains_key(path) {
+                let Some(config) = parsed.config else {
+                    continue;
+                };
+                if !config.file_names().is_empty() && config.file_names_by_path().contains_key(path)
+                {
                     return node;
                 }
                 for r in config.resolved_project_reference_paths() {
@@ -179,6 +220,9 @@ impl TsConfigResolver {
                 });
             }
         });
-        results.into_iter().map(|m| m.into_inner().unwrap()).collect()
+        results
+            .into_iter()
+            .map(|m| m.into_inner().unwrap())
+            .collect()
     }
 }
