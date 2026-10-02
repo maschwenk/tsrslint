@@ -1,0 +1,611 @@
+// Port of cmd/tsgolint/headless.go + internal/linter/linter.go.
+
+use std::io::{Read, Write};
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::mpsc;
+use std::sync::{Arc, Mutex};
+use std::time::{Duration, Instant};
+
+use rustc_hash::FxHashMap;
+use tsrs_ast::{self as ast, Kind, Node, SourceFile};
+use tsrs_checker::Checker;
+use tsrs_compiler::{new_cached_fs_compiler_host, new_program, Program, ProgramOptions};
+use tsrs_core::CompilerOptions;
+use tsrs_core::tspath::{self, Path};
+use tsrs_core::{Tristate, P};
+use tsrs_vfs::{bundled, cachedvfs, osvfs, FS};
+
+use crate::overlayfs::OverlayFS;
+use crate::protocol::{self, MessageType, Payload};
+use crate::rule::{Ctx, Listener, ReportedDiagnostic, Rule, RuleVisitor, KIND_SLOTS};
+use crate::rules;
+use crate::tsconfig::{ExtendedConfigCache, ParseHost, TsConfigResolver};
+
+#[derive(Default, Clone)]
+pub struct Options {
+    pub fix: bool,
+    pub fix_suggestions: bool,
+    pub debug_timings: bool,
+}
+
+fn parse_flags(args: &[String]) -> Result<Options, String> {
+    let mut o = Options::default();
+    let mut i = 0;
+    while i < args.len() {
+        let a = args[i].trim_start_matches('-');
+        let (name, value) = match a.split_once('=') {
+            Some((n, v)) => (n, Some(v.to_string())),
+            None => (a, None),
+        };
+        match name {
+            "fix" => o.fix = value.map_or(true, |v| v == "true"),
+            "fix-suggestions" => o.fix_suggestions = value.map_or(true, |v| v == "true"),
+            "debug" => {
+                let v = match value {
+                    Some(v) => v,
+                    None => {
+                        i += 1;
+                        args.get(i).cloned().unwrap_or_default()
+                    }
+                };
+                for part in v.split(',') {
+                    match part.trim() {
+                        "timings" => o.debug_timings = true,
+                        "" => {}
+                        other => return Err(format!("unknown debug option: {other}")),
+                    }
+                }
+            }
+            // Go profiling flags (oxlint's OXLINT_TSGOLINT_TRACE/CPU/HEAP/ALLOCS). Accepted and ignored:
+            // profile tsrslint with samply / Instruments instead.
+            "trace" | "cpuprof" | "heap" | "allocs" => {
+                if value.is_none() {
+                    i += 1;
+                }
+                eprintln!("tsrslint: -{name} is a Go profiling flag and is ignored");
+            }
+            other => return Err(format!("flag provided but not defined: -{other}")),
+        }
+        i += 1;
+    }
+    Ok(o)
+}
+
+/// Rules configured for one payload config group.
+struct RuleSet {
+    rules: Vec<&'static dyn Rule>,
+}
+
+pub fn run_headless(args: &[String]) -> i32 {
+    let debug = std::env::var("OXC_LOG").is_ok_and(|v| v == "debug");
+    let t0 = Instant::now();
+    let log = |msg: String| {
+        if debug {
+            eprintln!("[{:>9.3}s] {msg}", t0.elapsed().as_secs_f64());
+        }
+    };
+    let opts = match parse_flags(args) {
+        Ok(o) => o,
+        Err(e) => {
+            eprintln!("error parsing options: {e}");
+            return 1;
+        }
+    };
+    let cwd = match std::env::current_dir() {
+        Ok(c) => tspath::normalize_path(&c.to_string_lossy()),
+        Err(e) => {
+            protocol::write_error_message(&format!("error getting current directory: {e}"));
+            return 1;
+        }
+    };
+    let mut data = Vec::new();
+    if let Err(e) = std::io::stdin().read_to_end(&mut data) {
+        protocol::write_error_message(&format!("error reading from stdin: {e}"));
+        return 1;
+    }
+    let payload = match protocol::deserialize_payload(&data) {
+        Ok(p) => p,
+        Err(e) => {
+            protocol::write_error_message(&format!("error parsing config: {e}"));
+            return 1;
+        }
+    };
+    match run(payload, &cwd, &opts, &log) {
+        Ok(()) => 0,
+        Err(e) => {
+            protocol::write_error_message(&format!("error running linter: {e}"));
+            1
+        }
+    }
+}
+
+fn base_fs(payload: &Payload) -> Arc<dyn FS> {
+    let os: Arc<dyn FS> = Arc::new(osvfs::fs());
+    let base: Arc<dyn FS> = match &payload.source_overrides {
+        Some(o) if !o.is_empty() => Arc::new(OverlayFS::new(os, o.clone())),
+        _ => os,
+    };
+    Arc::new(bundled::wrap_fs(cachedvfs::from(base)))
+}
+
+pub fn run(payload: Payload, cwd: &str, opts: &Options, log: &dyn Fn(String)) -> Result<(), String> {
+    let fs = base_fs(&payload);
+    let host: &'static ParseHost = Box::leak(Box::new(ParseHost { fs: fs.clone(), cwd: cwd.to_string() }));
+    let ext_cache: &'static ExtendedConfigCache = Box::leak(Box::default());
+
+    // Rules: one instance per distinct (name, options); unknown rules are a hard error (Go panics).
+    let mut rule_cache: FxHashMap<String, &'static dyn Rule> = FxHashMap::default();
+    let mut rule_sets: Vec<RuleSet> = Vec::new();
+    for config in &payload.configs {
+        let mut set = RuleSet { rules: Vec::new() };
+        for r in &config.rules {
+            let key = format!("{}\u{0}{}", r.name, r.options.as_ref().map(|o| o.to_string()).unwrap_or_default());
+            let rule = match rule_cache.get(&key) {
+                Some(r) => *r,
+                None => {
+                    let created = rules::create_rule(&r.name, r.options.as_ref())?;
+                    let leaked: &'static dyn Rule = Box::leak(created);
+                    rule_cache.insert(key, leaked);
+                    leaked
+                }
+            };
+            set.rules.push(rule);
+        }
+        rule_sets.push(set);
+    }
+
+    // File -> rule set.
+    let use_case_sensitive = fs.use_case_sensitive_file_names();
+    let mut files: Vec<String> = Vec::new();
+    let mut file_rules: FxHashMap<Path, usize> = FxHashMap::default();
+    for (idx, config) in payload.configs.iter().enumerate() {
+        for f in &config.file_paths {
+            let normalized = tspath::normalize_slashes(f);
+            file_rules.insert(tspath::to_path(&normalized, cwd, use_case_sensitive), idx);
+            files.push(normalized);
+        }
+    }
+    log(format!("Starting to assign files to programs. Total files: {}", files.len()));
+    let resolver = TsConfigResolver::new(host, ext_cache);
+    let threads = std::thread::available_parallelism().map_or(4, |n| n.get());
+    let assignment = resolver.resolve_all(&files, threads);
+    let mut programs: Vec<(String, Vec<String>)> = Vec::new();
+    let mut program_index: FxHashMap<String, usize> = FxHashMap::default();
+    let mut unmatched: Vec<String> = Vec::new();
+    for (file, config) in files.iter().zip(assignment) {
+        if config.is_empty() {
+            unmatched.push(file.clone());
+        } else {
+            let i = *program_index.entry(config.clone()).or_insert_with(|| {
+                programs.push((config.clone(), Vec::new()));
+                programs.len() - 1
+            });
+            programs[i].1.push(file.clone());
+        }
+    }
+    log(format!("Done assigning files to programs. Total programs: {}. Unmatched files: {}", programs.len(), unmatched.len()));
+
+    // Output thread (headless.go's diagnostics goroutine).
+    let (tx, rx) = mpsc::sync_channel::<protocol::Diagnostic>(4096);
+    let writer = std::thread::spawn(move || {
+        let stdout = std::io::stdout();
+        let mut w = std::io::BufWriter::with_capacity(4096 * 100, stdout.lock());
+        for d in rx {
+            let _ = protocol::write_message(&mut w, MessageType::Diagnostic, &d);
+        }
+        let _ = w.flush();
+    });
+
+    let timings: Mutex<FxHashMap<&'static str, (Duration, u64)>> = Mutex::new(FxHashMap::default());
+    let ctx = LintCtx { opts, rule_sets: &rule_sets, file_rules: &file_rules, tx: &tx, timings: &timings, use_case_sensitive, cwd };
+
+    let mut result = Ok(());
+    for (config_file_name, config_files) in &programs {
+        log(format!("Running linter on program: {config_file_name}"));
+        let parsed = resolver.load(config_file_name);
+        if !parsed.errors.is_empty() || parsed.config.is_none() {
+            for d in &parsed.errors {
+                send_internal_tsconfig_diag(&tx, *d, config_file_name);
+            }
+            continue;
+        }
+        let config = parsed.config.unwrap();
+        if !config.errors.is_empty() && !suppress_program_diagnostics() {
+            for d in &config.errors {
+                send_internal_tsconfig_diag(&tx, *d, config_file_name);
+            }
+            continue;
+        }
+        let dir = tspath::get_directory_path(config_file_name);
+        let compiler_host = new_cached_fs_compiler_host(&dir, fs.clone(), &bundled::lib_path(), Some(Arc::new(ProgramExtCache(ext_cache))), None);
+        let mut popts = ProgramOptions::new(config, compiler_host);
+        popts.use_source_of_project_reference = true;
+        popts.single_threaded = Tristate::False;
+        let program = new_program(popts);
+        let program_diags = program.get_program_diagnostics();
+        if !program_diags.is_empty() && !suppress_program_diagnostics() {
+            for d in &program_diags {
+                send_internal_tsconfig_diag(&tx, *d, config_file_name);
+            }
+            continue;
+        }
+        program.bind_source_files();
+        log(format!("Program created with {} source files", program.source_files().len()));
+        let wanted: FxHashMap<Path, &String> = config_files.iter().map(|f| (tspath::to_path(f, &dir, use_case_sensitive), f)).collect();
+        let source_files: Vec<P<SourceFile>> = program.source_files().iter().copied().filter(|sf| wanted.contains_key(sf.path())).collect();
+        if source_files.len() != wanted.len() {
+            result = Err(format!("expected {} files in program {config_file_name}, found {}", wanted.len(), source_files.len()));
+            break;
+        }
+        lint_program(program, &source_files, &payload, &ctx);
+    }
+
+    if result.is_ok() && !unmatched.is_empty() {
+        log(format!("Running linter on inferred program with {} files", unmatched.len()));
+        let compiler_host = new_cached_fs_compiler_host(cwd, fs.clone(), &bundled::lib_path(), Some(Arc::new(ProgramExtCache(ext_cache))), None);
+        let config = P::new(tsrs_tsoptions::new_parsed_command_line(
+            P::new(inferred_compiler_options()),
+            unmatched.clone(),
+            Vec::new(),
+            tspath::ComparePathsOptions { use_case_sensitive_file_names: use_case_sensitive, current_directory: cwd.to_string() },
+        ));
+        let mut popts = ProgramOptions::new(config, compiler_host);
+        popts.single_threaded = Tristate::False;
+        let program = new_program(popts);
+        program.bind_source_files();
+        let wanted: FxHashMap<Path, ()> = unmatched.iter().map(|f| (tspath::to_path(f, cwd, use_case_sensitive), ())).collect();
+        let source_files: Vec<P<SourceFile>> = program.source_files().iter().copied().filter(|sf| wanted.contains_key(sf.path())).collect();
+        lint_program(program, &source_files, &payload, &ctx);
+    }
+
+    drop(tx);
+    writer.join().map_err(|_| "output thread panicked".to_string())?;
+    result?;
+
+    if opts.debug_timings {
+        let rules = timings
+            .into_inner()
+            .unwrap()
+            .into_iter()
+            .map(|(name, (d, calls))| protocol::RuleTiming { rule_name: name.to_string(), duration: d.as_nanos() as u64, calls })
+            .collect();
+        let mut out = std::io::stdout().lock();
+        protocol::write_message(&mut out, MessageType::Timing, &protocol::TimingPayload { rules }).map_err(|e| e.to_string())?;
+        out.flush().map_err(|e| e.to_string())?;
+    }
+    log("Linting Complete".to_string());
+    Ok(())
+}
+
+fn suppress_program_diagnostics() -> bool {
+    std::env::var("OXLINT_TSGOLINT_DANGEROUSLY_SUPPRESS_PROGRAM_DIAGNOSTICS").is_ok_and(|v| v == "true")
+}
+
+struct ProgramExtCache(&'static ExtendedConfigCache);
+
+impl tsrs_tsoptions::ExtendedConfigCache for ProgramExtCache {
+    fn get_extended_config(
+        &self,
+        file_name: &str,
+        path: &Path,
+        resolution_stack: &[Path],
+        host: &'static dyn tsrs_tsoptions::ParseConfigHost,
+    ) -> P<tsrs_tsoptions::ExtendedConfigCacheEntry> {
+        self.0.get_extended_config(file_name, path, resolution_stack, host)
+    }
+}
+
+/// create_program.go CreateInferredProjectProgram's options.
+fn inferred_compiler_options() -> CompilerOptions {
+    use tsrs_core::{JsxEmit, ModuleKind, ModuleResolutionKind, ScriptTarget};
+    CompilerOptions {
+        allow_js: Tristate::True,
+        module: ModuleKind::ESNext,
+        module_resolution: ModuleResolutionKind::Bundler,
+        target: ScriptTarget::ES2022,
+        jsx: JsxEmit::ReactJSX,
+        allow_importing_ts_extensions: Tristate::True,
+        strict_null_checks: Tristate::True,
+        strict_function_types: Tristate::True,
+        source_map: Tristate::True,
+        es_module_interop: Tristate::True,
+        allow_non_ts_extensions: Tristate::True,
+        resolve_json_module: Tristate::True,
+        ..Default::default()
+    }
+}
+
+fn diagnostic_text(d: P<tsrs_ast::Diagnostic>) -> String {
+    tsrs_compiler::diagnosticwriter::flatten_diagnostic_message(d, "\n")
+}
+
+fn send_internal_tsconfig_diag(tx: &mpsc::SyncSender<protocol::Diagnostic>, d: P<tsrs_ast::Diagnostic>, config_file_name: &str) {
+    let file_path = d.file().map(|f| f.file_name().to_string()).filter(|f| !f.is_empty()).unwrap_or_else(|| config_file_name.to_string());
+    let loc = d.loc();
+    let mut help = diagnostic_text(d);
+    if help.contains("Please remove it from your configuration.") {
+        help.push_str("\nSee https://github.com/oxc-project/tsgolint/issues/351 for more information.");
+    }
+    let _ = tx.send(protocol::Diagnostic {
+        kind: 1,
+        range: Some(protocol::Range { pos: loc.pos(), end: loc.end() }),
+        message: protocol::Message { id: "tsconfig-error".to_string(), description: "Invalid tsconfig".to_string(), help: Some(help) },
+        file_path: Some(file_path),
+        labeled_ranges: Vec::new(),
+        rule: None,
+        fixes: Vec::new(),
+        suggestions: Vec::new(),
+    });
+}
+
+struct LintCtx<'a> {
+    opts: &'a Options,
+    rule_sets: &'a [RuleSet],
+    file_rules: &'a FxHashMap<Path, usize>,
+    tx: &'a mpsc::SyncSender<protocol::Diagnostic>,
+    timings: &'a Mutex<FxHashMap<&'static str, (Duration, u64)>>,
+    use_case_sensitive: bool,
+    cwd: &'a str,
+}
+
+fn report_typescript_diagnostics(program: &'static Program, files: &[P<SourceFile>], payload: &Payload, tx: &mpsc::SyncSender<protocol::Diagnostic>) {
+    if !payload.report_syntactic && !payload.report_semantic {
+        return;
+    }
+    let ctx = tsrs_compiler::Context::default();
+    for &file in files {
+        let mut diags = Vec::new();
+        if payload.report_syntactic {
+            diags.extend(program.get_syntactic_diagnostics(&ctx, Some(file)));
+        }
+        if payload.report_semantic {
+            diags.extend(program.get_semantic_diagnostics(&ctx, Some(file)));
+        }
+        for d in diags {
+            if d.file().map(|f| f.file_name() == file.file_name()) != Some(true) {
+                continue;
+            }
+            let loc = d.loc();
+            let _ = tx.send(protocol::Diagnostic {
+                kind: 1,
+                range: Some(protocol::Range { pos: loc.pos(), end: loc.end() }),
+                message: protocol::Message { id: format!("TS{}", d.code()), description: diagnostic_text(d), help: None },
+                file_path: Some(file.file_name().to_string()),
+                labeled_ranges: Vec::new(),
+                rule: None,
+                fixes: Vec::new(),
+                suggestions: Vec::new(),
+            });
+        }
+    }
+}
+
+fn lint_program(program: &'static Program, files: &[P<SourceFile>], payload: &Payload, lctx: &LintCtx) {
+    report_typescript_diagnostics(program, files, payload, lctx.tx);
+    let next = AtomicUsize::new(0);
+    // linter.go makeCheckerWorkloadQueue: one worker per checker; all checkers pull from one file queue.
+    program.for_each_checker_parallel(|_idx, checker| {
+        let mut worker = Worker::new(lctx.opts.debug_timings);
+        let mut out: Vec<ReportedDiagnostic> = Vec::new();
+        loop {
+            let i = next.fetch_add(1, Ordering::Relaxed);
+            if i >= files.len() {
+                break;
+            }
+            let file = files[i];
+            let set = lctx.file_rules.get(file.path()).map(|&i| &lctx.rule_sets[i]);
+            let Some(set) = set else { continue };
+            worker.lint_file(checker, program, file, &set.rules, lctx.opts, &mut out);
+            for d in out.drain(..) {
+                let _ = lctx.tx.send(d.to_protocol());
+            }
+        }
+        if lctx.opts.debug_timings {
+            let mut t = lctx.timings.lock().unwrap();
+            for (name, (d, c)) in worker.timings {
+                let e = t.entry(name).or_default();
+                e.0 += d;
+                e.1 += c;
+            }
+        }
+    });
+    let _ = (lctx.use_case_sensitive, lctx.cwd);
+}
+
+/// Lints `files` of `program` with `rules` and returns the diagnostics (used by the rule tests; the
+/// headless path streams instead).
+pub fn lint_files(program: &'static Program, files: &[P<SourceFile>], rules: &[&'static dyn Rule], opts: &Options) -> Vec<ReportedDiagnostic> {
+    let next = AtomicUsize::new(0);
+    let all: Mutex<Vec<ReportedDiagnostic>> = Mutex::new(Vec::new());
+    program.for_each_checker_parallel(|_idx, checker| {
+        let mut worker = Worker::new(false);
+        let mut out = Vec::new();
+        loop {
+            let i = next.fetch_add(1, Ordering::Relaxed);
+            if i >= files.len() {
+                break;
+            }
+            worker.lint_file(checker, program, files[i], rules, opts, &mut out);
+        }
+        all.lock().unwrap().extend(out);
+    });
+    all.into_inner().unwrap()
+}
+
+/// Go linter.ApplyRuleFixes: applies non-overlapping fixes in position order.
+pub fn apply_rule_fixes(code: &str, mut fix_sets: Vec<Vec<crate::rule::RuleFix>>) -> (String, bool) {
+    fix_sets.retain(|f| !f.is_empty());
+    for f in &mut fix_sets {
+        f.sort_by(|a, b| a.pos.cmp(&b.pos).then(a.end.cmp(&b.end)));
+    }
+    fix_sets.sort_by(|a, b| a[0].pos.cmp(&b[0].pos).then(a[a.len() - 1].end.cmp(&b[b.len() - 1].end)));
+    let mut out = String::with_capacity(code.len());
+    let mut last = 0usize;
+    let mut fixed = false;
+    for fixes in &fix_sets {
+        if last > fixes[0].pos as usize {
+            continue;
+        }
+        for f in fixes {
+            fixed = true;
+            out.push_str(&code[last..f.pos as usize]);
+            out.push_str(&f.text);
+            last = f.end as usize;
+        }
+    }
+    out.push_str(&code[last..]);
+    (out, fixed)
+}
+
+/// Per-worker scratch state: listener dispatch table reused across files.
+struct Worker {
+    dispatch: Vec<Vec<u16>>,
+    touched: Vec<usize>,
+    timed: bool,
+    timings: FxHashMap<&'static str, (Duration, u64)>,
+}
+
+impl Worker {
+    fn new(timed: bool) -> Worker {
+        Worker { dispatch: vec![Vec::new(); 6 * KIND_SLOTS], touched: Vec::new(), timed, timings: FxHashMap::default() }
+    }
+
+    fn lint_file(
+        &mut self,
+        checker: &mut Checker,
+        program: &'static Program,
+        file: P<SourceFile>,
+        rules: &[&'static dyn Rule],
+        opts: &Options,
+        out: &mut Vec<ReportedDiagnostic>,
+    ) {
+        let mut visitors: Vec<Box<dyn RuleVisitor>> = Vec::with_capacity(rules.len());
+        for (idx, rule) in rules.iter().enumerate() {
+            let mut ctx = Ctx { checker: &mut *checker, program, file, fix: opts.fix, fix_suggestions: opts.fix_suggestions, rule_name: rule.name(), out: &mut *out };
+            let start = self.timed.then(Instant::now);
+            let v = rule.create_visitor(&mut ctx);
+            if let Some(s) = start {
+                let e = self.timings.entry(rule.name()).or_default();
+                e.0 += s.elapsed();
+                e.1 += 1;
+            }
+            for l in v.listeners() {
+                let slot = l.slot();
+                if self.dispatch[slot].is_empty() {
+                    self.touched.push(slot);
+                }
+                self.dispatch[slot].push(idx as u16);
+            }
+            visitors.push(v);
+        }
+        let mut walker = Walker { worker: self, checker, program, file, rules, visitors: &mut visitors, opts, out };
+        walker.walk_file();
+        for slot in self.touched.drain(..) {
+            self.dispatch[slot].clear();
+        }
+    }
+}
+
+struct Walker<'a> {
+    worker: &'a mut Worker,
+    checker: &'a mut Checker,
+    program: &'static Program,
+    file: P<SourceFile>,
+    rules: &'a [&'static dyn Rule],
+    visitors: &'a mut Vec<Box<dyn RuleVisitor>>,
+    opts: &'a Options,
+    out: &'a mut Vec<ReportedDiagnostic>,
+}
+
+impl Walker<'_> {
+    #[inline]
+    fn run(&mut self, listener: Listener, node: P<Node>) {
+        let slot = listener.slot();
+        let n = self.worker.dispatch[slot].len();
+        for j in 0..n {
+            let idx = self.worker.dispatch[slot][j] as usize;
+            let rule = self.rules[idx];
+            let mut ctx = Ctx {
+                checker: &mut *self.checker,
+                program: self.program,
+                file: self.file,
+                fix: self.opts.fix,
+                fix_suggestions: self.opts.fix_suggestions,
+                rule_name: rule.name(),
+                out: &mut *self.out,
+            };
+            if self.worker.timed {
+                let s = Instant::now();
+                self.visitors[idx].visit(&mut ctx, listener, node);
+                let e = self.worker.timings.entry(rule.name()).or_default();
+                e.0 += s.elapsed();
+                e.1 += 1;
+            } else {
+                self.visitors[idx].visit(&mut ctx, listener, node);
+            }
+        }
+    }
+
+    /// linter.go visitLintNodes.
+    fn walk_file(&mut self) {
+        let root = self.file.as_node();
+        root.for_each_child(&mut |c| self.child_visitor(c));
+    }
+
+    fn pattern_visitor(&mut self, node: P<Node>) {
+        let kind = node.kind();
+        self.run(Listener::Enter(kind), node);
+        self.run(Listener::AllowPattern(kind), node);
+        match kind {
+            Kind::ArrayLiteralExpression => {
+                for &e in node.elements() {
+                    self.pattern_visitor(e);
+                }
+            }
+            Kind::ObjectLiteralExpression => {
+                for &p in node.properties() {
+                    self.pattern_visitor(p);
+                }
+            }
+            Kind::SpreadElement | Kind::SpreadAssignment => {
+                if let Some(e) = node.expression() {
+                    self.pattern_visitor(e);
+                }
+            }
+            Kind::PropertyAssignment => {
+                if let Some(i) = node.initializer() {
+                    self.pattern_visitor(i);
+                }
+            }
+            _ => {
+                node.for_each_child(&mut |c| self.child_visitor(c));
+            }
+        }
+        self.run(Listener::AllowPatternExit(kind), node);
+        self.run(Listener::Exit(kind), node);
+    }
+
+    fn child_visitor(&mut self, node: P<Node>) -> bool {
+        let kind = node.kind();
+        self.run(Listener::Enter(kind), node);
+        match kind {
+            Kind::ArrayLiteralExpression | Kind::ObjectLiteralExpression => {
+                self.run(Listener::NotAllowPattern(kind), node);
+                node.for_each_child(&mut |c| self.child_visitor(c));
+                self.run(Listener::NotAllowPatternExit(kind), node);
+            }
+            _ => {
+                if ast::is_assignment_expression(node, true) {
+                    let e = node.as_binary_expression();
+                    self.pattern_visitor(e.left);
+                    self.child_visitor(e.operator_token);
+                    self.child_visitor(e.right.get());
+                } else {
+                    node.for_each_child(&mut |c| self.child_visitor(c));
+                }
+            }
+        }
+        self.run(Listener::Exit(kind), node);
+        false
+    }
+}

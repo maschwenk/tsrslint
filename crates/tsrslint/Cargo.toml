@@ -1,0 +1,31 @@
+[package]
+name = "tsrslint"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Rust port of tsgolint's headless type-aware linter, on top of tsrs"
+
+[[bin]]
+name = "tsgolint"
+path = "src/main.rs"
+
+[lib]
+name = "tsrslint"
+path = "src/lib.rs"
+
+[dependencies]
+tsrs_core.workspace = true
+tsrs_ast.workspace = true
+tsrs_scanner.workspace = true
+tsrs_checker.workspace = true
+tsrs_compiler.workspace = true
+tsrs_tsoptions.workspace = true
+tsrs_vfs.workspace = true
+tsrs_diagnostics.workspace = true
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rustc-hash = "2"
+mimalloc = "0.1.52"
+
+[dev-dependencies]
+tsrs_parser = { git = "https://github.com/maschwenk/tsrs", branch = "lint-api" }
