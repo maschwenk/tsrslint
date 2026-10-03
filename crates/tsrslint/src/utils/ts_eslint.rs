@@ -78,3 +78,15 @@ pub fn get_declaration(c: &mut Checker, node: P<Node>) -> Option<P<Node>> {
     let symbol = c.get_symbol_at_location_exported(node)?;
     symbol.declarations().first().copied()
 }
+
+/// ts_eslint.go GetParentFunctionNode.
+pub fn get_parent_function_node(node: P<Node>) -> Option<P<Node>> {
+    let mut current = node.parent();
+    while let Some(c) = current {
+        if ast::is_function_like_declaration(c) {
+            return Some(c);
+        }
+        current = c.parent();
+    }
+    None
+}

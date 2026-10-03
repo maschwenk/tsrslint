@@ -27,3 +27,8 @@ pub fn get_well_known_symbol_property_of_type(
     let property_name = c.get_property_name_for_known_symbol_name(name);
     c.get_property_of_type(t, &property_name)
 }
+
+/// ts_api_utils.go IsIntrinsicVoidType.
+pub fn is_intrinsic_void_type(t: P<Type>) -> bool {
+    is_type_flag_set(t, TypeFlags::Void)
+}
