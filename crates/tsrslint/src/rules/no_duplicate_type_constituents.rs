@@ -1,5 +1,8 @@
 // Port of internal/rules/no_duplicate_type_constituents/no_duplicate_type_constituents.go.
 
+// P<Type> hashes by pointer identity (Go map[*checker.Type]).
+#![allow(clippy::mutable_key_type)]
+
 use rustc_hash::FxHashMap;
 use tsrs_ast::{self as ast, Kind, Node};
 use tsrs_checker::{Type, TypeFlags};

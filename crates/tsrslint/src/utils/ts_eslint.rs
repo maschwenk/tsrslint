@@ -53,6 +53,7 @@ pub fn is_type_unknown_array_type(t: P<Type>, c: &mut Checker) -> bool {
 
 /// ts_eslint.go IsUnsafeAssignment: Some((receiver, sender)) if an any is assigned to a non-any type,
 /// including in generic positions.
+#[allow(clippy::mutable_key_type)]
 pub fn is_unsafe_assignment(
     t: P<Type>,
     receiver_t: P<Type>,
@@ -201,6 +202,7 @@ pub enum DiscriminatedAnyType {
 
 /// ts_eslint.go DiscriminateAnyType: Any if the type is `any`, AnyArray if it is `any[]` or
 /// `readonly any[]`, PromiseAny if it is `Promise<any>`, otherwise Safe.
+#[allow(clippy::mutable_key_type)]
 pub fn discriminate_any_type(
     t: P<Type>,
     c: &mut Checker,
@@ -211,7 +213,7 @@ pub fn discriminate_any_type(
     discriminate_any_type_worker(t, c, program, node, &mut visited)
 }
 
-#[allow(clippy::mutable_key_type)]
+#[allow(clippy::mutable_key_type, clippy::only_used_in_recursion)]
 fn discriminate_any_type_worker(
     t: P<Type>,
     c: &mut Checker,

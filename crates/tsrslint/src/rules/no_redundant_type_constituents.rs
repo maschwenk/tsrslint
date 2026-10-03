@@ -83,7 +83,7 @@ struct TypeFlagsWithNodeOrType {
 }
 
 impl TypeFlagsWithNodeOrType {
-    fn to_display(&self, c: &mut Checker) -> String {
+    fn to_display(self, c: &mut Checker) -> String {
         if let Some(node) = self.node {
             match node.kind() {
                 Kind::AnyKeyword => return "any".to_string(),
