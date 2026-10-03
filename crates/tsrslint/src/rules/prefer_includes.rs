@@ -73,42 +73,6 @@ fn is_simple_literal_pattern(pattern: &str) -> bool {
     true
 }
 
-/// Whether `regexp2.Compile(pattern, regexp2.ECMAScript)` (github.com/dlclark/regexp2/v2 v2.8.0)
-/// succeeds, for patterns accepted by `is_simple_literal_pattern`. Such patterns contain no groups,
-/// classes or quantifiers, so the only parse errors regexp2 can report are a trailing `\`
-/// (ErrIllegalEndEscape) and a `\<digits>` backreference number that overflows int32
-/// (ErrCaptureGroupOutOfRange, from scanDecimal).
-fn regexp2_compiles_simple_pattern(pattern: &str) -> bool {
-    const MAX_VALUE_DIV10: i64 = i32::MAX as i64 / 10;
-    const MAX_VALUE_MOD10: i64 = i32::MAX as i64 % 10;
-    let chars: Vec<char> = pattern.chars().collect();
-    let mut i = 0;
-    while i < chars.len() {
-        if chars[i] != '\\' {
-            i += 1;
-            continue;
-        }
-        i += 1;
-        if i >= chars.len() {
-            return false;
-        }
-        if ('1'..='9').contains(&chars[i]) {
-            let mut n: i64 = 0;
-            while i < chars.len() && chars[i].is_ascii_digit() {
-                let d = chars[i] as i64 - '0' as i64;
-                i += 1;
-                if n > MAX_VALUE_DIV10 || (n == MAX_VALUE_DIV10 && d > MAX_VALUE_MOD10) {
-                    return false;
-                }
-                n = n * 10 + d;
-            }
-            continue;
-        }
-        i += 1;
-    }
-    true
-}
-
 // Extract pattern from regex literal: /bar/ -> "bar"
 fn extract_regex_literal_pattern(node: P<Node>) -> Option<&'static str> {
     if node.kind() != Kind::RegularExpressionLiteral {
@@ -127,7 +91,9 @@ fn extract_regex_literal_pattern(node: P<Node>) -> Option<&'static str> {
         return None;
     }
     // Reject non-literal patterns before compiling them.
-    if !is_simple_literal_pattern(pattern) || !regexp2_compiles_simple_pattern(pattern) {
+    if !is_simple_literal_pattern(pattern)
+        || !super::prefer_regexp_exec::regexp2_syntax::compiles_ecmascript(pattern)
+    {
         return None;
     }
     non_empty(pattern)
@@ -156,7 +122,9 @@ fn extract_reg_exp_constructor_pattern(node: P<Node>) -> Option<&'static str> {
     }
     let pattern = args[0].text();
     // Reject non-literal patterns before compiling them.
-    if !is_simple_literal_pattern(pattern) || !regexp2_compiles_simple_pattern(pattern) {
+    if !is_simple_literal_pattern(pattern)
+        || !super::prefer_regexp_exec::regexp2_syntax::compiles_ecmascript(pattern)
+    {
         return None;
     }
     non_empty(pattern)
