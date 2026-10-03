@@ -3,6 +3,11 @@
 #[allow(unused_imports)]
 use super::*;
 
+/// ts_api_utils.go IsObjectType.
+pub fn is_object_type(t: P<Type>) -> bool {
+    is_type_flag_set(t, TypeFlags::Object)
+}
+
 /// ts_api_utils.go IsIntrinsicVoidType.
 pub fn is_intrinsic_void_type(t: P<Type>) -> bool {
     is_type_flag_set(t, TypeFlags::Void)
