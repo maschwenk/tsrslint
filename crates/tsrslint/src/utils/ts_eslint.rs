@@ -190,3 +190,70 @@ pub fn is_rest_parameter_declaration(decl: P<Node>) -> bool {
             .dot_dot_dot_token()
             .is_some()
 }
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum DiscriminatedAnyType {
+    Any,
+    PromiseAny,
+    AnyArray,
+    Safe,
+}
+
+/// ts_eslint.go DiscriminateAnyType: Any if the type is `any`, AnyArray if it is `any[]` or
+/// `readonly any[]`, PromiseAny if it is `Promise<any>`, otherwise Safe.
+pub fn discriminate_any_type(
+    t: P<Type>,
+    c: &mut Checker,
+    program: &Program,
+    node: P<Node>,
+) -> DiscriminatedAnyType {
+    let mut visited = rustc_hash::FxHashSet::default();
+    discriminate_any_type_worker(t, c, program, node, &mut visited)
+}
+
+#[allow(clippy::mutable_key_type)]
+fn discriminate_any_type_worker(
+    t: P<Type>,
+    c: &mut Checker,
+    program: &Program,
+    node: P<Node>,
+    // TODO(port): do we really need visited here?
+    visited: &mut rustc_hash::FxHashSet<P<Type>>,
+) -> DiscriminatedAnyType {
+    if visited.contains(&t) {
+        return DiscriminatedAnyType::Safe;
+    }
+    visited.insert(t);
+    if is_type_any_type(t) {
+        return DiscriminatedAnyType::Any;
+    }
+    if is_type_any_array_type(t, c) {
+        return DiscriminatedAnyType::AnyArray;
+    }
+    let found_promise_any = type_recurser(t, &mut |t| {
+        if !is_thenable_type(c, node, Some(t)) {
+            return false;
+        }
+        let Some(awaited_type) = c.get_awaited_type(t) else {
+            return false;
+        };
+        discriminate_any_type_worker(awaited_type, c, program, node, visited)
+            == DiscriminatedAnyType::Any
+    });
+    if found_promise_any {
+        return DiscriminatedAnyType::PromiseAny;
+    }
+    DiscriminatedAnyType::Safe
+}
+
+/// ts_eslint.go GetParentFunctionNode.
+pub fn get_parent_function_node(node: P<Node>) -> Option<P<Node>> {
+    let mut current = node.parent();
+    while let Some(c) = current {
+        if ast::is_function_like_declaration(c) {
+            return Some(c);
+        }
+        current = c.parent();
+    }
+    None
+}
