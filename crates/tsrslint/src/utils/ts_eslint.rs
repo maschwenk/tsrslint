@@ -72,3 +72,9 @@ pub fn get_for_statement_head_loc(source_file: P<SourceFile>, node: P<Node>) -> 
     let (pos, _) = trim_node_text_range(source_file, node);
     (pos, statement.pos())
 }
+
+/// ts_eslint.go GetDeclaration.
+pub fn get_declaration(c: &mut Checker, node: P<Node>) -> Option<P<Node>> {
+    let symbol = c.get_symbol_at_location_exported(node)?;
+    symbol.declarations().first().copied()
+}
