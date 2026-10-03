@@ -61,3 +61,14 @@ pub fn is_rest_parameter_declaration(decl: P<Node>) -> bool {
             .dot_dot_dot_token()
             .is_some()
 }
+
+/// ts_eslint.go GetForStatementHeadLoc.
+pub fn get_for_statement_head_loc(source_file: P<SourceFile>, node: P<Node>) -> (i32, i32) {
+    let statement = if ast::is_for_statement(node) {
+        node.as_for_statement().iteration_statement_base.statement
+    } else {
+        node.as_for_in_or_of_statement().statement
+    };
+    let (pos, _) = trim_node_text_range(source_file, node);
+    (pos, statement.pos())
+}

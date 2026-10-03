@@ -17,3 +17,13 @@ pub fn is_intrinsic_type(t: P<Type>) -> bool {
 pub fn is_intrinsic_error_type(t: P<Type>) -> bool {
     is_intrinsic_type(t) && t.as_intrinsic_type().intrinsic_name() == "error"
 }
+
+/// ts_api_utils.go GetWellKnownSymbolPropertyOfType.
+pub fn get_well_known_symbol_property_of_type(
+    t: P<Type>,
+    name: &str,
+    c: &mut Checker,
+) -> Option<P<Symbol>> {
+    let property_name = c.get_property_name_for_known_symbol_name(name);
+    c.get_property_of_type(t, &property_name)
+}

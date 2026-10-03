@@ -26,3 +26,9 @@ pub fn get_heritage_clauses(node: P<Node>) -> Option<P<ast::NodeList>> {
         _ => None,
     }
 }
+
+/// utils.go GetNumberIndexType.
+pub fn get_number_index_type(c: &mut Checker, t: P<Type>) -> Option<P<Type>> {
+    let number_type = c.number_type;
+    c.get_index_type_of_type(t, number_type)
+}
