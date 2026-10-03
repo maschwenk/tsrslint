@@ -436,7 +436,7 @@ fn value_matches_specifier(
     if node_name.is_empty() {
         return false;
     }
-    if !specifier.name.iter().any(|n| *n == node_name) {
+    if !specifier.name.contains(&node_name) {
         return false;
     }
     if ast::get_source_file_of_node(node).is_none() {

@@ -72,18 +72,18 @@ fn needs_preceding_semicolon(source_file: P<SourceFile>, node: P<Node>) -> bool 
     if ch == b'}' {
         if let Some(parent) = node.parent() {
             match parent.kind() {
-                Kind::ClassDeclaration | Kind::ClassExpression | Kind::InterfaceDeclaration => {
-                    if previous_sibling_is_method_like(parent.member_list(), node) {
-                        return false;
-                    }
+                Kind::ClassDeclaration | Kind::ClassExpression | Kind::InterfaceDeclaration
+                    if previous_sibling_is_method_like(parent.member_list(), node) =>
+                {
+                    return false;
                 }
-                Kind::ObjectLiteralExpression => {
+                Kind::ObjectLiteralExpression
                     if previous_sibling_is_method_like(
                         Some(parent.as_object_literal_expression().properties),
                         node,
-                    ) {
-                        return false;
-                    }
+                    ) =>
+                {
+                    return false;
                 }
                 _ => {}
             }
@@ -322,15 +322,11 @@ impl RuleVisitor for Visitor {
                 }
             }
             Kind::AwaitExpression => self.mark_as_has_await(),
-            Kind::ForOfStatement => {
-                if node.as_for_in_or_of_statement().await_modifier.is_some() {
-                    self.mark_as_has_await();
-                }
+            Kind::ForOfStatement if node.as_for_in_or_of_statement().await_modifier.is_some() => {
+                self.mark_as_has_await()
             }
-            Kind::VariableDeclarationList => {
-                if ast::is_var_await_using(node) {
-                    self.mark_as_has_await();
-                }
+            Kind::VariableDeclarationList if ast::is_var_await_using(node) => {
+                self.mark_as_has_await()
             }
             // Mark `is_async_yield` if it 1) delegates async generator function or 2) yields
             // thenable type.

@@ -379,10 +379,8 @@ impl RuleVisitor for Visitor {
                     }
                 }
             }
-            Kind::BinaryExpression => {
-                if ast::is_assignment_expression(node, false) {
-                    self.check_expression_node(ctx, node.as_binary_expression().right.get());
-                }
+            Kind::BinaryExpression if ast::is_assignment_expression(node, false) => {
+                self.check_expression_node(ctx, node.as_binary_expression().right.get());
             }
             Kind::CallExpression | Kind::NewExpression => self.check_function_call_node(ctx, node),
             Kind::JsxAttribute => {

@@ -152,16 +152,9 @@ impl Visitor {
                         continue;
                     }
                 }
-                Kind::ArrowFunction => {
-                    if self.o.ignore_arrow_shorthand {
-                        return None;
-                    }
-                }
-                Kind::VoidExpression => {
-                    if self.o.ignore_void_operator {
-                        return None;
-                    }
-                }
+                // e.g. `() => console.log("foo")` is valid with an appropriate option
+                Kind::ArrowFunction if self.o.ignore_arrow_shorthand => return None,
+                Kind::VoidExpression if self.o.ignore_void_operator => return None,
                 _ => {}
             }
             break;
