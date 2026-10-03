@@ -40,3 +40,144 @@ pub fn get_type_name(c: &mut Checker, t: P<Type>) -> String {
     }
     c.type_to_string_exported(t)
 }
+
+/// ts_eslint.go IsTypeAnyArrayType: true if the type is `any[]`.
+pub fn is_type_any_array_type(t: P<Type>, c: &mut Checker) -> bool {
+    c.is_array_type(t) && is_type_any_type(c.get_type_arguments(t)[0])
+}
+
+/// ts_eslint.go IsTypeUnknownArrayType: true if the type is `unknown[]`.
+pub fn is_type_unknown_array_type(t: P<Type>, c: &mut Checker) -> bool {
+    c.is_array_type(t) && is_type_unknown_type(c.get_type_arguments(t)[0])
+}
+
+/// ts_eslint.go IsUnsafeAssignment: Some((receiver, sender)) if an any is assigned to a non-any type,
+/// including in generic positions.
+pub fn is_unsafe_assignment(
+    t: P<Type>,
+    receiver_t: P<Type>,
+    c: &mut Checker,
+    sender_node: Option<P<Node>>,
+) -> Option<(P<Type>, P<Type>)> {
+    let mut visited: rustc_hash::FxHashMap<P<Type>, rustc_hash::FxHashSet<P<Type>>> =
+        Default::default();
+    is_unsafe_assignment_worker(t, receiver_t, c, sender_node, &mut visited)
+}
+
+#[allow(clippy::mutable_key_type)]
+fn is_unsafe_assignment_worker(
+    t: P<Type>,
+    receiver: P<Type>,
+    c: &mut Checker,
+    sender_node: Option<P<Node>>,
+    visited: &mut rustc_hash::FxHashMap<P<Type>, rustc_hash::FxHashSet<P<Type>>>,
+) -> Option<(P<Type>, P<Type>)> {
+    if is_type_any_type(t) {
+        // Allow assignment of any ==> unknown.
+        if is_type_unknown_type(receiver) {
+            return None;
+        }
+        if !is_type_any_type(receiver) {
+            return Some((receiver, t));
+        }
+    }
+
+    if let Some(type_already_visited) = visited.get_mut(&t) {
+        if type_already_visited.contains(&receiver) {
+            return None;
+        }
+        type_already_visited.insert(receiver);
+    } else {
+        let mut set = rustc_hash::FxHashSet::default();
+        set.insert(receiver);
+        visited.insert(t, set);
+    }
+
+    if tsrs_checker::is_non_deferred_type_reference(t)
+        && tsrs_checker::is_non_deferred_type_reference(receiver)
+    {
+        if t.target() != receiver.target() {
+            // if the type references are different, assume safe, as we won't know how to compare
+            // the two types; the generic positions might not be equivalent for both types
+            return None;
+        }
+
+        if let Some(sender_node) = sender_node {
+            if ast::is_new_expression(sender_node)
+                && sender_node
+                    .expression()
+                    .is_some_and(|e| ast::is_identifier(e) && e.text() == "Map")
+                && sender_node.arguments().is_empty()
+                && sender_node.type_argument_list().is_none()
+            {
+                // special case to handle `new Map()`: Map's default empty constructor is typed
+                // to return `Map<any, any>`
+                return None;
+            }
+        }
+
+        let type_arguments = c.get_type_arguments(t);
+        let receiver_type_arguments = c.get_type_arguments(receiver);
+        for (i, &arg) in type_arguments.iter().enumerate() {
+            let receiver_arg = receiver_type_arguments[i];
+            if is_unsafe_assignment_worker(arg, receiver_arg, c, sender_node, visited).is_some() {
+                return Some((receiver, t));
+            }
+        }
+        return None;
+    }
+
+    None
+}
+
+/// ts_eslint.go GetContextualType: the type of the target the node is going into.
+pub fn get_contextual_type(c: &mut Checker, node: P<Node>) -> Option<P<Type>> {
+    let parent = node.parent()?;
+
+    if ast::is_call_expression(parent) || ast::is_new_expression(parent) {
+        if parent.expression() == Some(node) {
+            // is the callee, so has no contextual type
+            return None;
+        }
+    } else if ast::is_variable_declaration(parent)
+        || ast::is_property_declaration(parent)
+        || ast::is_parameter_declaration(parent)
+    {
+        return parent.type_node().map(|t| c.get_type_from_type_node(t));
+    } else if parent.kind() == Kind::JsxExpression {
+        return c.get_contextual_type(parent, tsrs_checker::ContextFlags::None);
+    } else if ast::is_identifier(node)
+        && (ast::is_property_assignment(parent) || ast::is_shorthand_property_assignment(parent))
+    {
+        return c.get_contextual_type(node, tsrs_checker::ContextFlags::None);
+    } else if ast::is_binary_expression(parent)
+        && parent.as_binary_expression().operator_token.kind() == Kind::EqualsToken
+        && parent.as_binary_expression().right.get() == node
+    {
+        // is RHS of assignment
+        return Some(c.get_type_at_location(parent.as_binary_expression().left));
+    } else if parent.kind() != Kind::JsxExpression && !ast::is_template_span(parent) {
+        // parent is not something we know we can get the contextual type of
+        return None;
+    }
+    // TODO - support return statement checking
+
+    c.get_contextual_type(node, tsrs_checker::ContextFlags::None)
+}
+
+/// ts_eslint.go GetThisExpression.
+pub fn get_this_expression(mut node: P<Node>) -> Option<P<Node>> {
+    loop {
+        node = ast::skip_parentheses(node);
+        if ast::is_call_expression(node) {
+            node = node.expression().unwrap();
+        } else if node.kind() == Kind::ThisKeyword {
+            return Some(node);
+        } else if ast::is_access_expression(node) {
+            node = node.expression().unwrap();
+        } else {
+            break;
+        }
+    }
+    None
+}
