@@ -138,7 +138,7 @@ fn unwrap_binary(node: Option<P<Node>>) -> Option<BinaryParts> {
     })
 }
 
-fn is_comparison_against(op: &Operand, predicate: fn(P<Node>) -> bool) -> bool {
+fn is_comparison_against(op: &Operand, predicate: fn(Option<P<Node>>) -> bool) -> bool {
     if op.typ != OperandType::Comparison {
         return false;
     }
@@ -148,7 +148,7 @@ fn is_comparison_against(op: &Operand, predicate: fn(P<Node>) -> bool) -> bool {
     if bin.operator != Kind::EqualsEqualsToken && bin.operator != Kind::EqualsEqualsEqualsToken {
         return false;
     }
-    predicate(bin.left) || predicate(bin.right)
+    predicate(Some(bin.left)) || predicate(Some(bin.right))
 }
 
 fn is_nullish_comparison(op: &Operand) -> bool {
@@ -165,7 +165,7 @@ fn is_strict_null_check_for_or_chain(op: &Operand) -> bool {
         OperandType::Comparison => {
             if let Some(bin) = unwrap_binary(Some(op.node)) {
                 return bin.operator == Kind::EqualsEqualsEqualsToken
-                    && (utils::is_null_literal(bin.left) || utils::is_null_literal(bin.right));
+                    && (utils::is_null_literal(Some(bin.left)) || utils::is_null_literal(Some(bin.right)));
             }
             false
         }
@@ -181,8 +181,8 @@ fn is_strict_undefined_check_for_or_chain(op: &Operand) -> bool {
         OperandType::Comparison => {
             if let Some(bin) = unwrap_binary(Some(op.node)) {
                 return bin.operator == Kind::EqualsEqualsEqualsToken
-                    && (utils::is_undefined_literal(bin.left)
-                        || utils::is_undefined_literal(bin.right));
+                    && (utils::is_undefined_literal(Some(bin.left))
+                        || utils::is_undefined_literal(Some(bin.right)));
             }
             false
         }
@@ -210,10 +210,10 @@ fn is_nullish_check_operand(op: &Operand) -> bool {
         | OperandType::EqualNull => true,
         OperandType::Comparison => {
             if let Some(bin) = unwrap_binary(Some(op.node)) {
-                return utils::is_null_literal(bin.right)
-                    || utils::is_undefined_identifier(bin.right)
-                    || utils::is_null_literal(bin.left)
-                    || utils::is_undefined_identifier(bin.left);
+                return utils::is_null_literal(Some(bin.right))
+                    || utils::is_undefined_identifier(Some(bin.right))
+                    || utils::is_null_literal(Some(bin.left))
+                    || utils::is_undefined_identifier(Some(bin.left));
             }
             false
         }
@@ -264,9 +264,9 @@ fn analyze_nullish_checks(chain: &[Operand], or_chain_mode: bool) -> NullishChec
             OperandType::Comparison => {
                 if let Some(bin) = unwrap_binary(Some(op.node)) {
                     let is_null =
-                        utils::is_null_literal(bin.left) || utils::is_null_literal(bin.right);
-                    let is_undefined = utils::is_undefined_literal(bin.left)
-                        || utils::is_undefined_literal(bin.right);
+                        utils::is_null_literal(Some(bin.left)) || utils::is_null_literal(Some(bin.right));
+                    let is_undefined = utils::is_undefined_literal(Some(bin.left))
+                        || utils::is_undefined_literal(Some(bin.right));
                     if bin.operator == Kind::EqualsEqualsToken && (is_null || is_undefined) {
                         analysis.has_both_check = true;
                     } else if bin.operator == Kind::EqualsEqualsEqualsToken {
@@ -881,8 +881,8 @@ impl ChainProcessor {
             return false;
         };
 
-        let is_left_nullish = utils::is_nullish_literal(bin.left);
-        let is_right_nullish = utils::is_nullish_literal(bin.right);
+        let is_left_nullish = utils::is_nullish_literal(Some(bin.left));
+        let is_right_nullish = utils::is_nullish_literal(Some(bin.right));
 
         if bin.operator == Kind::EqualsEqualsEqualsToken && !is_left_nullish && !is_right_nullish {
             return true;
@@ -1121,8 +1121,8 @@ impl ChainProcessor {
             return true;
         };
 
-        let is_null = utils::is_null_literal(value);
-        let is_undefined = utils::is_undefined_literal(value);
+        let is_null = utils::is_null_literal(Some(value));
+        let is_undefined = utils::is_undefined_literal(Some(value));
         let is_literal = matches!(
             value.kind(),
             Kind::NumericLiteral
@@ -1424,9 +1424,9 @@ impl ChainProcessor {
             let (b_left, b_right) = (bin_expr.left, bin_expr.right.get());
 
             let mut expr_value: Option<(P<Node>, P<Node>)> = None;
-            if utils::is_nullish_literal(b_right) || ast::is_string_literal(b_right) {
+            if utils::is_nullish_literal(Some(b_right)) || ast::is_string_literal(b_right) {
                 expr_value = Some((b_left, b_right));
-            } else if utils::is_nullish_literal(b_left) || ast::is_string_literal(b_left) {
+            } else if utils::is_nullish_literal(Some(b_left)) || ast::is_string_literal(b_left) {
                 expr_value = Some((b_right, b_left));
             }
 
@@ -1458,8 +1458,8 @@ impl ChainProcessor {
                     }
                 }
 
-                let is_null = utils::is_null_literal(value);
-                let is_undefined = utils::is_undefined_literal(value);
+                let is_null = utils::is_null_literal(Some(value));
+                let is_undefined = utils::is_undefined_literal(Some(value));
                 let is_ident_or_this = ast::is_identifier(expr) || expr.kind() == Kind::ThisKeyword;
 
                 if is_and_chain {
@@ -2513,9 +2513,9 @@ impl ChainProcessor {
                         if bin_expr.operator_token.kind() == Kind::EqualsEqualsEqualsToken {
                             let (l, r) = (bin_expr.left, bin_expr.right.get());
                             let is_strict_null_check =
-                                utils::is_null_literal(r) || utils::is_null_literal(l);
+                                utils::is_null_literal(Some(r)) || utils::is_null_literal(Some(l));
                             let is_strict_undef_check =
-                                utils::is_undefined_literal(r) || utils::is_undefined_literal(l);
+                                utils::is_undefined_literal(Some(r)) || utils::is_undefined_literal(Some(l));
                             if ((is_strict_null_check && !is_strict_undef_check)
                                 || (is_strict_undef_check && !is_strict_null_check))
                                 && (truncate_at == -1 || next < truncate_at)
@@ -2681,10 +2681,10 @@ impl ChainProcessor {
                 if bin_expr.operator_token.kind() == Kind::EqualsEqualsToken {
                     let left = ast::skip_parentheses(bin_expr.left);
                     let right = ast::skip_parentheses(bin_expr.right.get());
-                    let is_nullish = utils::is_null_literal(left)
-                        || utils::is_null_literal(right)
-                        || utils::is_undefined_identifier(left)
-                        || utils::is_undefined_identifier(right);
+                    let is_nullish = utils::is_null_literal(Some(left))
+                        || utils::is_null_literal(Some(right))
+                        || utils::is_undefined_identifier(Some(left))
+                        || utils::is_undefined_identifier(Some(right));
                     if is_nullish {
                         all_strict_checks = false;
                         break;

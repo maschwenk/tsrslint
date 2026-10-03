@@ -54,3 +54,17 @@ pub fn is_builtin_type_alias_like(
         BuiltinMatch::Unknown
     })
 }
+
+/// builtin_symbol_likes.go IsAnyBuiltinSymbolLike.
+pub fn is_any_builtin_symbol_like(program: &Program, c: &mut Checker, t: P<Type>) -> bool {
+    is_builtin_symbol_like_recurser(program, c, t, &mut |_c, sub| {
+        let Some(symbol) = sub.symbol() else {
+            return BuiltinMatch::False;
+        };
+        if is_symbol_from_default_library(program, Some(symbol)) {
+            BuiltinMatch::True
+        } else {
+            BuiltinMatch::Unknown
+        }
+    })
+}

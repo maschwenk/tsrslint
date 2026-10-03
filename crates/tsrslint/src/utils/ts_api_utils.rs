@@ -19,27 +19,27 @@ pub fn is_type_void_type(t: P<Type>) -> bool {
 }
 
 /// ts_api_utils.go IsNullLiteral.
-pub fn is_null_literal(node: P<Node>) -> bool {
-    node.kind() == Kind::NullKeyword
+pub fn is_null_literal(node: Option<P<Node>>) -> bool {
+    node.is_some_and(|n| n.kind() == Kind::NullKeyword)
 }
 
 /// ts_api_utils.go IsUndefinedIdentifier.
-pub fn is_undefined_identifier(node: P<Node>) -> bool {
-    ast::is_identifier(node) && node.as_identifier().text() == "undefined"
+pub fn is_undefined_identifier(node: Option<P<Node>>) -> bool {
+    node.is_some_and(|n| ast::is_identifier(n) && n.text() == "undefined")
 }
 
 /// ts_api_utils.go IsVoidExpression.
-pub fn is_void_expression(node: P<Node>) -> bool {
-    ast::is_void_expression(node)
+pub fn is_void_expression(node: Option<P<Node>>) -> bool {
+    node.is_some_and(ast::is_void_expression)
 }
 
 /// ts_api_utils.go IsUndefinedLiteral.
-pub fn is_undefined_literal(node: P<Node>) -> bool {
+pub fn is_undefined_literal(node: Option<P<Node>>) -> bool {
     is_undefined_identifier(node) || is_void_expression(node)
 }
 
 /// ts_api_utils.go IsNullishLiteral.
-pub fn is_nullish_literal(node: P<Node>) -> bool {
+pub fn is_nullish_literal(node: Option<P<Node>>) -> bool {
     is_null_literal(node) || is_undefined_literal(node)
 }
 
