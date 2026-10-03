@@ -51,28 +51,20 @@ fn is_node_inside_type_declaration(node: P<Node>) -> bool {
     let mut parent = node.parent();
     while let Some(p) = parent {
         match p.kind() {
-            Kind::ClassDeclaration => {
-                if utils::includes_modifier(p, Kind::DeclareKeyword) {
-                    return true;
-                }
+            Kind::ClassDeclaration if utils::includes_modifier(p, Kind::DeclareKeyword) => {
+                return true;
             }
-            Kind::MethodDeclaration => {
-                if utils::includes_modifier(p, Kind::AbstractKeyword) {
-                    return true;
-                }
+            Kind::MethodDeclaration if utils::includes_modifier(p, Kind::AbstractKeyword) => {
+                return true;
             }
-            Kind::FunctionDeclaration => {
-                if p.body().is_none() {
-                    return true;
-                }
+            Kind::FunctionDeclaration if p.body().is_none() => {
+                return true;
             }
             Kind::FunctionType | Kind::InterfaceDeclaration | Kind::TypeAliasDeclaration => {
                 return true
             }
-            Kind::VariableStatement => {
-                if utils::includes_modifier(p, Kind::DeclareKeyword) {
-                    return true;
-                }
+            Kind::VariableStatement if utils::includes_modifier(p, Kind::DeclareKeyword) => {
+                return true;
             }
             _ => {}
         }

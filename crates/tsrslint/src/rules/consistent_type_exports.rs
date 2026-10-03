@@ -47,6 +47,8 @@ struct AnalyzedNamedExport {
 }
 
 /// Returns (is_type, resolved).
+// P<Symbol> hashes by identity, like Go's map[*ast.Symbol]bool.
+#[allow(clippy::mutable_key_type)]
 fn is_symbol_type_based(c: &mut Checker, mut symbol: Option<P<Symbol>>) -> (bool, bool) {
     let mut visited: HashSet<P<Symbol>> = HashSet::new();
     while let Some(s) = symbol {
