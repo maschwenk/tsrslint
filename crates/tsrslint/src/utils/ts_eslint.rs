@@ -181,3 +181,12 @@ pub fn get_this_expression(mut node: P<Node>) -> Option<P<Node>> {
     }
     None
 }
+
+/// ts_eslint.go IsRestParameterDeclaration.
+pub fn is_rest_parameter_declaration(decl: P<Node>) -> bool {
+    ast::is_parameter_declaration(decl)
+        && decl
+            .as_parameter_declaration()
+            .dot_dot_dot_token()
+            .is_some()
+}
