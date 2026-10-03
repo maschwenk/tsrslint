@@ -1,5 +1,11 @@
 # tsrslint evaluation (2026-10-02)
 
+> **Update (later on 2026-10-02):** the full port has landed: all 59 rules are ported and pass tsgolint's test suite
+> (7,341 cases pass, 28 skipped upstream, 0 fail). On the monolith (tsrs `lint-api` `60a8d12`, quieter machine, 3 alternating
+> pairs through oxlint) the normal config gives 0 diagnostics with both backends; the tsgolint segment takes 8.4 s vs
+> 25.9 s (median) at 8.1 GB vs 26.7 GB peak RSS. With all 59 rules enabled both report the same 181,827 diagnostics
+> (identical per-rule counts and positions); the sections below describe the original five-rule slice.
+
 Question: is a Rust port of tsgolint on tsrs worth it, and what would a full port cost? Everything below was
 measured on an internal monolith (origin/main `(redacted)`, 28,573 linted files, 39,145 program files) on an
 18-core Apple Silicon Mac with 128 GB RAM that was **shared with another agent's builds and benchmarks**: load

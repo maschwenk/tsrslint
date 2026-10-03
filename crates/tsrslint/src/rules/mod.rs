@@ -1,4 +1,5 @@
-// All of tsgolint's rules. Unported rules are stubs whose create() returns not_ported(); see docs/porting.md.
+// All 59 of tsgolint's rules (v7.0.2002), each ported in rules/<rule>.rs; see docs/porting.md.
+// not_ported() remains for new upstream rules: a stub's create() returns it and the rule tests skip it.
 
 use crate::rule::Rule;
 

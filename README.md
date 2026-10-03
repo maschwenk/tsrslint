@@ -11,21 +11,23 @@ cargo build --release
 OXLINT_TSGOLINT_PATH=$PWD/target/release/tsgolint oxlint --type-aware
 ```
 
-**Status: vertical slice.** Five of tsgolint's ~60 rules are ported:
-`no-floating-promises` (without `allowForKnownSafeCalls` / `allowForKnownSafePromises`), `no-implied-eval`,
-`no-unnecessary-boolean-literal-compare`, `promise-function-async` and `return-await`. A payload that enables any
-other rule fails with `unknown rule` (tsgolint itself panics on unknown rules). Everything around the rules is
-ported: payload V1/V2, file → tsconfig assignment (nearest config, project references, ancestor configs), the
-inferred program for unmatched files, tsconfig/program diagnostics, `--type-check` diagnostics, source overrides,
-`-fix` / `-fix-suggestions` and `-debug timings`. Go's profiling flags (`-cpuprof` & co.) are accepted and ignored.
+**Status: complete port.** All 59 of tsgolint's v7.0.2002 rules are ported and pass tsgolint's own test suite (see
+[Tests](#tests)). Everything around the rules is ported too: payload V1/V2, file → tsconfig assignment (nearest
+config, project references, ancestor configs), the inferred program for unmatched files, tsconfig/program
+diagnostics, `--type-check` diagnostics, source overrides, `-fix` / `-fix-suggestions` and `-debug timings`. Go's
+profiling flags (`-cpuprof` & co.) are accepted and ignored. tsrs ports TypeScript 7.1.0-dev.20260929, so printed
+types can differ from stock tsgolint 7.0.2002 (built on TS 7.0) where TS 7.1 prints them differently (union member
+order, `typeof import("…")` specifiers). On an internal monolith with all 59 rules enabled, tsrslint reports the
+same 181,827 diagnostics as stock (same rules, files and positions); only some printed types differ, as above.
 
-[docs/evaluation.md](docs/evaluation.md) has the measurements (profile of stock tsgolint, parity and timing on a
-28.5k-file codebase) and the estimate for a full port.
+[docs/evaluation.md](docs/evaluation.md) has the original evaluation of the five-rule slice (profile of stock
+tsgolint, parity and timing on a 28.5k-file codebase, full-port estimate).
 
 ## Layout
 
 * `crates/tsrslint/`: the Rust crate (`src/linter.rs` = headless.go + linter.go, `src/tsconfig.rs` =
-  find_tsconfig.go, `src/rule.rs` = rule.go, `src/utils.rs` = the used parts of internal/utils, `src/rules/`).
+  find_tsconfig.go, `src/rule.rs` = rule.go, `src/utils/` = internal/utils/*.go with one module per Go file,
+  `src/rules/<rule>.rs` = internal/rules/<rule>/); [docs/porting.md](docs/porting.md) has the conventions.
 * `crates/tsrslint/tests/rule_tests.rs`: port of tsgolint's rule tester; runs the cases in `tests/cases/*.json`,
   extracted from tsgolint's Go tests by `tools/extract_rule_tests` (`GOWORK=off go run ./tools/extract_rule_tests
   internal/rules/<rule> crates/tsrslint/tests/cases/<rule-name>.json`).
@@ -35,11 +37,12 @@ inferred program for unmatched files, tsconfig/program diagnostics, `--type-chec
 ## Tests
 
 ```sh
+pnpm install --frozen-lockfile   # @types/node, needed by some no-deprecated cases
 cargo test --release --test rule_tests -- --nocapture
 ```
 
-415 of tsgolint's 452 test cases for the five rules pass; 37 are skipped (36 use the unported
-`allowForKnownSafe*` options, 1 is skipped upstream too); none fail.
+All 59 rules run every case extracted from tsgolint's Go tests: 7,341 pass, 28 are skipped (exactly the cases
+marked `Skip: true` upstream), none fail and none are unconverted.
 
 ## License and attribution
 
