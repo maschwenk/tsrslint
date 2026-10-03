@@ -78,3 +78,8 @@ pub fn is_str_white_space(r: char) -> bool {
             | '\u{2000}'..='\u{200A}' | '\u{202F}' | '\u{205F}' | '\u{3000}'
     )
 }
+
+/// utils.go IsStringWhiteSpace.
+pub fn is_string_white_space(s: &str) -> bool {
+    s.chars().all(is_str_white_space)
+}
