@@ -1,0 +1,851 @@
+{
+  "source": "no_base_to_string_test.go",
+  "groups": [
+    {
+      "tsconfig": "tsconfig.minimal.json",
+      "valid": [],
+      "invalid": [
+        {
+          "code": "\ndeclare const x: unknown;\n`${x})`;\n      ",
+          "options": {
+            "checkUnknown": true
+          },
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const x: unknown;\nx.toString();\n      ",
+          "options": {
+            "checkUnknown": true
+          },
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const x: unknown;\nx.toLocaleString();\n      ",
+          "options": {
+            "checkUnknown": true
+          },
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const x: unknown;\n'' + x;\n      ",
+          "options": {
+            "checkUnknown": true
+          },
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const x: unknown;\nString(x);\n      ",
+          "options": {
+            "checkUnknown": true
+          },
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const x: unknown;\n'' += x;\n      ",
+          "options": {
+            "checkUnknown": true
+          },
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\nfunction foo\u003cT\u003e(x: T) {\n  String(x);\n}\n      ",
+          "options": {
+            "checkUnknown": true
+          },
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "`${{}})`;",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "({}).toString();",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "({}).toLocaleString();",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "'' + {};",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "String({});",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "'' += {};",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        let someObjectOrString = Math.random() ? { a: true } : 'text';\n        someObjectOrString.toString();\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        let someObjectOrString = Math.random() ? { a: true } : 'text';\n        someObjectOrString.toLocaleString();\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        let someObjectOrString = Math.random() ? { a: true } : 'text';\n        someObjectOrString + '';\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        let someObjectOrObject = Math.random() ? { a: true, b: true } : { a: true };\n        someObjectOrObject.toString();\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        let someObjectOrObject = Math.random() ? { a: true, b: true } : { a: true };\n        someObjectOrObject.toLocaleString();\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        let someObjectOrObject = Math.random() ? { a: true, b: true } : { a: true };\n        someObjectOrObject + '';\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        interface A {}\n        interface B {}\n        function test(intersection: A \u0026 B): string {\n          return `${intersection}`;\n        }\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\nclass Foo {\n  foo: string;\n}\ndeclare const foo: string | Foo;\n`${foo}`;\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\nclass Foo {\n  foo: string;\n}\nclass Bar {\n  bar: string;\n}\ndeclare const foo: Bar | Foo;\n`${foo}`;\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\nclass Foo {\n  foo: string;\n}\nclass Bar {\n  bar: string;\n}\ndeclare const foo: Bar \u0026 Foo;\n`${foo}`;\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        [{}, {}].join('');\n      ",
+          "errors": [
+            {
+              "messageId": "baseArrayJoin",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        const array = [{}, {}];\n        array.join('');\n      ",
+          "errors": [
+            {
+              "messageId": "baseArrayJoin",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class A {\n          a: string;\n        }\n        [new A(), 'str'].join('');\n      ",
+          "errors": [
+            {
+              "messageId": "baseArrayJoin",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const array: (string | Foo)[];\n        array.join('');\n      ",
+          "errors": [
+            {
+              "messageId": "baseArrayJoin",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const array: (string \u0026 Foo) | (string | Foo)[];\n        array.join('');\n      ",
+          "errors": [
+            {
+              "messageId": "baseArrayJoin",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        class Bar {\n          bar: string;\n        }\n        declare const array: Foo[] \u0026 Bar[];\n        array.join('');\n      ",
+          "errors": [
+            {
+              "messageId": "baseArrayJoin",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const array: string[] | Foo[];\n        array.join('');\n      ",
+          "errors": [
+            {
+              "messageId": "baseArrayJoin",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const tuple: [string, Foo];\n        tuple.join('');\n      ",
+          "errors": [
+            {
+              "messageId": "baseArrayJoin",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const tuple: [Foo, Foo];\n        tuple.join('');\n      ",
+          "errors": [
+            {
+              "messageId": "baseArrayJoin",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const tuple: [Foo | string, string];\n        tuple.join('');\n      ",
+          "errors": [
+            {
+              "messageId": "baseArrayJoin",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const tuple: [string, string] | [Foo, Foo];\n        tuple.join('');\n      ",
+          "errors": [
+            {
+              "messageId": "baseArrayJoin",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const tuple: [Foo, string] \u0026 [Foo, Foo];\n        tuple.join('');\n      ",
+          "errors": [
+            {
+              "messageId": "baseArrayJoin",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        const array = ['string', { foo: 'bar' }];\n        array.join('');\n      ",
+          "errors": [
+            {
+              "messageId": "baseArrayJoin",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        type Bar = Record\u003cstring, string\u003e;\n        function foo\u003cT extends string | Bar\u003e(array: T[]) {\n          return array.join();\n        }\n      ",
+          "errors": [
+            {
+              "messageId": "baseArrayJoin",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        String([{}, {}]);\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        const array = [{}, {}];\n        String(array);\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class A {\n          a: string;\n        }\n        String([new A(), 'str']);\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const array: (string | Foo)[];\n        String(array);\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const array: (string \u0026 Foo) | (string | Foo)[];\n        String(array);\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        class Bar {\n          bar: string;\n        }\n        declare const array: Foo[] \u0026 Bar[];\n        String(array);\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const array: string[] | Foo[];\n        String(array);\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const tuple: [string, Foo];\n        String(tuple);\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const tuple: [Foo, Foo];\n        String(tuple);\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const tuple: [Foo | string, string];\n        String(tuple);\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const tuple: [string, string] | [Foo, Foo];\n        String(tuple);\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const tuple: [Foo, string] \u0026 [Foo, Foo];\n        String(tuple);\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        const array = ['string', { foo: 'bar' }];\n        String(array);\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        type Bar = Record\u003cstring, string\u003e;\n        function foo\u003cT extends string | Bar\u003e(array: T[]) {\n          return String(array);\n        }\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        [{}, {}].toString();\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        const array = [{}, {}];\n        array.toString();\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class A {\n          a: string;\n        }\n        [new A(), 'str'].toString();\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const array: (string | Foo)[];\n        array.toString();\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const array: (string \u0026 Foo) | (string | Foo)[];\n        array.toString();\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        class Bar {\n          bar: string;\n        }\n        declare const array: Foo[] \u0026 Bar[];\n        array.toString();\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const array: string[] | Foo[];\n        array.toString();\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const tuple: [string, Foo];\n        tuple.toString();\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const tuple: [Foo, Foo];\n        tuple.toString();\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const tuple: [Foo | string, string];\n        tuple.toString();\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const tuple: [string, string] | [Foo, Foo];\n        tuple.toString();\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const tuple: [Foo, string] \u0026 [Foo, Foo];\n        tuple.toString();\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        const array = ['string', { foo: 'bar' }];\n        array.toString();\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        type Bar = Record\u003cstring, string\u003e;\n        function foo\u003cT extends string | Bar\u003e(array: T[]) {\n          return array.toString();\n        }\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        `${[{}, {}]}`;\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        const array = [{}, {}];\n        `${array}`;\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class A {\n          a: string;\n        }\n        `${[new A(), 'str']}`;\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const array: (string | Foo)[];\n        `${array}`;\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const array: (string \u0026 Foo) | (string | Foo)[];\n        `${array}`;\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        class Bar {\n          bar: string;\n        }\n        declare const array: Foo[] \u0026 Bar[];\n        `${array}`;\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const array: string[] | Foo[];\n        `${array}`;\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const tuple: [string, Foo];\n        `${tuple}`;\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const tuple: [Foo, Foo];\n        `${tuple}`;\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const tuple: [Foo | string, string];\n        `${tuple}`;\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const tuple: [string, string] | [Foo, Foo];\n        `${tuple}`;\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        class Foo {\n          foo: string;\n        }\n        declare const tuple: [Foo, string] \u0026 [Foo, Foo];\n        `${tuple}`;\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        const array = ['string', { foo: 'bar' }];\n        `${array}`;\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        type Bar = Record\u003cstring, string\u003e;\n        function foo\u003cT extends string | Bar\u003e(array: T[]) {\n          return `${array}`;\n        }\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        type Bar = Record\u003cstring, string\u003e;\n        function foo\u003cT extends string | Bar\u003e(array: T[]) {\n          array[0].toString();\n        }\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        type Bar = Record\u003cstring, string\u003e;\n        function foo\u003cT extends string | Bar\u003e(value: T) {\n          value.toString();\n        }\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ntype Bar = Record\u003cstring, string\u003e;\ndeclare const foo: Bar | string;\nfoo.toString();\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        type Bar = Record\u003cstring, string\u003e;\n        function foo\u003cT extends string | Bar\u003e(array: T[]) {\n          return array;\n        }\n        foo([{ foo: 'foo' }]).join();\n      ",
+          "errors": [
+            {
+              "messageId": "baseArrayJoin",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n        type Bar = Record\u003cstring, string\u003e;\n        function foo\u003cT extends string | Bar\u003e(array: T[]) {\n          return array;\n        }\n        foo([{ foo: 'foo' }, 'bar']).join();\n      ",
+          "errors": [
+            {
+              "messageId": "baseArrayJoin",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ntype Value = { foo: string } | Value[];\ndeclare const v: Value;\n\nString(v);\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ntype Value = ({ foo: string } | Value)[];\ndeclare const v: Value;\n\nString(v);\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ntype Value = [{ foo: string }, Value];\ndeclare const v: Value;\n\nString(v);\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ntype Mapped = { [K in 'toString']: () =\u003e string };\ndeclare const x: Mapped;\n'' + x;\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const v: { foo: string }[][];\nv.join();\n      ",
+          "errors": [
+            {
+              "messageId": "baseArrayJoin",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ntype Leaf = { kind: string };\n\ntype BinaryExpression = [Leaf | Expression];\ntype UnaryExpression = [Leaf | Expression];\ntype UpdateExpression = [Leaf | Expression];\ntype CallExpression = [Leaf | Expression];\ntype MemberExpression = [Leaf | Expression];\ntype OptionalMemberExpression = [Leaf | Expression];\ntype OptionalCallExpression = [Leaf | Expression];\ntype AssignmentExpression = [Leaf | Expression];\ntype ConditionalExpression = [Leaf | Expression];\ntype SequenceExpression = [Leaf | Expression];\ntype TSAsExpression = [Leaf | Expression];\n\ntype Expression =\n  | BinaryExpression\n  | UnaryExpression\n  | UpdateExpression\n  | CallExpression\n  | MemberExpression\n  | OptionalMemberExpression\n  | OptionalCallExpression\n  | AssignmentExpression\n  | ConditionalExpression\n  | SequenceExpression\n  | TSAsExpression;\n\ndeclare const node: Expression;\n\nthrow new Error(`Fail: ${node}`);\n      ",
+          "errors": [
+            {
+              "messageId": "baseToString",
+              "suggestions": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "unconverted": [
+    {
+      "group": 0,
+      "kind": "valid",
+      "index": -1,
+      "line": 84,
+      "reason": "valid cases are not a literal (*ast.CallExpr)"
+    }
+  ]
+}

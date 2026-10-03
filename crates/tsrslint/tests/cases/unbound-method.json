@@ -1,0 +1,26 @@
+{
+  "source": "unbound_method_test.go",
+  "groups": [
+    {
+      "tsconfig": "tsconfig.minimal.json",
+      "valid": [],
+      "invalid": []
+    }
+  ],
+  "unconverted": [
+    {
+      "group": 0,
+      "kind": "valid",
+      "index": -1,
+      "line": 47,
+      "reason": "valid cases are not a literal (*ast.CallExpr)"
+    },
+    {
+      "group": 0,
+      "kind": "invalid",
+      "index": -1,
+      "line": 47,
+      "reason": "invalid cases are not a literal (*ast.CallExpr)"
+    }
+  ]
+}

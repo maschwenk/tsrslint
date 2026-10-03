@@ -409,6 +409,12 @@ fn run_cases(rule_name: &str) -> (usize, Vec<String>, usize, usize) {
 }
 
 fn check(rule_name: &str) {
+    if let Err(e) = tsrslint::rules::create_rule(rule_name, None) {
+        if e.starts_with(tsrslint::rules::NOT_PORTED_PREFIX) {
+            eprintln!("[{rule_name}] skipped: not ported yet");
+            return;
+        }
+    }
     let (passed, failures, skipped, unconverted) = run_cases(rule_name);
     eprintln!("[{rule_name}] passed {passed}, failed {}, skipped {skipped}, unconverted (not extracted) {unconverted}", failures.len());
     for f in &failures {
@@ -436,11 +442,104 @@ macro_rules! rule_test {
     };
 }
 
+rule_test!(await_thenable, "await-thenable");
+rule_test!(consistent_return, "consistent-return");
+rule_test!(consistent_type_exports, "consistent-type-exports");
+rule_test!(dot_notation, "dot-notation");
+rule_test!(no_array_delete, "no-array-delete");
+rule_test!(no_base_to_string, "no-base-to-string");
+rule_test!(no_confusing_void_expression, "no-confusing-void-expression");
+rule_test!(no_deprecated, "no-deprecated");
+rule_test!(
+    no_duplicate_type_constituents,
+    "no-duplicate-type-constituents"
+);
 rule_test!(no_floating_promises, "no-floating-promises");
+rule_test!(no_for_in_array, "no-for-in-array");
 rule_test!(no_implied_eval, "no-implied-eval");
+rule_test!(no_meaningless_void_operator, "no-meaningless-void-operator");
+rule_test!(no_misused_promises, "no-misused-promises");
+rule_test!(no_misused_spread, "no-misused-spread");
+rule_test!(no_mixed_enums, "no-mixed-enums");
+rule_test!(
+    no_redundant_type_constituents,
+    "no-redundant-type-constituents"
+);
 rule_test!(
     no_unnecessary_boolean_literal_compare,
     "no-unnecessary-boolean-literal-compare"
 );
+rule_test!(no_unnecessary_condition, "no-unnecessary-condition");
+rule_test!(no_unnecessary_qualifier, "no-unnecessary-qualifier");
+rule_test!(
+    no_unnecessary_template_expression,
+    "no-unnecessary-template-expression"
+);
+rule_test!(
+    no_unnecessary_type_arguments,
+    "no-unnecessary-type-arguments"
+);
+rule_test!(
+    no_unnecessary_type_assertion,
+    "no-unnecessary-type-assertion"
+);
+rule_test!(
+    no_unnecessary_type_conversion,
+    "no-unnecessary-type-conversion"
+);
+rule_test!(
+    no_unnecessary_type_parameters,
+    "no-unnecessary-type-parameters"
+);
+rule_test!(no_unsafe_argument, "no-unsafe-argument");
+rule_test!(no_unsafe_assignment, "no-unsafe-assignment");
+rule_test!(no_unsafe_call, "no-unsafe-call");
+rule_test!(no_unsafe_enum_comparison, "no-unsafe-enum-comparison");
+rule_test!(no_unsafe_member_access, "no-unsafe-member-access");
+rule_test!(no_unsafe_return, "no-unsafe-return");
+rule_test!(no_unsafe_type_assertion, "no-unsafe-type-assertion");
+rule_test!(no_unsafe_unary_minus, "no-unsafe-unary-minus");
+rule_test!(
+    no_useless_default_assignment,
+    "no-useless-default-assignment"
+);
+rule_test!(
+    non_nullable_type_assertion_style,
+    "non-nullable-type-assertion-style"
+);
+rule_test!(only_throw_error, "only-throw-error");
+rule_test!(prefer_find, "prefer-find");
+rule_test!(prefer_includes, "prefer-includes");
+rule_test!(prefer_nullish_coalescing, "prefer-nullish-coalescing");
+rule_test!(prefer_optional_chain, "prefer-optional-chain");
+rule_test!(prefer_promise_reject_errors, "prefer-promise-reject-errors");
+rule_test!(prefer_readonly, "prefer-readonly");
+rule_test!(
+    prefer_readonly_parameter_types,
+    "prefer-readonly-parameter-types"
+);
+rule_test!(prefer_reduce_type_parameter, "prefer-reduce-type-parameter");
+rule_test!(prefer_regexp_exec, "prefer-regexp-exec");
+rule_test!(prefer_return_this_type, "prefer-return-this-type");
+rule_test!(
+    prefer_string_starts_ends_with,
+    "prefer-string-starts-ends-with"
+);
 rule_test!(promise_function_async, "promise-function-async");
+rule_test!(related_getter_setter_pairs, "related-getter-setter-pairs");
+rule_test!(require_array_sort_compare, "require-array-sort-compare");
+rule_test!(require_await, "require-await");
+rule_test!(restrict_plus_operands, "restrict-plus-operands");
+rule_test!(
+    restrict_template_expressions,
+    "restrict-template-expressions"
+);
 rule_test!(return_await, "return-await");
+rule_test!(strict_boolean_expressions, "strict-boolean-expressions");
+rule_test!(strict_void_return, "strict-void-return");
+rule_test!(switch_exhaustiveness_check, "switch-exhaustiveness-check");
+rule_test!(unbound_method, "unbound-method");
+rule_test!(
+    use_unknown_in_catch_callback_variable,
+    "use-unknown-in-catch-callback-variable"
+);

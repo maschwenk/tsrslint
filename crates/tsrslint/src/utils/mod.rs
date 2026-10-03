@@ -1,6 +1,43 @@
 // Ports of the internal/utils helpers the implemented rules use (ts_api_utils.go, ts_eslint.go,
 // builtin_symbol_likes.go, utils.go).
 
+// New helpers go into the submodule named after the Go file they port (internal/utils/<file>.go;
+// go_utils.rs is utils.go). Everything is re-exported, so callers use crate::utils::name. The helpers
+// above the submodules predate the split; check them before porting a helper again.
+mod base_type_utils;
+#[allow(unused_imports)]
+pub use base_type_utils::*;
+mod bfs;
+#[allow(unused_imports)]
+pub use bfs::*;
+mod builtin_symbol_likes;
+#[allow(unused_imports)]
+pub use builtin_symbol_likes::*;
+mod diagnostic_helpers;
+#[allow(unused_imports)]
+pub use diagnostic_helpers::*;
+mod map;
+#[allow(unused_imports)]
+pub use map::*;
+mod set;
+#[allow(unused_imports)]
+pub use set::*;
+mod string_literal;
+#[allow(unused_imports)]
+pub use string_literal::*;
+mod ts_api_utils;
+#[allow(unused_imports)]
+pub use ts_api_utils::*;
+mod ts_eslint;
+#[allow(unused_imports)]
+pub use ts_eslint::*;
+mod type_matches_specifier;
+#[allow(unused_imports)]
+pub use type_matches_specifier::*;
+mod go_utils;
+#[allow(unused_imports)]
+pub use go_utils::*;
+
 use tsrs_ast::{self as ast, Kind, Node, SourceFile, Symbol, SymbolFlags};
 use tsrs_checker::{Checker, Signature, SignatureKind, Type, TypeFlags};
 use tsrs_compiler::Program;

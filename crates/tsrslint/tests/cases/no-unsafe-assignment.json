@@ -1,0 +1,135 @@
+{
+  "source": "no_unsafe_assignment_test.go",
+  "groups": [
+    {
+      "tsconfig": "tsconfig.noImplicitThis.json",
+      "valid": [
+        {
+          "code": "const x = 1;"
+        },
+        {
+          "code": "const x: number = 1;"
+        },
+        {
+          "code": "\nconst x = 1,\n  y = 1;\n    "
+        },
+        {
+          "code": "let x;"
+        },
+        {
+          "code": "\nlet x = 1,\n  y;\n    "
+        },
+        {
+          "code": "function foo(a = 1) {}"
+        },
+        {
+          "code": "\nclass Foo {\n  constructor(private a = 1) {}\n}\n    "
+        },
+        {
+          "code": "\nclass Foo {\n  private a = 1;\n}\n    "
+        },
+        {
+          "code": "\nclass Foo {\n  accessor a = 1;\n}\n    "
+        },
+        {
+          "code": "const x: Set\u003cstring\u003e = new Set();"
+        },
+        {
+          "code": "const x: Set\u003cstring\u003e = new Set\u003cstring\u003e();"
+        },
+        {
+          "code": "const [x] = [1];"
+        },
+        {
+          "code": "const [x, y] = [1, 2] as number[];"
+        },
+        {
+          "code": "const [x, ...y] = [1, 2, 3, 4, 5];"
+        },
+        {
+          "code": "const [x, ...y] = [1];"
+        },
+        {
+          "code": "const [{ ...x }] = [{ x: 1 }] as [{ x: any }];"
+        },
+        {
+          "code": "function foo(x = 1) {}"
+        },
+        {
+          "code": "function foo([x] = [1]) {}"
+        },
+        {
+          "code": "function foo([x, ...y] = [1, 2, 3, 4, 5]) {}"
+        },
+        {
+          "code": "function foo([x, ...y] = [1]) {}"
+        },
+        {
+          "code": "const x = new Set\u003cany\u003e();"
+        },
+        {
+          "code": "const x = { y: 1 };"
+        },
+        {
+          "code": "const x = { y = 1 };",
+          "skip": true
+        },
+        {
+          "code": "const x = { y(){} };"
+        },
+        {
+          "code": "const x: { y: number } = { y: 1 };"
+        },
+        {
+          "code": "const x = [...[1, 2, 3]];"
+        },
+        {
+          "code": "const [{ [`x${1}`]: x }] = [{ [`x`]: 1 }] as [{ [`x`]: any }];"
+        },
+        {
+          "code": "\ntype T = [string, T[]];\nconst test: T = ['string', []] as T;\n    "
+        },
+        {
+          "code": "\ntype Props = { a: string };\ndeclare function Foo(props: Props): never;\n\u003cFoo a={'foo'} /\u003e;\n      ",
+          "tsx": true
+        },
+        {
+          "code": "\ndeclare function Foo(props: { a: string }): never;\n\u003cFoo a=\"foo\" /\u003e;\n      ",
+          "tsx": true
+        },
+        {
+          "code": "\ndeclare function Foo(props: { a: string }): never;\n\u003cFoo a={} /\u003e;\n      ",
+          "tsx": true
+        },
+        {
+          "code": "const x: unknown = y as any;"
+        },
+        {
+          "code": "const x: unknown[] = y as any[];"
+        },
+        {
+          "code": "const x: Set\u003cunknown\u003e = y as Set\u003cany\u003e;"
+        },
+        {
+          "code": "const x: Map\u003cstring, string\u003e = new Map();"
+        },
+        {
+          "code": "\ntype Foo = { bar: unknown };\nconst bar: any = 1;\nconst foo: Foo = { bar };\n    "
+        },
+        {
+          "code": "\ndeclare const foo: any;\nlet a = 1;\n\na+= foo;\n\t\t"
+        }
+      ],
+      "invalid": []
+    }
+  ],
+  "unconverted": [
+    {
+      "group": 0,
+      "kind": "invalid",
+      "index": -1,
+      "line": 113,
+      "reason": "invalid cases are not a literal (*ast.CallExpr)"
+    }
+  ]
+}

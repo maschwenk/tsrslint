@@ -1,0 +1,26 @@
+{
+  "source": "base_cases_test.go,prefer_optional_chain_test.go",
+  "groups": [
+    {
+      "tsconfig": "tsconfig.json",
+      "valid": [],
+      "invalid": []
+    }
+  ],
+  "unconverted": [
+    {
+      "group": 0,
+      "kind": "valid",
+      "index": -1,
+      "line": 4385,
+      "reason": "valid cases are not a literal (*ast.CallExpr)"
+    },
+    {
+      "group": 0,
+      "kind": "invalid",
+      "index": -1,
+      "line": 4385,
+      "reason": "invalid cases are not a literal (*ast.CallExpr)"
+    }
+  ]
+}
