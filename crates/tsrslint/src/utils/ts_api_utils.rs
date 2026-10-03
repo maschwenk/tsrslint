@@ -27,3 +27,18 @@ pub fn is_undefined_identifier(node: Option<P<Node>>) -> bool {
 pub fn is_null_literal_or_undefined_identifier(node: Option<P<Node>>) -> bool {
     is_null_literal(node) || is_undefined_identifier(node)
 }
+
+/// ts_api_utils.go IsIntrinsicType.
+pub fn is_intrinsic_type(t: P<Type>) -> bool {
+    is_type_flag_set(t, TypeFlags::Intrinsic)
+}
+
+/// ts_api_utils.go IsIntrinsicErrorType.
+pub fn is_intrinsic_error_type(t: P<Type>) -> bool {
+    is_intrinsic_type(t) && t.as_intrinsic_type().intrinsic_name() == "error"
+}
+
+/// ts_api_utils.go IsObjectType.
+pub fn is_object_type(t: P<Type>) -> bool {
+    is_type_flag_set(t, TypeFlags::Object)
+}
