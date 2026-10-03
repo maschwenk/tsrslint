@@ -64,6 +64,10 @@ CI runs on Depot ([.depot/workflows/ci.yml](.depot/workflows/ci.yml): fmt, relea
 packaging smoke tests). Releases: [.github/workflows/release.yml](.github/workflows/release.yml), see
 [npm/README.md](npm/README.md#releasing).
 
+The release binaries are PGO builds: profile `dist` (fat LTO) trained on the rule tests and two open-source projects
+with all 59 rules. That is ~15% fewer instructions and less CPU time than the same build without PGO, with the same
+diagnostics ([docs/perf-pgo.md](docs/perf-pgo.md)). `cargo build --release` stays the development build.
+
 ## License and attribution
 
 MIT, like tsgolint: [LICENSE](LICENSE) (Copyright VoidZero Inc. & contributors, typescript-eslint contributors).

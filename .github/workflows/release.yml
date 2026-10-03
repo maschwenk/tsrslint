@@ -47,8 +47,11 @@ jobs:
           if [ "$GITHUB_REF_TYPE" = tag ]; then node npm/build.mjs --check-tag "$GITHUB_REF_NAME"; fi
           echo "version=$(node npm/build.mjs --print-version)" >> "$GITHUB_OUTPUT"
 
-  # Release binaries use the `dist` profile (fat LTO, one codegen unit; Cargo.toml). Each binary is smoke-tested on
-  # its own platform: the headless protocol on npm/smoke/fixture, directly and through the packed npm packages.
+  # Release binaries are PGO builds with the `dist` profile (fat LTO, one codegen unit; Cargo.toml): an instrumented
+  # build of the tsgolint binary and the rule test suite, the training workload (.github/scripts/pgo-train.sh: the rule
+  # tests and two open-source projects with all 59 rules), then the final build with the merged profile. Method and
+  # numbers: docs/perf-pgo.md. Each binary is smoke-tested on its own platform: the headless protocol on
+  # npm/smoke/fixture, directly and through the packed npm packages.
   build:
     name: build ${{ matrix.target }}
     needs: version
@@ -69,13 +72,60 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
+      # @types/node at the repository root: the rule tests of the training workload need it (as in CI).
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - name: pnpm install
+        run: pnpm install --frozen-lockfile
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
         with:
           targets: ${{ matrix.target }}
+          components: llvm-tools
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:
-          key: ${{ matrix.target }}-dist
+          key: ${{ matrix.target }}-pgo
+      # Everything of the PGO steps but the final build lives outside target/, which rust-cache saves.
+      # `cargo test --no-run` builds the integration test and the tsgolint binary; both link the same crate units
+      # (the tsrslint lib, the tsrs crates), so the test's counts apply to the binary.
+      # CFLAGS: cc passes -Cprofile-generate/-use on to clang (macOS) but not to gcc (Linux). Apple clang's profile
+      # format does not have to match rustc's LLVM (maschwenk/tsrs saw the instrumented mimalloc crash in
+      # __llvm_profile_instrument_target), so the C code (mimalloc) is built without PGO, as on Linux.
+      - name: Instrumented build
+        shell: bash
+        env:
+          RUSTFLAGS: -Cprofile-generate=${{ runner.temp }}/pgo/raw
+          CFLAGS: ${{ runner.os == 'macOS' && '-fno-profile-generate' || '' }}
+          CARGO_TARGET_DIR: ${{ runner.temp }}/pgo/target
+        run: |
+          mkdir -p "$RUNNER_TEMP/pgo"
+          cargo test --profile dist --locked -p tsrslint --test rule_tests --no-run --target ${{ matrix.target }} \
+            --message-format=json-render-diagnostics > "$RUNNER_TEMP/pgo/artifacts.jsonl"
+          node -e '
+            const fs = require("node:fs");
+            const exes = fs.readFileSync(process.argv[1], "utf8").split("\n").filter(Boolean).map(JSON.parse)
+              .filter(m => m.reason === "compiler-artifact" && m.executable);
+            for (const name of ["tsgolint", "rule_tests"]) {
+              const m = exes.find(m => m.target.name === name);
+              if (!m) { console.error("no executable for " + name); process.exit(1); }
+              fs.mkdirSync(process.argv[2], { recursive: true });
+              fs.copyFileSync(m.executable, process.argv[2] + "/" + name);
+            }' "$RUNNER_TEMP/pgo/artifacts.jsonl" "$RUNNER_TEMP/pgo/bin"
+      # Runs the workload and merges the raw profiles (weighted; see the script) with rustup's llvm-profdata.
+      - name: Training run
+        id: profile
+        shell: bash
+        run: |
+          .github/scripts/pgo-train.sh "$RUNNER_TEMP/pgo/bin/tsgolint" "$RUNNER_TEMP/pgo/bin/rule_tests" \
+            "$RUNNER_TEMP/pgo/work" "$RUNNER_TEMP/pgo/merged.profdata"
+          # The profile's hash is part of its path, and so of RUSTFLAGS: cargo then rebuilds dependencies restored by
+          # rust-cache whenever the profile changes.
+          sum=$(shasum -a 256 "$RUNNER_TEMP/pgo/merged.profdata" | cut -c1-16)
+          mv "$RUNNER_TEMP/pgo/merged.profdata" "$RUNNER_TEMP/pgo/$sum.profdata"
+          echo "path=$RUNNER_TEMP/pgo/$sum.profdata" >> "$GITHUB_OUTPUT"
       - name: cargo build
+        shell: bash
+        env:
+          RUSTFLAGS: -Cprofile-use=${{ steps.profile.outputs.path }}
+          CFLAGS: ${{ runner.os == 'macOS' && '-fno-profile-use' || '' }}
         run: cargo build --profile dist --locked -p tsrslint --target ${{ matrix.target }}
       - name: Stage binary
         shell: bash

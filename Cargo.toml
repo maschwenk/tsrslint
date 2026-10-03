@@ -24,6 +24,9 @@ opt-level = 3
 debug = "line-tables-only"
 panic = "unwind"
 
+# Release binaries (.github/workflows/release.yml) build with this profile twice, for PGO: -Cprofile-generate,
+# training run (.github/scripts/pgo-train.sh), -Cprofile-use (docs/perf-pgo.md). `cargo build --release` stays the
+# development build.
 [profile.dist]
 inherits = "release"
 lto = "fat"
