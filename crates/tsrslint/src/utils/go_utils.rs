@@ -68,3 +68,13 @@ pub fn is_str_white_space(r: char) -> bool {
 pub fn is_string_white_space(s: &str) -> bool {
     s.chars().all(is_str_white_space)
 }
+
+/// utils.go GetHeritageClauses.
+pub fn get_heritage_clauses(node: P<Node>) -> Option<P<ast::NodeList>> {
+    match node.kind() {
+        Kind::ClassDeclaration => node.as_class_declaration().heritage_clauses(),
+        Kind::ClassExpression => node.as_class_expression().heritage_clauses(),
+        Kind::InterfaceDeclaration => node.as_interface_declaration().heritage_clauses(),
+        _ => None,
+    }
+}
