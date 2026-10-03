@@ -2,6 +2,8 @@
 
 #[allow(unused_imports)]
 use super::*;
+use tsrs_ast::CommentRange;
+use tsrs_core::TextRange;
 
 /// utils.go TypeRecurser: the predicate returns true to stop.
 pub fn type_recurser(t: P<Type>, predicate: &mut dyn FnMut(P<Type>) -> bool) -> bool {
@@ -33,28 +35,29 @@ pub fn get_number_index_type(c: &mut Checker, t: P<Type>) -> Option<P<Type>> {
     c.get_index_type_of_type(t, number_type)
 }
 
-/// utils.go GetCommentsInRange: trailing then leading comment ranges starting at `pos` that begin
-/// before `end`.
-pub fn get_comments_in_range(file: P<SourceFile>, pos: i32, end: i32) -> Vec<ast::CommentRange> {
+/// utils.go GetCommentsInRange: trailing then leading comment ranges starting at in_range.pos, stopping at
+/// in_range.end.
+pub fn get_comments_in_range(source_file: P<SourceFile>, in_range: TextRange) -> Vec<CommentRange> {
+    let text = source_file.text();
     let mut out = Vec::new();
-    for c in tsrs_scanner::get_trailing_comment_ranges(file.text(), pos) {
-        if c.pos() >= end {
+    for comment_range in tsrs_scanner::get_trailing_comment_ranges(text, in_range.pos()) {
+        if comment_range.pos() >= in_range.end() {
             break;
         }
-        out.push(c);
+        out.push(comment_range);
     }
-    for c in tsrs_scanner::get_leading_comment_ranges(file.text(), pos) {
-        if c.pos() >= end {
+    for comment_range in tsrs_scanner::get_leading_comment_ranges(text, in_range.pos()) {
+        if comment_range.pos() >= in_range.end() {
             break;
         }
-        out.push(c);
+        out.push(comment_range);
     }
     out
 }
 
 /// utils.go HasCommentsInRange.
-pub fn has_comments_in_range(file: P<SourceFile>, pos: i32, end: i32) -> bool {
-    !get_comments_in_range(file, pos, end).is_empty()
+pub fn has_comments_in_range(source_file: P<SourceFile>, in_range: TextRange) -> bool {
+    !get_comments_in_range(source_file, in_range).is_empty()
 }
 
 /// utils.go IsStrWhiteSpace (jsnum's StrWhiteSpaceChar: LineTerminator, WhiteSpace, Unicode Zs).

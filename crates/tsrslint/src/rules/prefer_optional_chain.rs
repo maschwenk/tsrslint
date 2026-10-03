@@ -165,7 +165,8 @@ fn is_strict_null_check_for_or_chain(op: &Operand) -> bool {
         OperandType::Comparison => {
             if let Some(bin) = unwrap_binary(Some(op.node)) {
                 return bin.operator == Kind::EqualsEqualsEqualsToken
-                    && (utils::is_null_literal(Some(bin.left)) || utils::is_null_literal(Some(bin.right)));
+                    && (utils::is_null_literal(Some(bin.left))
+                        || utils::is_null_literal(Some(bin.right)));
             }
             false
         }
@@ -263,8 +264,8 @@ fn analyze_nullish_checks(chain: &[Operand], or_chain_mode: bool) -> NullishChec
             OperandType::Plain if !or_chain_mode => analysis.has_both_check = true,
             OperandType::Comparison => {
                 if let Some(bin) = unwrap_binary(Some(op.node)) {
-                    let is_null =
-                        utils::is_null_literal(Some(bin.left)) || utils::is_null_literal(Some(bin.right));
+                    let is_null = utils::is_null_literal(Some(bin.left))
+                        || utils::is_null_literal(Some(bin.right));
                     let is_undefined = utils::is_undefined_literal(Some(bin.left))
                         || utils::is_undefined_literal(Some(bin.right));
                     if bin.operator == Kind::EqualsEqualsToken && (is_null || is_undefined) {
@@ -2514,8 +2515,8 @@ impl ChainProcessor {
                             let (l, r) = (bin_expr.left, bin_expr.right.get());
                             let is_strict_null_check =
                                 utils::is_null_literal(Some(r)) || utils::is_null_literal(Some(l));
-                            let is_strict_undef_check =
-                                utils::is_undefined_literal(Some(r)) || utils::is_undefined_literal(Some(l));
+                            let is_strict_undef_check = utils::is_undefined_literal(Some(r))
+                                || utils::is_undefined_literal(Some(l));
                             if ((is_strict_null_check && !is_strict_undef_check)
                                 || (is_strict_undef_check && !is_strict_null_check))
                                 && (truncate_at == -1 || next < truncate_at)

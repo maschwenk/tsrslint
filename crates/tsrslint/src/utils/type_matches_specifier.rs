@@ -2,7 +2,6 @@
 
 #[allow(unused_imports)]
 use super::*;
-
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum TypeOrValueSpecifierFrom {
     File,

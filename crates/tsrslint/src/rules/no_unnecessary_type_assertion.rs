@@ -1386,7 +1386,10 @@ fn create_assertion_fixer(ctx: &mut Ctx, node: P<Node>) -> Vec<RuleFix> {
     let s = tsrs_scanner::get_scanner_for_source_file(ctx.file, expression.end());
     let as_token = s.token_range();
     let mut token_before_as_end = expression.end();
-    for comment in utils::get_comments_in_range(ctx.file, expression.end(), as_token.pos()) {
+    for comment in utils::get_comments_in_range(
+        ctx.file,
+        tsrs_core::TextRange::new(expression.end(), as_token.pos()),
+    ) {
         token_before_as_end = token_before_as_end.max(comment.end());
     }
     vec![ctx.fix_remove_range(token_before_as_end, node.end())]
