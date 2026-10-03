@@ -1,84 +1,151 @@
+# Builds the tsrslint binaries and publishes the npm packages (npm/README.md). Modeled on maschwenk/tsrs's release
+# workflow. Lint CI (fmt, rule tests, packaging smoke test) runs on Depot: .depot/workflows/ci.yml.
+#
+# Setup before the first release:
+#   - repository secret NPM_TOKEN: an npm automation (or granular, publish-enabled) token for an account that may
+#     publish to the @maschwenk scope (npm/tsrslint/package.json "name").
+#   - push the tag v<workspace version> (node npm/build.mjs --print-version), e.g. v0.1.0.
+# workflow_dispatch builds, smoke-tests and packs, then runs `npm publish --dry-run` unless dry_run is unchecked.
+# Provenance (`npm publish --provenance`) is only possible from a public repository; it is enabled automatically
+# when the repository is public and skipped while it is private.
+
 name: Release
 
-permissions: {}
-
 on:
+  push:
+    tags: ["v*"]
   workflow_dispatch:
     inputs:
-      version:
-        type: string
-        required: true
-        description: version without leading `v`
+      dry_run:
+        description: "Build, test and pack, but run `npm publish --dry-run`"
+        type: boolean
+        default: true
+
+# One release per ref at a time; never cancel a publish half-way.
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        goos: [windows, linux, darwin]
-        goarch: [amd64, arm64]
+  version:
+    runs-on: ubuntu-22.04
+    outputs:
+      version: ${{ steps.v.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0 # required for git am --3way to work properly
-          submodules: true
           persist-credentials: false
+      - id: v
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then node npm/build.mjs --check-tag "$GITHUB_REF_NAME"; fi
+          echo "version=$(node npm/build.mjs --print-version)" >> "$GITHUB_OUTPUT"
 
-      - uses: ./.github/actions/setup
-
-      - name: Build binaries
-        env:
-          GOOS: ${{ matrix.goos }}
-          GOARCH: ${{ matrix.goarch }}
-        run: just build
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+  # Release binaries use the `dist` profile (fat LTO, one codegen unit; Cargo.toml). Each binary is smoke-tested on
+  # its own platform: the headless protocol on npm/smoke/fixture, directly and through the packed npm packages.
+  build:
+    name: build ${{ matrix.target }}
+    needs: version
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { target: aarch64-apple-darwin, os: macos-14 }
+          # Built on 22.04 so the binary needs at most glibc 2.35.
+          - { target: x86_64-unknown-linux-gnu, os: ubuntu-22.04 }
+          - { target: aarch64-unknown-linux-gnu, os: ubuntu-22.04-arm }
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          name: tsgolint-${{ matrix.goos }}-${{ matrix.goarch }}
-          path: tsgolint
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          key: ${{ matrix.target }}-dist
+      - name: cargo build
+        run: cargo build --profile dist --locked -p tsrslint --target ${{ matrix.target }}
+      - name: Stage binary
+        shell: bash
+        run: |
+          mkdir -p "out/${{ matrix.target }}"
+          cp "target/${{ matrix.target }}/dist/tsgolint" "out/${{ matrix.target }}/tsgolint"
+      - name: Headless smoke test
+        run: node npm/smoke.mjs "out/${{ matrix.target }}/tsgolint"
+      - name: npm packaging smoke test
+        shell: bash
+        run: |
+          node npm/build.mjs --binary "${{ matrix.target }}=out/${{ matrix.target }}/tsgolint" --pack --out "$RUNNER_TEMP/npm"
+          npm/smoke-install.sh "$RUNNER_TEMP/npm"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: bin-${{ matrix.target }}
+          path: out/
+          if-no-files-found: error
 
   publish:
-    runs-on: ubuntu-latest
-    needs: build
+    needs: [version, build]
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
     permissions:
-      contents: write # for softprops/action-gh-release
-      id-token: write # for `pnpm publish --provenance`
+      contents: read
+      id-token: write # npm provenance
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-
-      - uses: oxc-project/setup-node@f46a72f95efdc55273fcd042d61c84e723b2892c # v1.4.1
-
-      - name: Download artifacts
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          pattern: tsgolint-*
-          path: build
-
-      - name: chmod +x
-        run: find build -type f -name tsgolint -exec chmod +x {} \;
-
-      - name: Generate npm packages
-        env:
-          TSGOLINT_VERSION: ${{ inputs.version }}
-        run: node ./tools/gen-npm-packages.mjs
-
-      - name: Publish
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          pattern: bin-*
+          path: artifacts
+          merge-multiple: true
+      - name: Require the release platforms
         run: |
-          for package in npm/*; do
-            pushd "$package"
-            pnpm publish --no-git-checks --provenance --access public
-            popd
+          for t in aarch64-apple-darwin x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu; do
+            test -f "artifacts/$t/tsgolint" || { echo "::error::missing binary for $t"; exit 1; }
           done
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+          ls -lR artifacts
+      - name: Assemble and pack
+        run: node npm/build.mjs --artifacts artifacts --pack
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          draft: false
-          name: v${{ inputs.version }}
-          tag_name: v${{ inputs.version }}
-          target_commitish: ${{ github.sha }}
-          generate_release_notes: true
+          name: npm-packages
+          path: npm/dist/*.tgz
+      - name: Publish (platform packages first, then the main package)
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
+          VERSION: ${{ needs.version.outputs.version }}
+          PRIVATE_REPO: ${{ github.event.repository.private }}
+        run: |
+          flags=(--access public --tag latest)
+          [ "$PRIVATE_REPO" = false ] && flags+=(--provenance)
+          [ "$DRY_RUN" = true ] && flags+=(--dry-run)
+          if [ "$DRY_RUN" != true ] && [ -z "$NODE_AUTH_TOKEN" ]; then
+            echo "::error::NPM_TOKEN secret is not set"; exit 1
+          fi
+          node -e 'for (const p of require("./npm/dist/packages.json").packages) console.log(p.name + " " + p.tarball)' |
+          while read -r name tarball; do
+            # Re-running a partially published release skips what is already on the registry.
+            if [ "$DRY_RUN" != true ] && npm view "$name@$VERSION" version > /dev/null 2>&1; then
+              echo "$name@$VERSION already published"
+              continue
+            fi
+            npm publish "$tarball" "${flags[@]}"
+          done

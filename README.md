@@ -3,13 +3,8 @@
 An exploratory Rust port of [tsgolint](https://github.com/oxc-project/tsgolint) (oxlint's type-aware lint
 backend) on top of [tsrs](https://github.com/maschwenk/tsrs), the Rust port of the TypeScript 7 checker.
 
-The binary is named `tsgolint` and speaks tsgolint's headless protocol
-([docs/headless-protocol.md](docs/headless-protocol.md)), so oxlint uses it unchanged:
-
-```sh
-cargo build --release
-OXLINT_TSGOLINT_PATH=$PWD/target/release/tsgolint oxlint --type-aware
-```
+It speaks tsgolint's headless protocol ([docs/headless-protocol.md](docs/headless-protocol.md)), so oxlint uses it
+unchanged through `OXLINT_TSGOLINT_PATH`.
 
 **Status: complete port.** All 59 of tsgolint's v7.0.2002 rules are ported and pass tsgolint's own test suite (see
 [Tests](#tests)). Everything around the rules is ported too: payload V1/V2, file → tsconfig assignment (nearest
@@ -22,6 +17,27 @@ same 181,827 diagnostics as stock (same rules, files and positions); only some p
 
 [docs/evaluation.md](docs/evaluation.md) has the original evaluation of the five-rule slice (profile of stock
 tsgolint, parity and timing on a 28.5k-file codebase, full-port estimate).
+
+## Install and use
+
+From npm (macOS arm64, Linux x64/arm64):
+
+```sh
+pnpm add -D @maschwenk/tsrslint
+OXLINT_TSGOLINT_PATH="$(pnpm exec tsrslint-path)" pnpm exec oxlint --type-aware
+```
+
+The package's bin is `tsrslint` (not `tsgolint`), so it installs next to `oxlint-tsgolint` without replacing it;
+oxlint only uses tsrslint when `OXLINT_TSGOLINT_PATH` points at the native binary. Get that path with
+`pnpm exec tsrslint-path` or `require("@maschwenk/tsrslint").binaryPath()`. Packaging details:
+[npm/README.md](npm/README.md).
+
+From source (Cargo names the binary `tsgolint`):
+
+```sh
+cargo build --release
+OXLINT_TSGOLINT_PATH=$PWD/target/release/tsgolint oxlint --type-aware
+```
 
 ## Layout
 
@@ -43,6 +59,10 @@ cargo test --release --test rule_tests -- --nocapture
 
 All 59 rules run every case extracted from tsgolint's Go tests: 7,341 pass, 28 are skipped (exactly the cases
 marked `Skip: true` upstream), none fail and none are unconverted.
+
+CI runs on Depot ([.depot/workflows/ci.yml](.depot/workflows/ci.yml): fmt, release build, rule tests, headless and npm
+packaging smoke tests). Releases: [.github/workflows/release.yml](.github/workflows/release.yml), see
+[npm/README.md](npm/README.md#releasing).
 
 ## License and attribution
 

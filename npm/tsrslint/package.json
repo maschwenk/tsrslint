@@ -1,0 +1,43 @@
+{
+    "name": "@maschwenk/tsrslint",
+    "version": "0.0.0-set-by-npm-build",
+    "license": "MIT",
+    "description": "tsgolint's type-aware lint backend for oxlint, ported to Rust on top of tsrs",
+    "keywords": [
+        "oxlint",
+        "tsgolint",
+        "typescript",
+        "lint",
+        "rust"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/maschwenk/tsrslint.git"
+    },
+    "type": "commonjs",
+    "preferUnplugged": true,
+    "engines": {
+        "node": ">=18"
+    },
+    "files": [
+        "bin",
+        "lib",
+        "THIRD-PARTY-LICENSE"
+    ],
+    "bin": {
+        "tsrslint": "./bin/tsrslint",
+        "tsrslint-path": "./bin/tsrslint-path"
+    },
+    "main": "./lib/index.cjs",
+    "types": "./lib/index.d.cts",
+    "exports": {
+        "./package.json": "./package.json",
+        ".": {
+            "types": "./lib/index.d.cts",
+            "default": "./lib/index.cjs"
+        }
+    },
+    "publishConfig": {
+        "access": "public"
+    }
+}

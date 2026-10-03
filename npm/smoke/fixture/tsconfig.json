@@ -1,0 +1,9 @@
+{
+    "compilerOptions": {
+        "strict": true,
+        "target": "es2022",
+        "module": "esnext",
+        "noEmit": true
+    },
+    "include": ["index.ts"]
+}

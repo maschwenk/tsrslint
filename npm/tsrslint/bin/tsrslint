@@ -1,0 +1,50 @@
+#!/usr/bin/env node
+"use strict";
+// Runs the native binary with this process's arguments and stdio (e.g. `tsrslint headless < payload.json`).
+
+const { spawn } = require("node:child_process");
+const { binaryPath } = require("../lib/index.cjs");
+
+let exe;
+try {
+    exe = binaryPath();
+}
+catch (e) {
+    console.error(`tsrslint: ${e.message}`);
+    process.exit(1);
+}
+const args = process.argv.slice(2);
+
+// Node >= 22.15 / 23.11: replace this process with the binary, so exit codes and signals need no forwarding.
+if (typeof process.execve === "function") {
+    try {
+        process.execve(exe, [exe, ...args]);
+    }
+    catch {
+        // Not permitted here (e.g. worker or sandbox); fall back to a child process.
+    }
+}
+
+const child = spawn(exe, args, { stdio: "inherit" });
+
+const handlers = new Map();
+for (const signal of ["SIGINT", "SIGTERM", "SIGHUP", "SIGQUIT"]) {
+    const handler = () => child.kill(signal);
+    process.on(signal, handler);
+    handlers.set(signal, handler);
+}
+
+child.on("error", e => {
+    console.error(`tsrslint: failed to run ${exe}: ${e.message}`);
+    process.exit(1);
+});
+
+child.on("exit", (code, signal) => {
+    for (const [s, handler] of handlers) process.off(s, handler);
+    if (signal) {
+        // Die the same way the binary did, so callers see the signal rather than an exit code.
+        process.kill(process.pid, signal);
+        return;
+    }
+    process.exit(code ?? 1);
+});

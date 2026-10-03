@@ -10,3 +10,6 @@ node_modules/
 
 # Per-worktree [patch] of the tsrs git dependency to a local checkout
 /.cargo/config.toml
+
+# npm/build.mjs output
+/npm/dist

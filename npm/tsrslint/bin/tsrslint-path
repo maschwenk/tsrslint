@@ -1,0 +1,11 @@
+#!/usr/bin/env node
+"use strict";
+// Prints the absolute path of the native binary: OXLINT_TSGOLINT_PATH="$(pnpm exec tsrslint-path)" oxlint --type-aware
+
+try {
+    console.log(require("../lib/index.cjs").binaryPath());
+}
+catch (e) {
+    console.error(`tsrslint-path: ${e.message}`);
+    process.exit(1);
+}
