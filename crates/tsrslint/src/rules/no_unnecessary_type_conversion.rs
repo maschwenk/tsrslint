@@ -155,11 +155,13 @@ fn get_node_text(ctx: &Ctx, node: P<Node>) -> &'static str {
     &ctx.text()[pos as usize..end as usize]
 }
 
+type WrapFn<'a> = &'a dyn Fn(&[String]) -> String;
+
 fn build_wrapping_fix(
     ctx: &Ctx,
     node: P<Node>,
     inner_nodes: &[P<Node>],
-    wrap: Option<&dyn Fn(&[String]) -> String>,
+    wrap: Option<WrapFn>,
 ) -> RuleFix {
     let inner_codes: Vec<String> = inner_nodes
         .iter()

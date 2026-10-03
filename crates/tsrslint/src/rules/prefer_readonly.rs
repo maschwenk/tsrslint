@@ -1,4 +1,6 @@
 // Port of internal/rules/prefer_readonly/prefer_readonly.go.
+// P<Type> hashes by identity; its interior mutability does not affect Hash/Eq.
+#![allow(clippy::mutable_key_type)]
 
 use rustc_hash::{FxHashMap, FxHashSet};
 use tsrs_ast::{self as ast, Kind, ModifierFlags, Node, SymbolFlags};
@@ -534,11 +536,12 @@ impl RuleVisitor for Visitor {
                     scope.exit_constructor();
                 }
             }
-            Listener::Enter(Kind::PropertyAccessExpression) => {
-                if !self.class_scope_stack.is_empty() {
-                    self.handle_property_access_expression(ctx, node);
-                }
+            Listener::Enter(Kind::PropertyAccessExpression)
+                if !self.class_scope_stack.is_empty() =>
+            {
+                self.handle_property_access_expression(ctx, node);
             }
+            Listener::Enter(Kind::PropertyAccessExpression) => {}
             Listener::Enter(_) => {
                 if let Some(scope) = self.class_scope_stack.last_mut() {
                     scope.enter_non_constructor();

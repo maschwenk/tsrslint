@@ -1,4 +1,6 @@
 // Port of internal/rules/prefer_readonly_parameter_types/prefer_readonly_parameter_types.go.
+// P<Type> hashes by identity; its interior mutability does not affect Hash/Eq.
+#![allow(clippy::mutable_key_type)]
 
 use rustc_hash::FxHashSet;
 use tsrs_ast::{self as ast, CheckFlags, Kind, ModifierFlags, Node, Symbol, SymbolFlags};
@@ -303,9 +305,9 @@ fn is_parameter_property(parameter: P<Node>) -> bool {
     if !ast::is_parameter_declaration(parameter) {
         return false;
     }
-    if !parameter
+    if parameter
         .parent()
-        .is_some_and(|p| p.kind() == Kind::Constructor)
+        .is_none_or(|p| p.kind() != Kind::Constructor)
     {
         return false;
     }
