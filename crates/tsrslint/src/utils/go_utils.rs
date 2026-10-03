@@ -2,3 +2,69 @@
 
 #[allow(unused_imports)]
 use super::*;
+
+use tsrs_ast::CommentRange;
+use tsrs_core::TextRange;
+
+/// utils.go GetCommentsInRange: trailing then leading comment ranges starting at in_range.pos, stopping at
+/// in_range.end.
+pub fn get_comments_in_range(source_file: P<SourceFile>, in_range: TextRange) -> Vec<CommentRange> {
+    let text = source_file.text();
+    let mut out = Vec::new();
+    for comment_range in tsrs_scanner::get_trailing_comment_ranges(text, in_range.pos()) {
+        if comment_range.pos() >= in_range.end() {
+            break;
+        }
+        out.push(comment_range);
+    }
+    for comment_range in tsrs_scanner::get_leading_comment_ranges(text, in_range.pos()) {
+        if comment_range.pos() >= in_range.end() {
+            break;
+        }
+        out.push(comment_range);
+    }
+    out
+}
+
+/// utils.go HasCommentsInRange.
+pub fn has_comments_in_range(source_file: P<SourceFile>, in_range: TextRange) -> bool {
+    !get_comments_in_range(source_file, in_range).is_empty()
+}
+
+/// utils.go TypeRecurser: predicate returns "should stop".
+pub fn type_recurser(t: P<Type>, predicate: &mut dyn FnMut(P<Type>) -> bool) -> bool {
+    if is_type_flag_set(t, TypeFlags::UnionOrIntersection) {
+        for &subtype in t.types() {
+            if type_recurser(subtype, predicate) {
+                return true;
+            }
+        }
+        false
+    } else {
+        predicate(t)
+    }
+}
+
+/// utils.go IsStrWhiteSpace (LineTerminator, WhiteSpace, Unicode Zs).
+pub fn is_str_white_space(r: char) -> bool {
+    matches!(
+        r,
+        '\n' | '\r'
+            | '\u{2028}'
+            | '\u{2029}'
+            | '\t'
+            | '\u{000B}'
+            | '\u{000C}'
+            | '\u{FEFF}'
+            // Unicode category Zs
+            | ' '
+            | '\u{00A0}'
+            | '\u{1680}'
+            | '\u{2000}'..='\u{200A}' | '\u{202F}' | '\u{205F}' | '\u{3000}'
+    )
+}
+
+/// utils.go IsStringWhiteSpace.
+pub fn is_string_white_space(s: &str) -> bool {
+    s.chars().all(is_str_white_space)
+}
