@@ -151,13 +151,12 @@ impl RuleVisitor for Visitor {
                     }
                 }
             }
-            Listener::Exit(Kind::ModuleBlock) => {
+            Listener::Exit(Kind::ModuleBlock)
                 if node
                     .parent()
-                    .is_some_and(|p| p.kind() == Kind::ModuleDeclaration)
-                {
-                    self.exit_declaration();
-                }
+                    .is_some_and(|p| p.kind() == Kind::ModuleDeclaration) =>
+            {
+                self.exit_declaration();
             }
             Listener::Enter(Kind::PropertyAccessExpression) => {
                 let pa = node.as_property_access_expression();
