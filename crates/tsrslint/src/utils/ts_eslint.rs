@@ -245,3 +245,118 @@ fn is_unsafe_assignment_worker(
 
     None
 }
+
+/// ts_eslint.go IsTypeAnyArrayType: true if the type is `any[]`.
+pub fn is_type_any_array_type(t: P<Type>, c: &mut Checker) -> bool {
+    c.is_array_type(t) && is_type_any_type(c.get_type_arguments(t)[0])
+}
+
+/// ts_eslint.go IsTypeUnknownArrayType: true if the type is `unknown[]`.
+pub fn is_type_unknown_array_type(t: P<Type>, c: &mut Checker) -> bool {
+    c.is_array_type(t) && is_type_unknown_type(c.get_type_arguments(t)[0])
+}
+
+/// ts_eslint.go GetThisExpression.
+pub fn get_this_expression(mut node: P<Node>) -> Option<P<Node>> {
+    loop {
+        node = ast::skip_parentheses(node);
+        if ast::is_call_expression(node) {
+            node = node.expression().unwrap();
+        } else if node.kind() == Kind::ThisKeyword {
+            return Some(node);
+        } else if ast::is_access_expression(node) {
+            node = node.expression().unwrap();
+        } else {
+            break;
+        }
+    }
+    None
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum DiscriminatedAnyType {
+    Any,
+    PromiseAny,
+    AnyArray,
+    Safe,
+}
+
+/// ts_eslint.go DiscriminateAnyType: Any if the type is `any`, AnyArray if it is `any[]` or
+/// `readonly any[]`, PromiseAny if it is `Promise<any>`, otherwise Safe.
+#[allow(clippy::mutable_key_type)]
+pub fn discriminate_any_type(
+    t: P<Type>,
+    c: &mut Checker,
+    program: &Program,
+    node: P<Node>,
+) -> DiscriminatedAnyType {
+    let mut visited = rustc_hash::FxHashSet::default();
+    discriminate_any_type_worker(t, c, program, node, &mut visited)
+}
+
+#[allow(clippy::mutable_key_type, clippy::only_used_in_recursion)]
+fn discriminate_any_type_worker(
+    t: P<Type>,
+    c: &mut Checker,
+    program: &Program,
+    node: P<Node>,
+    // TODO(port): do we really need visited here?
+    visited: &mut rustc_hash::FxHashSet<P<Type>>,
+) -> DiscriminatedAnyType {
+    if visited.contains(&t) {
+        return DiscriminatedAnyType::Safe;
+    }
+    visited.insert(t);
+    if is_type_any_type(t) {
+        return DiscriminatedAnyType::Any;
+    }
+    if is_type_any_array_type(t, c) {
+        return DiscriminatedAnyType::AnyArray;
+    }
+    let found_promise_any = type_recurser(t, &mut |t| {
+        if !is_thenable_type(c, node, Some(t)) {
+            return false;
+        }
+        let Some(awaited_type) = c.get_awaited_type(t) else {
+            return false;
+        };
+        discriminate_any_type_worker(awaited_type, c, program, node, visited)
+            == DiscriminatedAnyType::Any
+    });
+    if found_promise_any {
+        return DiscriminatedAnyType::PromiseAny;
+    }
+    DiscriminatedAnyType::Safe
+}
+
+/// ts_eslint.go getBaseEnumType: if passed an enum member, returns the type of the parent;
+/// otherwise returns itself.
+fn get_base_enum_type(c: &mut Checker, t: P<Type>) -> P<Type> {
+    let symbol = t.symbol();
+    if !is_symbol_flag_set(symbol, SymbolFlags::EnumMember) {
+        return t;
+    }
+    let parent = symbol
+        .unwrap()
+        .value_declaration()
+        .unwrap()
+        .parent()
+        .unwrap();
+    c.get_type_at_location(parent)
+}
+
+/// ts_eslint.go GetEnumLiterals: only the enum literals of a type.
+pub fn get_enum_literals(t: P<Type>) -> Vec<P<Type>> {
+    union_type_parts(t)
+        .into_iter()
+        .filter(|&sub_type| is_type_flag_set(sub_type, TypeFlags::EnumLiteral))
+        .collect()
+}
+
+/// ts_eslint.go GetEnumTypes: the enum types of a type (0 or more).
+pub fn get_enum_types(c: &mut Checker, t: P<Type>) -> Vec<P<Type>> {
+    get_enum_literals(t)
+        .into_iter()
+        .map(|t| get_base_enum_type(c, t))
+        .collect()
+}
