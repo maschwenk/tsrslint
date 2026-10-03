@@ -257,3 +257,35 @@ pub fn get_parent_function_node(node: P<Node>) -> Option<P<Node>> {
     }
     None
 }
+
+/// ts_eslint.go getBaseEnumType: if passed an enum member, returns the type of the parent;
+/// otherwise returns itself.
+fn get_base_enum_type(c: &mut Checker, t: P<Type>) -> P<Type> {
+    let symbol = t.symbol();
+    if !is_symbol_flag_set(symbol, SymbolFlags::EnumMember) {
+        return t;
+    }
+    let parent = symbol
+        .unwrap()
+        .value_declaration()
+        .unwrap()
+        .parent()
+        .unwrap();
+    c.get_type_at_location(parent)
+}
+
+/// ts_eslint.go GetEnumLiterals: only the enum literals of a type.
+pub fn get_enum_literals(t: P<Type>) -> Vec<P<Type>> {
+    union_type_parts(t)
+        .into_iter()
+        .filter(|&sub_type| is_type_flag_set(sub_type, TypeFlags::EnumLiteral))
+        .collect()
+}
+
+/// ts_eslint.go GetEnumTypes: the enum types of a type (0 or more).
+pub fn get_enum_types(c: &mut Checker, t: P<Type>) -> Vec<P<Type>> {
+    get_enum_literals(t)
+        .into_iter()
+        .map(|t| get_base_enum_type(c, t))
+        .collect()
+}
