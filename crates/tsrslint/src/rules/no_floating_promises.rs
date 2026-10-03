@@ -59,6 +59,8 @@ fn floating_void() -> RuleMessage {
 }
 
 pub struct NoFloatingPromises {
+    allow_for_known_safe_calls: Vec<utils::TypeOrValueSpecifier>,
+    allow_for_known_safe_promises: Vec<utils::TypeOrValueSpecifier>,
     check_thenables: bool,
     ignore_iife: bool,
     ignore_void: bool,
@@ -66,18 +68,13 @@ pub struct NoFloatingPromises {
 
 pub fn create(options: Option<&serde_json::Value>) -> Result<Box<dyn Rule>, String> {
     let m = options_object(options);
-    for key in ["allowForKnownSafeCalls", "allowForKnownSafePromises"] {
-        if m.get(key)
-            .and_then(|v| v.as_array())
-            .is_some_and(|a| !a.is_empty())
-        {
-            // TypeOrValueSpecifier matching (utils/type_matches_specifier.go) is not ported yet.
-            return Err(format!(
-                "no-floating-promises: option `{key}` is not supported by tsrslint yet"
-            ));
-        }
-    }
+    let specifiers = |key: &str| {
+        utils::unmarshal_type_or_value_specifiers(m.get(key))
+            .map_err(|e| format!("no-floating-promises: failed to unmarshal options: {e}"))
+    };
     Ok(Box::new(NoFloatingPromises {
+        allow_for_known_safe_calls: specifiers("allowForKnownSafeCalls")?,
+        allow_for_known_safe_promises: specifiers("allowForKnownSafePromises")?,
         check_thenables: opt_bool(&m, "checkThenables", false),
         ignore_iife: opt_bool(&m, "ignoreIIFE", false),
         ignore_void: opt_bool(&m, "ignoreVoid", true),
@@ -159,7 +156,11 @@ impl Visitor {
 
     fn is_promise_like(&self, ctx: &mut Ctx, node: P<Node>, t: Option<P<Type>>) -> bool {
         let t = t.unwrap_or_else(|| ctx.checker.get_type_at_location(node));
-        // allowForKnownSafePromises is always empty here (see create).
+        // The highest priority is to allow anything allowlisted
+        if utils::type_matches_some_specifier(t, &self.o.allow_for_known_safe_promises, ctx.program)
+        {
+            return false;
+        }
         let apparent = ctx.checker.get_apparent_type(t);
         let parts = utils::union_type_parts(apparent);
         for &part in &parts {
@@ -188,6 +189,26 @@ impl Visitor {
             }
         }
         false
+    }
+
+    fn is_known_safe_promise_return(&self, ctx: &mut Ctx, node: P<Node>) -> bool {
+        if self.o.allow_for_known_safe_calls.is_empty() {
+            return false;
+        }
+        if !ast::is_call_expression(node) {
+            return false;
+        }
+        let callee = node.expression().unwrap();
+        let t = ctx.checker.get_type_at_location(callee);
+        if utils::value_matches_some_specifier(
+            callee,
+            &self.o.allow_for_known_safe_calls,
+            ctx.program,
+            Some(t),
+        ) {
+            return true;
+        }
+        utils::type_matches_some_specifier(t, &self.o.allow_for_known_safe_calls, ctx.program)
     }
 
     fn is_promise_array(&self, ctx: &mut Ctx, node: P<Node>, t: P<Type>) -> bool {
@@ -375,7 +396,9 @@ impl RuleVisitor for Visitor {
             }
         }
         let expression = ast::skip_parentheses(statement_expression);
-        // allowForKnownSafeCalls is always empty here (see create).
+        if self.is_known_safe_promise_return(ctx, expression) {
+            return;
+        }
         let Some(result) = self.is_unhandled_promise(ctx, expression) else {
             return;
         };
