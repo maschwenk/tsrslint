@@ -83,7 +83,7 @@ struct TypeFlagsWithNodeOrType {
 }
 
 impl TypeFlagsWithNodeOrType {
-    fn to_string(&self, c: &mut Checker) -> String {
+    fn to_display(&self, c: &mut Checker) -> String {
         if let Some(node) = self.node {
             match node.kind() {
                 Kind::AnyKeyword => return "any".to_string(),
@@ -119,7 +119,7 @@ impl TypeFlagsWithNodeOrType {
 fn join_parts(c: &mut Checker, parts: &[TypeFlagsWithNodeOrType]) -> String {
     parts
         .iter()
-        .map(|p| p.to_string(c))
+        .map(|p| p.to_display(c))
         .collect::<Vec<_>>()
         .join(" | ")
 }
@@ -189,16 +189,16 @@ fn check_intersection_bottom_and_top_types(
     type_node: P<Node>,
 ) -> bool {
     let message = if type_part.flags == TypeFlags::Any {
-        let type_name = type_part.to_string(ctx.checker);
+        let type_name = type_part.to_display(ctx.checker);
         if type_name == "any" {
             build_overrides_message(&type_name, "intersection")
         } else {
             build_error_type_overrides_message(&type_name, "intersection")
         }
     } else if type_part.flags == TypeFlags::Never {
-        build_overrides_message(&type_part.to_string(ctx.checker), "intersection")
+        build_overrides_message(&type_part.to_display(ctx.checker), "intersection")
     } else if type_part.flags == TypeFlags::Unknown {
-        build_overridden_message(&type_part.to_string(ctx.checker), "intersection")
+        build_overridden_message(&type_part.to_display(ctx.checker), "intersection")
     } else {
         return false;
     };
@@ -390,14 +390,14 @@ fn check_union(ctx: &mut Ctx, node: P<Node>) {
     let check_union_bottom_and_top_types =
         |ctx: &mut Ctx, type_part: &TypeFlagsWithNodeOrType, type_node: P<Node>| -> bool {
             let message = if type_part.flags == TypeFlags::Any {
-                let type_name = type_part.to_string(ctx.checker);
+                let type_name = type_part.to_display(ctx.checker);
                 if type_name == "any" {
                     build_overrides_message(&type_name, "union")
                 } else {
                     build_error_type_overrides_message(&type_name, "union")
                 }
             } else if type_part.flags == TypeFlags::Unknown {
-                build_overrides_message(&type_part.to_string(ctx.checker), "union")
+                build_overrides_message(&type_part.to_display(ctx.checker), "union")
             } else if type_part.flags == TypeFlags::Never {
                 if is_node_inside_return_type(node) {
                     return false;
