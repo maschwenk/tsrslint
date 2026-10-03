@@ -5,6 +5,13 @@ use super::*;
 
 use tsrs_checker::{Checker, Type, TypeFlags};
 
+/// ts_eslint.go GetForStatementHeadLoc.
+pub fn get_for_statement_head_loc(source_file: P<SourceFile>, node: P<Node>) -> (i32, i32) {
+    let statement = node.statement();
+    let (pos, _) = trim_node_text_range(source_file, node);
+    (pos, statement.pos())
+}
+
 /// ts_eslint.go GetTypeName.
 pub fn get_type_name(c: &mut Checker, t: P<Type>) -> String {
     // It handles `string` and string literal types as string.
