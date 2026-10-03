@@ -3386,13 +3386,5 @@
       ]
     }
   ],
-  "unconverted": [
-    {
-      "group": 2,
-      "kind": "valid",
-      "index": -1,
-      "line": 4646,
-      "reason": "valid cases are not a literal (\u003cnil\u003e)"
-    }
-  ]
+  "unconverted": []
 }

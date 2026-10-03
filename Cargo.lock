@@ -477,6 +477,7 @@ name = "tsrslint"
 version = "0.1.0"
 dependencies = [
  "mimalloc",
+ "regex",
  "rustc-hash",
  "serde",
  "serde_json",

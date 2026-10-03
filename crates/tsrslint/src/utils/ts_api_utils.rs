@@ -84,3 +84,18 @@ pub fn get_well_known_symbol_property_of_type(
 pub fn is_intrinsic_void_type(t: P<Type>) -> bool {
     is_type_flag_set(t, TypeFlags::Void)
 }
+
+/// ts_api_utils.go IsNullableType.
+pub fn is_nullable_type(c: &mut Checker, t: P<Type>) -> bool {
+    c.is_nullable_type(t)
+}
+
+/// ts_api_utils.go IsNullLiteralOrUndefinedIdentifier.
+pub fn is_null_literal_or_undefined_identifier(node: Option<P<Node>>) -> bool {
+    is_null_literal(node) || is_undefined_identifier(node)
+}
+
+/// ts_api_utils.go IsObjectType.
+pub fn is_object_type(t: P<Type>) -> bool {
+    is_type_flag_set(t, TypeFlags::Object)
+}

@@ -71,6 +71,10 @@ type evaluator struct {
 	// struct type name -> Go field name -> JSON name
 	jsonNames map[string]map[string]string
 	locals    map[string]ast.Expr
+	// package-level helper functions whose body is a single return statement
+	funcs map[string]*ast.FuncDecl
+	// arguments bound while evaluating a helper function's body
+	args map[string]any
 }
 
 type evalError struct{ msg string }
@@ -137,6 +141,9 @@ func (ev *evaluator) value(e ast.Expr, typeHint string) any {
 		case "nil":
 			return nil
 		}
+		if v, ok := ev.args[x.Name]; ok {
+			return v
+		}
 		if v, ok := ev.consts[x.Name]; ok {
 			return v
 		}
@@ -172,8 +179,31 @@ func (ev *evaluator) value(e ast.Expr, typeHint string) any {
 			return v
 		case "Ref":
 			return ev.value(x.Args[0], typeHint)
+		case "BoolOrValue":
+			// utils.BoolOr[T] marshals a plain boolean value as that boolean.
+			return ev.value(x.Args[0], typeHint)
 		case "Dedent", "dedent":
 			fail("helper %s not supported", name)
+		}
+		// Helper function of the test package with a single return statement, e.g.
+		// func nullishSuggestion(output string) []rule_tester.InvalidTestCaseSuggestion { return ... }.
+		if fd, ok := ev.funcs[name]; ok {
+			var params []*ast.Ident
+			for _, f := range fd.Type.Params.List {
+				params = append(params, f.Names...)
+			}
+			if len(params) != len(x.Args) {
+				fail("helper %s: argument count mismatch", name)
+			}
+			// Arguments are evaluated in the caller's scope, the body with only the parameters bound.
+			args := map[string]any{}
+			for i, p := range params {
+				args[p.Name] = ev.value(x.Args[i], "")
+			}
+			savedLocals, savedArgs := ev.locals, ev.args
+			ev.locals, ev.args = map[string]ast.Expr{}, args
+			defer func() { ev.locals, ev.args = savedLocals, savedArgs }()
+			return ev.value(fd.Body.List[0].(*ast.ReturnStmt).Results[0], typeHint)
 		}
 		// Type conversion such as ReturnAwaitOptions("always").
 		if len(x.Args) == 1 {
@@ -313,7 +343,7 @@ func toCase(m map[string]any) testCase {
 func main() {
 	ruleDir, outPath := os.Args[1], os.Args[2]
 	fset := token.NewFileSet()
-	ev := &evaluator{fset: fset, consts: map[string]any{}, jsonNames: map[string]map[string]string{}}
+	ev := &evaluator{fset: fset, consts: map[string]any{}, jsonNames: map[string]map[string]string{}, funcs: map[string]*ast.FuncDecl{}}
 	matches, _ := filepath.Glob(filepath.Join(ruleDir, "*.go"))
 	var testFiles []*ast.File
 	var testPaths []string
@@ -325,6 +355,13 @@ func main() {
 		if strings.HasSuffix(p, "_test.go") {
 			testFiles = append(testFiles, f)
 			testPaths = append(testPaths, filepath.Base(p))
+			for _, d := range f.Decls {
+				if fd, ok := d.(*ast.FuncDecl); ok && fd.Recv == nil && fd.Body != nil && len(fd.Body.List) == 1 {
+					if ret, ok := fd.Body.List[0].(*ast.ReturnStmt); ok && len(ret.Results) == 1 {
+						ev.funcs[fd.Name.Name] = fd
+					}
+				}
+			}
 		}
 		for _, d := range f.Decls {
 			gd, ok := d.(*ast.GenDecl)
@@ -402,6 +439,10 @@ func main() {
 				for ai, kind := range []string{"valid", "invalid"} {
 					arg := call.Args[4+ai]
 					if id, ok := arg.(*ast.Ident); ok {
+						if id.Name == "nil" {
+							// No cases of this kind.
+							continue
+						}
 						arg = ev.locals[id.Name]
 					}
 					lit, ok := arg.(*ast.CompositeLit)

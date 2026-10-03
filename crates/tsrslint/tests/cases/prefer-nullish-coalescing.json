@@ -400,6 +400,12 @@
         {
           "code": "\ndeclare const a: any;\ndeclare const b: any;\na ? a : b;\n      ",
           "options": {
+            "ignorePrimitives": true
+          }
+        },
+        {
+          "code": "\ndeclare const a: any;\ndeclare const b: any;\na ? a : b;\n      ",
+          "options": {
             "ignorePrimitives": {
               "number": true
             }
@@ -419,6 +425,20 @@
       ],
       "invalid": [
         {
+          "code": "this != undefined ? this : y;",
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "this ?? y;"
+                }
+              ]
+            }
+          ]
+        },
+        {
           "code": "\ndeclare let x: string[] | null;\nif (x) {\n}\n      ",
           "tsconfig": "tsconfig.unstrict.json",
           "errors": [
@@ -427,892 +447,2294 @@
               "suggestions": []
             }
           ]
+        },
+        {
+          "code": "\ndeclare let x: string | undefined;\nx || y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: string | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: number | undefined;\nx || y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: number | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: boolean | undefined;\nx || y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: boolean | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: bigint | undefined;\nx || y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "boolean": true,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: bigint | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: string | undefined;\nx ? x : y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: string | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: number | undefined;\nx ? x : y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: number | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: boolean | undefined;\nx ? x : y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: boolean | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: bigint | undefined;\nx ? x : y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "boolean": true,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: bigint | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: '' | undefined;\nx || y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": true,
+              "string": false
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: '' | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: `` | undefined;\nx || y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": true,
+              "string": false
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: `` | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 0 | undefined;\nx || y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": false,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 0 | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 0n | undefined;\nx || y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": false,
+              "boolean": true,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 0n | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: false | undefined;\nx || y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": false,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: false | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: '' | undefined;\nx ? x : y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": true,
+              "string": false
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: '' | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: `` | undefined;\nx ? x : y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": true,
+              "string": false
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: `` | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 0 | undefined;\nx ? x : y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": false,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 0 | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 0n | undefined;\nx ? x : y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": false,
+              "boolean": true,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 0n | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: false | undefined;\nx ? x : y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": false,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: false | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 'a' | undefined;\nx || y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": true,
+              "string": false
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 'a' | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: `hello${'string'}` | undefined;\nx || y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": true,
+              "string": false
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: `hello${'string'}` | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 1 | undefined;\nx || y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": false,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 1 | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 1n | undefined;\nx || y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": false,
+              "boolean": true,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 1n | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: true | undefined;\nx || y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": false,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: true | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 'a' | undefined;\nx ? x : y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": true,
+              "string": false
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 'a' | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 'a' | undefined;\n!x ? y : x;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": true,
+              "string": false
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 'a' | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: `hello${'string'}` | undefined;\nx ? x : y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": true,
+              "string": false
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: `hello${'string'}` | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: `hello${'string'}` | undefined;\n!x ? y : x;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": true,
+              "string": false
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: `hello${'string'}` | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 1 | undefined;\nx ? x : y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": false,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 1 | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 1 | undefined;\n!x ? y : x;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": false,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 1 | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 1n | undefined;\nx ? x : y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": false,
+              "boolean": true,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 1n | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 1n | undefined;\n!x ? y : x;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": false,
+              "boolean": true,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 1n | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: true | undefined;\nx ? x : y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": false,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: true | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: true | undefined;\n!x ? y : x;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": false,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: true | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 'a' | 'b' | undefined;\nx || y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": true,
+              "string": false
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 'a' | 'b' | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 'a' | `b` | undefined;\nx || y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": true,
+              "string": false
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 'a' | `b` | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 0 | 1 | undefined;\nx || y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": false,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 0 | 1 | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 1 | 2 | 3 | undefined;\nx || y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": false,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 1 | 2 | 3 | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 0n | 1n | undefined;\nx || y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": false,
+              "boolean": true,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 0n | 1n | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 1n | 2n | 3n | undefined;\nx || y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": false,
+              "boolean": true,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 1n | 2n | 3n | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: true | false | undefined;\nx || y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": false,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: true | false | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 'a' | 'b' | undefined;\nx ? x : y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": true,
+              "string": false
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 'a' | 'b' | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 'a' | 'b' | undefined;\n!x ? y : x;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": true,
+              "string": false
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 'a' | 'b' | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 'a' | `b` | undefined;\nx ? x : y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": true,
+              "string": false
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 'a' | `b` | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 'a' | `b` | undefined;\n!x ? y : x;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": true,
+              "string": false
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 'a' | `b` | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 0 | 1 | undefined;\nx ? x : y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": false,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 0 | 1 | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 0 | 1 | undefined;\n!x ? y : x;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": false,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 0 | 1 | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 1 | 2 | 3 | undefined;\nx ? x : y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": false,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 1 | 2 | 3 | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 1 | 2 | 3 | undefined;\n!x ? y : x;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": true,
+              "number": false,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 1 | 2 | 3 | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 0n | 1n | undefined;\nx ? x : y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": false,
+              "boolean": true,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 0n | 1n | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 0n | 1n | undefined;\n!x ? y : x;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": false,
+              "boolean": true,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 0n | 1n | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 1n | 2n | 3n | undefined;\nx ? x : y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": false,
+              "boolean": true,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 1n | 2n | 3n | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 1n | 2n | 3n | undefined;\n!x ? y : x;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": false,
+              "boolean": true,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 1n | 2n | 3n | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: true | false | undefined;\nx ? x : y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": false,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: true | false | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: true | false | undefined;\n!x ? y : x;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": false,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: true | false | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 0 | 1 | 0n | 1n | undefined;\nx || y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": false,
+              "boolean": true,
+              "number": false,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 0 | 1 | 0n | 1n | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: true | false | null | undefined;\nx || y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": false,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: true | false | null | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 0 | 1 | 0n | 1n | undefined;\nx ? x : y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": false,
+              "boolean": true,
+              "number": false,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 0 | 1 | 0n | 1n | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: 0 | 1 | 0n | 1n | undefined;\n!x ? y : x;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": false,
+              "boolean": true,
+              "number": false,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: 0 | 1 | 0n | 1n | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: true | false | null | undefined;\nx ? x : y;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": false,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: true | false | null | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: true | false | null | undefined;\n!x ? y : x;\n      ",
+          "options": {
+            "ignorePrimitives": {
+              "bigint": true,
+              "boolean": false,
+              "number": true,
+              "string": true
+            }
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: true | false | null | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: null;\nx || y;\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: null;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\nconst x = undefined;\nx || y;\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\nconst x = undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\nnull || y;\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\nnull ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\nundefined || y;\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\nundefined ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\nenum Enum {\n  A = 0,\n  B = 1,\n  C = 2,\n}\ndeclare let x: Enum | undefined;\nx || y;\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\nenum Enum {\n  A = 0,\n  B = 1,\n  C = 2,\n}\ndeclare let x: Enum | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\nenum Enum {\n  A = 0,\n  B = 1,\n  C = 2,\n}\ndeclare let x: Enum.A | Enum.B | undefined;\nx || y;\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\nenum Enum {\n  A = 0,\n  B = 1,\n  C = 2,\n}\ndeclare let x: Enum.A | Enum.B | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\nenum Enum {\n  A = 'a',\n  B = 'b',\n  C = 'c',\n}\ndeclare let x: Enum | undefined;\nx || y;\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\nenum Enum {\n  A = 'a',\n  B = 'b',\n  C = 'c',\n}\ndeclare let x: Enum | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\nenum Enum {\n  A = 'a',\n  B = 'b',\n  C = 'c',\n}\ndeclare let x: Enum.A | Enum.B | undefined;\nx || y;\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\nenum Enum {\n  A = 'a',\n  B = 'b',\n  C = 'c',\n}\ndeclare let x: Enum.A | Enum.B | undefined;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\nlet a: string | true | undefined;\nlet b: string | boolean | undefined;\nlet c: boolean | undefined;\n\nconst x = Boolean(a || b);\n      ",
+          "options": {
+            "ignoreBooleanCoercion": false
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\nlet a: string | true | undefined;\nlet b: string | boolean | undefined;\nlet c: boolean | undefined;\n\nconst x = Boolean(a ?? b);\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\nlet a: string | true | undefined;\nlet b: string | boolean | undefined;\n\nconst x = String(a || b);\n      ",
+          "options": {
+            "ignoreBooleanCoercion": true
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\nlet a: string | true | undefined;\nlet b: string | boolean | undefined;\n\nconst x = String(a ?? b);\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\nlet a: string | true | undefined;\nlet b: string | boolean | undefined;\n\nconst x = Boolean(() =\u003e a || b);\n      ",
+          "options": {
+            "ignoreBooleanCoercion": true
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\nlet a: string | true | undefined;\nlet b: string | boolean | undefined;\n\nconst x = Boolean(() =\u003e a ?? b);\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\nlet a: string | true | undefined;\nlet b: string | boolean | undefined;\n\nconst x = Boolean(function weird() {\n  return a || b;\n});\n      ",
+          "options": {
+            "ignoreBooleanCoercion": true
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\nlet a: string | true | undefined;\nlet b: string | boolean | undefined;\n\nconst x = Boolean(function weird() {\n  return a ?? b;\n});\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\nlet a: string | true | undefined;\nlet b: string | boolean | undefined;\n\ndeclare function f(x: unknown): unknown;\n\nconst x = Boolean(f(a || b));\n      ",
+          "options": {
+            "ignoreBooleanCoercion": true
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\nlet a: string | true | undefined;\nlet b: string | boolean | undefined;\n\ndeclare function f(x: unknown): unknown;\n\nconst x = Boolean(f(a ?? b));\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\nlet a: string | true | undefined;\nlet b: string | boolean | undefined;\n\nconst x = Boolean(1 + (a || b));\n      ",
+          "options": {
+            "ignoreBooleanCoercion": true
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\nlet a: string | true | undefined;\nlet b: string | boolean | undefined;\n\nconst x = Boolean(1 + (a ?? b));\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\nlet a: string | true | undefined;\nlet b: string | boolean | undefined;\n\nconst x = Boolean(a ? a : b);\n      ",
+          "options": {
+            "ignoreBooleanCoercion": true
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\nlet a: string | true | undefined;\nlet b: string | boolean | undefined;\n\nconst x = Boolean(a ?? b);\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\nlet a: string | boolean | undefined;\nlet b: string | boolean | undefined;\n\nconst test = Boolean(!a ? b : a);\n      ",
+          "options": {
+            "ignoreBooleanCoercion": true
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\nlet a: string | boolean | undefined;\nlet b: string | boolean | undefined;\n\nconst test = Boolean(a ?? b);\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\nlet a: string | true | undefined;\nlet b: string | boolean | undefined;\n\ndeclare function f(x: unknown): unknown;\n\nif (f(a || b)) {\n}\n      ",
+          "options": {
+            "ignoreConditionalTests": true
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\nlet a: string | true | undefined;\nlet b: string | boolean | undefined;\n\ndeclare function f(x: unknown): unknown;\n\nif (f(a ?? b)) {\n}\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const a: string | undefined;\ndeclare const b: string;\n\nif (+(a || b)) {\n}\n      ",
+          "options": {
+            "ignoreConditionalTests": true
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare const a: string | undefined;\ndeclare const b: string;\n\nif (+(a ?? b)) {\n}\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ninterface Box {\n  value: string;\n}\ndeclare function getFallbackBox(): Box;\ndeclare const defaultBox: Box | undefined;\n\ndefaultBox || getFallbackBox();\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ninterface Box {\n  value: string;\n}\ndeclare function getFallbackBox(): Box;\ndeclare const defaultBox: Box | undefined;\n\ndefaultBox ?? getFallbackBox();\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ninterface Box {\n  value: string;\n}\ndeclare function getFallbackBox(): Box;\ndeclare const defaultBox: Box | undefined;\n\ndefaultBox ? defaultBox : getFallbackBox();\n      ",
+          "options": {
+            "ignoreTernaryTests": false
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ninterface Box {\n  value: string;\n}\ndeclare function getFallbackBox(): Box;\ndeclare const defaultBox: Box | undefined;\n\ndefaultBox ?? getFallbackBox();\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ninterface Box {\n  value: string;\n}\ndeclare function getFallbackBox(): Box;\ndeclare const defaultBoxOptional: { a?: { b?: Box | undefined } };\n\ndefaultBoxOptional.a?.b != null ? defaultBoxOptional.a?.b : getFallbackBox();\n      ",
+          "options": {
+            "ignoreTernaryTests": false
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ninterface Box {\n  value: string;\n}\ndeclare function getFallbackBox(): Box;\ndeclare const defaultBoxOptional: { a?: { b?: Box | undefined } };\n\ndefaultBoxOptional.a?.b ?? getFallbackBox();\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const x: any;\ndeclare const y: any;\nx || y;\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare const x: any;\ndeclare const y: any;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const x: unknown;\ndeclare const y: any;\nx || y;\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare const x: unknown;\ndeclare const y: any;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ninterface Box {\n  value: string;\n}\ndeclare function getFallbackBox(): Box;\ndeclare const defaultBoxOptional: { a?: { b?: Box | undefined } };\n\ndefaultBoxOptional.a?.b != null ? defaultBoxOptional.a.b : getFallbackBox();\n      ",
+          "options": {
+            "ignoreTernaryTests": false
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ninterface Box {\n  value: string;\n}\ndeclare function getFallbackBox(): Box;\ndeclare const defaultBoxOptional: { a?: { b?: Box | undefined } };\n\ndefaultBoxOptional.a?.b ?? getFallbackBox();\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ninterface Box {\n  value: string;\n}\ndeclare function getFallbackBox(): Box;\ndeclare const defaultBoxOptional: { a?: { b?: Box | undefined } };\n\ndefaultBoxOptional.a?.b ? defaultBoxOptional.a?.b : getFallbackBox();\n      ",
+          "options": {
+            "ignoreTernaryTests": false
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ninterface Box {\n  value: string;\n}\ndeclare function getFallbackBox(): Box;\ndeclare const defaultBoxOptional: { a?: { b?: Box | undefined } };\n\ndefaultBoxOptional.a?.b ?? getFallbackBox();\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ninterface Box {\n  value: string;\n}\ndeclare function getFallbackBox(): Box;\ndeclare const defaultBoxOptional: { a?: { b?: Box | undefined } };\n\ndefaultBoxOptional.a?.b ? defaultBoxOptional.a.b : getFallbackBox();\n      ",
+          "options": {
+            "ignoreTernaryTests": false
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ninterface Box {\n  value: string;\n}\ndeclare function getFallbackBox(): Box;\ndeclare const defaultBoxOptional: { a?: { b?: Box | undefined } };\n\ndefaultBoxOptional.a?.b ?? getFallbackBox();\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ninterface Box {\n  value: string;\n}\ndeclare function getFallbackBox(): Box;\ndeclare const defaultBoxOptional: { a?: { b?: Box | undefined } };\n\ndefaultBoxOptional.a?.b !== undefined\n  ? defaultBoxOptional.a?.b\n  : getFallbackBox();\n      ",
+          "options": {
+            "ignoreTernaryTests": false
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ninterface Box {\n  value: string;\n}\ndeclare function getFallbackBox(): Box;\ndeclare const defaultBoxOptional: { a?: { b?: Box | undefined } };\n\ndefaultBoxOptional.a?.b ?? getFallbackBox();\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ninterface Box {\n  value: string;\n}\ndeclare function getFallbackBox(): Box;\ndeclare const defaultBoxOptional: { a?: { b?: Box | undefined } };\n\ndefaultBoxOptional.a?.b !== undefined\n  ? defaultBoxOptional.a.b\n  : getFallbackBox();\n      ",
+          "options": {
+            "ignoreTernaryTests": false
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ninterface Box {\n  value: string;\n}\ndeclare function getFallbackBox(): Box;\ndeclare const defaultBoxOptional: { a?: { b?: Box | undefined } };\n\ndefaultBoxOptional.a?.b ?? getFallbackBox();\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ninterface Box {\n  value: string;\n}\ndeclare function getFallbackBox(): Box;\ndeclare const defaultBoxOptional: { a?: { b?: Box | undefined } };\n\ndefaultBoxOptional.a?.b !== undefined \u0026\u0026 defaultBoxOptional.a?.b !== null\n  ? defaultBoxOptional.a?.b\n  : getFallbackBox();\n      ",
+          "options": {
+            "ignoreTernaryTests": false
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ninterface Box {\n  value: string;\n}\ndeclare function getFallbackBox(): Box;\ndeclare const defaultBoxOptional: { a?: { b?: Box | undefined } };\n\ndefaultBoxOptional.a?.b ?? getFallbackBox();\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ninterface Box {\n  value: string;\n}\ndeclare function getFallbackBox(): Box;\ndeclare const defaultBoxOptional: { a?: { b?: Box | undefined } };\n\ndefaultBoxOptional.a?.b !== undefined \u0026\u0026 defaultBoxOptional.a?.b !== null\n  ? defaultBoxOptional.a.b\n  : getFallbackBox();\n      ",
+          "options": {
+            "ignoreTernaryTests": false
+          },
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ninterface Box {\n  value: string;\n}\ndeclare function getFallbackBox(): Box;\ndeclare const defaultBoxOptional: { a?: { b?: Box | undefined } };\n\ndefaultBoxOptional.a?.b ?? getFallbackBox();\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: unknown;\ndeclare let y: number;\n!x ? y : x;\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: unknown;\ndeclare let y: number;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: unknown;\ndeclare let y: number;\nx ? x : y;\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: unknown;\ndeclare let y: number;\nx ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: { n: unknown };\n!x.n ? y : x.n;\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: { n: unknown };\nx.n ?? y;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: { a: string } | null;\n\nx?.['a'] != null ? x['a'] : 'foo';\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: { a: string } | null;\n\nx?.['a'] ?? 'foo';\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: { a: string } | null;\n\nx?.['a'] != null ? x.a : 'foo';\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: { a: string } | null;\n\nx?.['a'] ?? 'foo';\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let x: { a: string } | null;\n\nx?.a != null ? x['a'] : 'foo';\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let x: { a: string } | null;\n\nx?.a ?? 'foo';\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\nconst a = 'b';\ndeclare let x: { a: string; b: string } | null;\n\nx?.[a] != null ? x[a] : 'foo';\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\nconst a = 'b';\ndeclare let x: { a: string; b: string } | null;\n\nx?.[a] ?? 'foo';\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let foo: { a: string } | null;\ndeclare function makeFoo(): { a: string };\n\nfunction lazyInitialize() {\n  if (!foo) {\n    foo = makeFoo();\n  }\n}\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverAssignment",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let foo: { a: string } | null;\ndeclare function makeFoo(): { a: string };\n\nfunction lazyInitialize() {\n  foo ??= makeFoo();\n}\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let foo: { a: string } | null;\ndeclare function makeFoo(): { a: string };\n\nfunction lazyInitialize() {\n  if (foo == null) {\n    foo = makeFoo();\n  }\n}\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverAssignment",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let foo: { a: string } | null;\ndeclare function makeFoo(): { a: string };\n\nfunction lazyInitialize() {\n  foo ??= makeFoo();\n}\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let foo: { a: string } | null;\ndeclare function makeFoo(): { a: string };\n\nfunction lazyInitialize() {\n  if (foo == null) {\n    foo ??= makeFoo();\n  }\n}\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverAssignment",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let foo: { a: string } | null;\ndeclare function makeFoo(): { a: string };\n\nfunction lazyInitialize() {\n  foo ??= makeFoo();\n}\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let foo: { a: string } | null;\ndeclare function makeFoo(): { a: string };\n\nfunction lazyInitialize() {\n  if (foo == null) {\n    foo ||= makeFoo();\n  }\n}\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverAssignment",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let foo: { a: string } | null;\ndeclare function makeFoo(): { a: string };\n\nfunction lazyInitialize() {\n  foo ??= makeFoo();\n}\n      "
+                }
+              ]
+            },
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let foo: { a: string } | null;\ndeclare function makeFoo(): { a: string };\n\nfunction lazyInitialize() {\n  if (foo == null) {\n    foo ??= makeFoo();\n  }\n}\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let foo: { a: string } | null;\ndeclare function makeFoo(): { a: string };\n\nfunction lazyInitialize() {\n  if (foo === null) {\n    foo = makeFoo();\n  }\n}\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverAssignment",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let foo: { a: string } | null;\ndeclare function makeFoo(): { a: string };\n\nfunction lazyInitialize() {\n  foo ??= makeFoo();\n}\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let foo: { a: string } | null;\ndeclare function makeFoo(): { a: string };\n\nfunction lazyInitialize() {\n  if (foo == null) foo = makeFoo();\n  const bar = 42;\n  return bar;\n}\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverAssignment",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let foo: { a: string } | null;\ndeclare function makeFoo(): { a: string };\n\nfunction lazyInitialize() {\n  foo ??= makeFoo();\n  const bar = 42;\n  return bar;\n}\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let foo: { a: string } | null;\ndeclare function makeFoo(): { a: string };\n\nfunction lazyInitialize() {\n  if (foo == null) foo ??= makeFoo();\n  const bar = 42;\n  return bar;\n}\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverAssignment",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let foo: { a: string } | null;\ndeclare function makeFoo(): { a: string };\n\nfunction lazyInitialize() {\n  foo ??= makeFoo();\n  const bar = 42;\n  return bar;\n}\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let foo: { a: string } | null;\ndeclare function makeFoo(): { a: string };\n\nfunction lazyInitialize() {\n  if (foo == null) foo ||= makeFoo();\n  const bar = 42;\n  return bar;\n}\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverAssignment",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let foo: { a: string } | null;\ndeclare function makeFoo(): { a: string };\n\nfunction lazyInitialize() {\n  foo ??= makeFoo();\n  const bar = 42;\n  return bar;\n}\n      "
+                }
+              ]
+            },
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let foo: { a: string } | null;\ndeclare function makeFoo(): { a: string };\n\nfunction lazyInitialize() {\n  if (foo == null) foo ??= makeFoo();\n  const bar = 42;\n  return bar;\n}\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let foo: { a: string } | undefined;\ndeclare function makeFoo(): { a: string };\n\nfunction lazyInitialize() {\n  if (foo === undefined) {\n    foo = makeFoo();\n  }\n}\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverAssignment",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let foo: { a: string } | undefined;\ndeclare function makeFoo(): { a: string };\n\nfunction lazyInitialize() {\n  foo ??= makeFoo();\n}\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let foo: { a: string } | null | undefined;\ndeclare function makeFoo(): { a: string };\n\nfunction lazyInitialize() {\n  if (foo === undefined || foo === null) {\n    foo = makeFoo();\n  }\n}\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverAssignment",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let foo: { a: string } | null | undefined;\ndeclare function makeFoo(): { a: string };\n\nfunction lazyInitialize() {\n  foo ??= makeFoo();\n}\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let foo: { a: string } | null;\ndeclare function makeFoo(): string;\n\nfunction lazyInitialize() {\n  if (foo.a == null) {\n    foo.a = makeFoo();\n  }\n}\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverAssignment",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let foo: { a: string } | null;\ndeclare function makeFoo(): string;\n\nfunction lazyInitialize() {\n  foo.a ??= makeFoo();\n}\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let foo: { a: string } | null;\ndeclare function makeFoo(): string;\n\nfunction lazyInitialize() {\n  if (foo?.a == null) {\n    foo.a = makeFoo();\n  }\n}\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverAssignment",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let foo: { a: string } | null;\ndeclare function makeFoo(): string;\n\nfunction lazyInitialize() {\n  foo.a ??= makeFoo();\n}\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let foo: string | null;\ndeclare function makeFoo(): string;\n\nfunction lazyInitialize() {\n  // comment\n  if (foo == null) {\n    foo = makeFoo();\n  }\n}\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverAssignment",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let foo: string | null;\ndeclare function makeFoo(): string;\n\nfunction lazyInitialize() {\n  // comment\n  foo ??= makeFoo();\n}\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let foo: string | null;\ndeclare function makeFoo(): string;\n\nif (foo == null) {\n  // comment before 1\n  /* comment before 2 */\n  /* comment before 3\n    which is multiline\n  */\n  /**\n   * comment before 4\n   * which is also multiline\n   */\n  foo = makeFoo(); // comment inline\n  // comment after 1\n  /* comment after 2 */\n  /* comment after 3\n    which is multiline\n  */\n  /**\n   * comment after 4\n   * which is also multiline\n   */\n}\n      ",
+          "skip": true,
+          "errors": [
+            {
+              "messageId": "preferNullishOverAssignment",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let foo: string | null;\ndeclare function makeFoo(): string;\n\n// comment before 1\n/* comment before 2 */\n/* comment before 3\n    which is multiline\n  */\n/**\n   * comment before 4\n   * which is also multiline\n   */\nfoo ??= makeFoo(); // comment inline\n// comment after 1\n/* comment after 2 */\n/* comment after 3\n    which is multiline\n  */\n/**\n   * comment after 4\n   * which is also multiline\n   */\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let foo: string | null;\ndeclare function makeFoo(): string;\n\nif (foo == null) {\n  // comment before 1\n  /* comment before 2 */\n  /* comment before 3\n    which is multiline\n  */\n  /**\n   * comment before 4\n   * which is also multiline\n   */\n  foo = makeFoo(); // comment inline\n  // comment after 1\n  /* comment after 2 */\n  /* comment after 3\n    which is multiline\n  */\n  /**\n   * comment after 4\n   * which is also multiline\n   */\n}\n      ",
+          "skip": true,
+          "errors": [
+            {
+              "messageId": "preferNullishOverAssignment",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let foo: string | null;\ndeclare function makeFoo(): string;\n\n// comment before 1\n/* comment before 2 */\n/* comment before 3\n    which is multiline\n  */\n/**\n   * comment before 4\n   * which is also multiline\n   */\nfoo ??= makeFoo(); // comment inline\n// comment after 1\n/* comment after 2 */\n/* comment after 3\n    which is multiline\n  */\n/**\n   * comment after 4\n   * which is also multiline\n   */\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let foo: string | null;\ndeclare function makeFoo(): string;\n\nif (foo == null) /* comment before 1 */ /* comment before 2 */ foo = makeFoo(); // comment inline\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverAssignment",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let foo: string | null;\ndeclare function makeFoo(): string;\n\n/* comment before 1 */ /* comment before 2 */ foo ??= makeFoo(); // comment inline\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let foo: { a: string | null };\ndeclare function makeString(): string;\n\nfunction weirdParens() {\n  if (((((foo.a)) == null))) {\n    ((((((((foo).a))))) = makeString()));\n  }\n}\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverAssignment",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let foo: { a: string | null };\ndeclare function makeString(): string;\n\nfunction weirdParens() {\n  ((foo).a) ??= makeString();\n}\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\nlet a: string | undefined;\nlet b: { message: string } | undefined;\n\nconst foo = a ? a : b ? 1 : 2;\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\nlet a: string | undefined;\nlet b: { message: string } | undefined;\n\nconst foo = a ?? (b ? 1 : 2);\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\nlet a: string | undefined;\nlet b: { message: string } | undefined;\n\nconst foo = a ? a : (b ? 1 : 2);\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\nlet a: string | undefined;\nlet b: { message: string } | undefined;\n\nconst foo = a ?? (b ? 1 : 2);\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const c: string | null;\nc !== null ? c : c ? 1 : 2;\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverTernary",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare const c: string | null;\nc ?? (c ? 1 : 2);\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let a: string | null;\ndeclare let b: string;\ndeclare let c: string;\nconst x = (a \u0026\u0026 b) || c || 'd';\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let a: string | null;\ndeclare let b: string;\ndeclare let c: string;\nconst x = ((a \u0026\u0026 b) ?? c) || 'd';\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let a: string | null;\ndeclare let b: string;\ndeclare let c: string;\nconst x = ((a \u0026\u0026 b)) || c || 'd';\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let a: string | null;\ndeclare let b: string;\ndeclare let c: string;\nconst x = (((a \u0026\u0026 b)) ?? c) || 'd';\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let a: string | null;\ndeclare let b: string;\ndeclare let c: string;\nconst x = a \u0026\u0026 b || c || 'd';\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare let a: string | null;\ndeclare let b: string;\ndeclare let c: string;\nconst x = a \u0026\u0026 (b ?? c) || 'd';\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const isLoading: boolean;\ndeclare const isPending: boolean | undefined;\ndeclare const fallback: boolean;\nexport const result = isLoading || isPending || fallback;\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare const isLoading: boolean;\ndeclare const isPending: boolean | undefined;\ndeclare const fallback: boolean;\nexport const result = (isLoading || isPending) ?? fallback;\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const value: string | undefined;\ndeclare const fallback: string;\ndeclare const alternate: string;\nexport const result = value || fallback \u0026\u0026 alternate;\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare const value: string | undefined;\ndeclare const fallback: string;\ndeclare const alternate: string;\nexport const result = value ?? (fallback \u0026\u0026 alternate);\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const value: string | undefined;\ndeclare const fallback: string;\ndeclare const alternate: string;\nexport const result = value || (fallback \u0026\u0026 alternate);\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare const value: string | undefined;\ndeclare const fallback: string;\ndeclare const alternate: string;\nexport const result = value ?? (fallback \u0026\u0026 alternate);\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const value: string | undefined;\ndeclare const fallback: string;\ndeclare const alternate: string;\ndeclare const finalFallback: string;\nexport const result = value || fallback \u0026\u0026 alternate || finalFallback;\n      ",
+          "errors": [
+            {
+              "messageId": "preferNullishOverOr",
+              "suggestions": [
+                {
+                  "messageId": "suggestNullishCoalescing",
+                  "output": "\ndeclare const value: string | undefined;\ndeclare const fallback: string;\ndeclare const alternate: string;\ndeclare const finalFallback: string;\nexport const result = (value ?? (fallback \u0026\u0026 alternate)) || finalFallback;\n      "
+                }
+              ]
+            }
+          ]
         }
       ]
     }
   ],
-  "unconverted": [
-    {
-      "group": 0,
-      "kind": "valid",
-      "index": 57,
-      "line": 420,
-      "reason": "call to BoolOrValue not supported"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 0,
-      "line": 435,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 2,
-      "line": 458,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 3,
-      "line": 475,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 4,
-      "line": 492,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 5,
-      "line": 509,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 6,
-      "line": 526,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 7,
-      "line": 543,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 8,
-      "line": 560,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 9,
-      "line": 577,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 10,
-      "line": 594,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 11,
-      "line": 612,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 12,
-      "line": 629,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 13,
-      "line": 646,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 14,
-      "line": 663,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 15,
-      "line": 680,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 16,
-      "line": 698,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 17,
-      "line": 715,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 18,
-      "line": 732,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 19,
-      "line": 749,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 20,
-      "line": 766,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 21,
-      "line": 784,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 22,
-      "line": 801,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 23,
-      "line": 818,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 24,
-      "line": 835,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 25,
-      "line": 852,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 26,
-      "line": 869,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 27,
-      "line": 887,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 28,
-      "line": 905,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 29,
-      "line": 922,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 30,
-      "line": 939,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 31,
-      "line": 956,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 32,
-      "line": 973,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 33,
-      "line": 990,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 34,
-      "line": 1007,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 35,
-      "line": 1024,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 36,
-      "line": 1042,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 37,
-      "line": 1059,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 38,
-      "line": 1076,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 39,
-      "line": 1093,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 40,
-      "line": 1110,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 41,
-      "line": 1127,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 42,
-      "line": 1144,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 43,
-      "line": 1161,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 44,
-      "line": 1179,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 45,
-      "line": 1197,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 46,
-      "line": 1214,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 47,
-      "line": 1231,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 48,
-      "line": 1248,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 49,
-      "line": 1265,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 50,
-      "line": 1282,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 51,
-      "line": 1299,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 52,
-      "line": 1316,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 53,
-      "line": 1333,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 54,
-      "line": 1350,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 55,
-      "line": 1367,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 56,
-      "line": 1384,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 57,
-      "line": 1401,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 58,
-      "line": 1418,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 59,
-      "line": 1435,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 60,
-      "line": 1452,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 61,
-      "line": 1469,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 62,
-      "line": 1486,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 63,
-      "line": 1502,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 64,
-      "line": 1518,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 65,
-      "line": 1532,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 66,
-      "line": 1546,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 67,
-      "line": 1572,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 68,
-      "line": 1598,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 69,
-      "line": 1624,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 70,
-      "line": 1650,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 71,
-      "line": 1673,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 72,
-      "line": 1694,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 73,
-      "line": 1715,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 74,
-      "line": 1740,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 75,
-      "line": 1765,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 76,
-      "line": 1786,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 77,
-      "line": 1807,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 78,
-      "line": 1828,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 79,
-      "line": 1855,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 80,
-      "line": 1878,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 81,
-      "line": 1904,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 82,
-      "line": 1931,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 83,
-      "line": 1958,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 84,
-      "line": 1976,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 85,
-      "line": 1994,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 86,
-      "line": 2021,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 87,
-      "line": 2048,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 88,
-      "line": 2075,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 89,
-      "line": 2104,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 90,
-      "line": 2133,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 91,
-      "line": 2162,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 92,
-      "line": 2191,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 93,
-      "line": 2209,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 94,
-      "line": 2227,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 95,
-      "line": 2243,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 96,
-      "line": 2262,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 97,
-      "line": 2281,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 98,
-      "line": 2299,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 99,
-      "line": 2319,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 100,
-      "line": 2345,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 101,
-      "line": 2371,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 102,
-      "line": 2397,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 103,
-      "line": 2435,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 104,
-      "line": 2461,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 105,
-      "line": 2489,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 106,
-      "line": 2517,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 107,
-      "line": 2557,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 108,
-      "line": 2583,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 109,
-      "line": 2609,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 110,
-      "line": 2635,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 111,
-      "line": 2661,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 112,
-      "line": 2690,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 113,
-      "line": 2750,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 114,
-      "line": 2809,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 115,
-      "line": 2829,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 116,
-      "line": 2855,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 117,
-      "line": 2875,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 118,
-      "line": 2895,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 119,
-      "line": 2913,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 120,
-      "line": 2935,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 121,
-      "line": 2957,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 122,
-      "line": 2977,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 123,
-      "line": 2996,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 124,
-      "line": 3015,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    },
-    {
-      "group": 0,
-      "kind": "invalid",
-      "index": 125,
-      "line": 3034,
-      "reason": "interface conversion: interface {} is string, not []interface {}"
-    }
-  ]
+  "unconverted": []
 }
