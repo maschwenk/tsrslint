@@ -177,13 +177,12 @@ impl RuleVisitor for Visitor {
                 let c = node.as_conditional_expression().condition;
                 self.traverse_node(ctx, c, true);
             }
-            Kind::BinaryExpression => {
+            Kind::BinaryExpression
                 if ast::is_logical_expression(node)
                     && node.as_binary_expression().operator_token.kind()
-                        != Kind::QuestionQuestionToken
-                {
-                    self.traverse_logical_expression(ctx, node, false);
-                }
+                        != Kind::QuestionQuestionToken =>
+            {
+                self.traverse_logical_expression(ctx, node, false);
             }
             Kind::CallExpression => self.visit_call_expression(ctx, node),
             Kind::PrefixUnaryExpression => {
