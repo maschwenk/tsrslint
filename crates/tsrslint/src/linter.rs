@@ -1,7 +1,6 @@
 // Port of cmd/tsgolint/headless.go + internal/linter/linter.go.
 
 use std::io::{Read, Write};
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
@@ -111,7 +110,10 @@ pub fn run_headless(args: &[String]) -> i32 {
         }
     };
     match run(payload, &cwd, &opts, &log) {
-        Ok(()) => 0,
+        Ok(()) => {
+            crate::sched::report_totals(t0.elapsed());
+            0
+        }
         Err(e) => {
             protocol::write_error_message(&format!("error running linter: {e}"));
             1
@@ -395,6 +397,7 @@ fn inferred_compiler_options() -> CompilerOptions {
         es_module_interop: Tristate::True,
         allow_non_ts_extensions: Tristate::True,
         resolve_json_module: Tristate::True,
+        checkers: crate::sched::checkers(),
         ..Default::default()
     }
 }
@@ -500,38 +503,36 @@ fn lint_program(
     lctx: &LintCtx,
 ) {
     report_typescript_diagnostics(program, files, payload, lctx.tx);
-    // Each file goes to the checker tsrs assigned it (import-graph locality), not to whichever checker is free:
-    // with a shared queue every checker ends up resolving the types of nearly every module.
-    let workers: Mutex<Vec<(Worker, Vec<ReportedDiagnostic>)>> = Mutex::new(Vec::new());
-    program.for_each_checker_group(files, |checker, _i, file| {
-        let Some(set) = lctx
-            .file_rules
-            .get(file.path())
-            .map(|&i| &lctx.rule_sets[i])
-        else {
-            return;
-        };
-        let (mut worker, mut out) = workers
-            .lock()
-            .unwrap()
-            .pop()
-            .unwrap_or_else(|| (Worker::new(lctx.opts.debug_timings), Vec::new()));
-        worker.lint_file(checker, program, file, &set.rules, lctx.opts, &mut out);
-        for d in out.drain(..) {
-            let _ = lctx.tx.send(d.to_protocol());
-        }
-        workers.lock().unwrap().push((worker, out));
-    });
-    if lctx.opts.debug_timings {
-        let mut t = lctx.timings.lock().unwrap();
-        for (worker, _) in workers.into_inner().unwrap() {
-            for (name, (d, c)) in worker.timings {
-                let e = t.entry(name).or_default();
-                e.0 += d;
-                e.1 += c;
+    // Each file goes to the checker tsrs assigned it (import-graph locality) until that checker runs out, then to
+    // whichever checker is free (sched.rs): with a shared queue every checker resolves the types of nearly every
+    // module.
+    let todo: Vec<usize> = (0..files.len())
+        .filter(|&i| lctx.file_rules.contains_key(files[i].path()))
+        .collect();
+    crate::sched::for_each_file(
+        program,
+        files,
+        &todo,
+        || (Worker::new(lctx.opts.debug_timings), Vec::new()),
+        |(worker, out): &mut (Worker, Vec<ReportedDiagnostic>), checker, i| {
+            let file = files[i];
+            let set = &lctx.rule_sets[lctx.file_rules[file.path()]];
+            worker.lint_file(checker, program, file, &set.rules, lctx.opts, out);
+            for d in out.drain(..) {
+                let _ = lctx.tx.send(d.to_protocol());
             }
-        }
-    }
+        },
+        |(worker, _)| {
+            if lctx.opts.debug_timings {
+                let mut t = lctx.timings.lock().unwrap();
+                for (name, (d, c)) in worker.timings {
+                    let e = t.entry(name).or_default();
+                    e.0 += d;
+                    e.1 += c;
+                }
+            }
+        },
+    );
     let _ = (lctx.use_case_sensitive, lctx.cwd);
 }
 
@@ -543,20 +544,18 @@ pub fn lint_files(
     rules: &[&'static dyn Rule],
     opts: &Options,
 ) -> Vec<ReportedDiagnostic> {
-    let next = AtomicUsize::new(0);
     let all: Mutex<Vec<ReportedDiagnostic>> = Mutex::new(Vec::new());
-    program.for_each_checker_parallel(|_idx, checker| {
-        let mut worker = Worker::new(false);
-        let mut out = Vec::new();
-        loop {
-            let i = next.fetch_add(1, Ordering::Relaxed);
-            if i >= files.len() {
-                break;
-            }
-            worker.lint_file(checker, program, files[i], rules, opts, &mut out);
-        }
-        all.lock().unwrap().extend(out);
-    });
+    let todo: Vec<usize> = (0..files.len()).collect();
+    crate::sched::for_each_file(
+        program,
+        files,
+        &todo,
+        || (Worker::new(false), Vec::new()),
+        |(worker, out): &mut (Worker, Vec<ReportedDiagnostic>), checker, i| {
+            worker.lint_file(checker, program, files[i], rules, opts, out);
+        },
+        |(_, out)| all.lock().unwrap().extend(out),
+    );
     all.into_inner().unwrap()
 }
 
