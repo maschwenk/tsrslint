@@ -28,5 +28,9 @@ rustc-hash = "2"
 regex = "1"
 mimalloc = "0.1.52"
 
+[features]
+# Allocation profile (tsrs_core/alloc-profile); replaces the mimalloc global allocator with tsrs's counting one.
+alloc-profile = ["tsrs_core/alloc-profile"]
+
 [dev-dependencies]
 tsrs_parser = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-checker-index" }

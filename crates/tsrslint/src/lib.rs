@@ -3,6 +3,7 @@
 //! oxlint can use it as a drop-in `tsgolint` binary through `OXLINT_TSGOLINT_PATH`.
 
 pub mod linter;
+mod memstats;
 pub mod overlayfs;
 pub mod protocol;
 pub mod rule;

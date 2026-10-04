@@ -350,6 +350,7 @@ dependencies = [
  "indexmap",
  "libc",
  "memchr",
+ "mimalloc",
  "rustc-hash",
 ]
 

@@ -136,6 +136,7 @@ pub fn run(
     opts: &Options,
     log: &dyn Fn(String),
 ) -> Result<(), String> {
+    crate::memstats::mark("run start");
     let fs = base_fs(&payload);
     let host: &'static ParseHost = Box::leak(Box::new(ParseHost {
         fs: fs.clone(),
@@ -189,6 +190,7 @@ pub fn run(
     let resolver = TsConfigResolver::new(host, ext_cache);
     let threads = std::thread::available_parallelism().map_or(4, |n| n.get());
     let assignment = resolver.resolve_all(&files, threads);
+    crate::memstats::mark("files assigned to configs");
     let mut programs: Vec<(String, Vec<String>)> = Vec::new();
     let mut program_index: FxHashMap<String, usize> = FxHashMap::default();
     let mut unmatched: Vec<String> = Vec::new();
@@ -290,7 +292,9 @@ pub fn run(
             ));
             break;
         }
+        crate::memstats::mark("program built and bound");
         lint_program(program, &source_files, &payload, &ctx);
+        crate::memstats::mark("program linted");
     }
 
     if result.is_ok() && !unmatched.is_empty() {
@@ -328,7 +332,9 @@ pub fn run(
             .copied()
             .filter(|sf| wanted.contains_key(sf.path()))
             .collect();
+        crate::memstats::mark("inferred program built");
         lint_program(program, &source_files, &payload, &ctx);
+        crate::memstats::mark("inferred program linted");
     }
 
     drop(tx);
