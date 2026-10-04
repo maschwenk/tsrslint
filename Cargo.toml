@@ -8,16 +8,17 @@ edition = "2021"
 license = "MIT"
 
 # tsrs (the Rust port of the TypeScript 7 checker) supplies the program, binder and type checker.
-# Branch `lint-api` only widens the visibility of a few checker methods that lint rules need.
+# Branch `claude/lint-exports` is tsrs main plus the visibility changes lint rules need (tsrs PR #43); switch to
+# `main` once that PR is merged.
 [workspace.dependencies]
-tsrs_core = { git = "https://github.com/maschwenk/tsrs", branch = "lint-api" }
-tsrs_ast = { git = "https://github.com/maschwenk/tsrs", branch = "lint-api" }
-tsrs_scanner = { git = "https://github.com/maschwenk/tsrs", branch = "lint-api" }
-tsrs_checker = { git = "https://github.com/maschwenk/tsrs", branch = "lint-api" }
-tsrs_compiler = { git = "https://github.com/maschwenk/tsrs", branch = "lint-api" }
-tsrs_tsoptions = { git = "https://github.com/maschwenk/tsrs", branch = "lint-api" }
-tsrs_vfs = { git = "https://github.com/maschwenk/tsrs", branch = "lint-api" }
-tsrs_diagnostics = { git = "https://github.com/maschwenk/tsrs", branch = "lint-api" }
+tsrs_core = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-exports" }
+tsrs_ast = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-exports" }
+tsrs_scanner = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-exports" }
+tsrs_checker = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-exports" }
+tsrs_compiler = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-exports" }
+tsrs_tsoptions = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-exports" }
+tsrs_vfs = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-exports" }
+tsrs_diagnostics = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-exports" }
 
 [profile.release]
 opt-level = 3
@@ -31,3 +32,4 @@ panic = "unwind"
 inherits = "release"
 lto = "fat"
 codegen-units = 1
+
