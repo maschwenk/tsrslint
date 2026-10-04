@@ -131,7 +131,10 @@ impl TsConfigResolver {
         }
         let (parsed, errors) = tsoptions::get_parsed_command_line_of_config_file(
             config_file_name,
-            Some(&CompilerOptions::default()),
+            Some(&CompilerOptions {
+                checkers: crate::sched::checkers(),
+                ..Default::default()
+            }),
             None,
             self.host,
             Some(self.ext_cache),

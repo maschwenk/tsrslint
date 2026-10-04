@@ -7,5 +7,6 @@ pub mod overlayfs;
 pub mod protocol;
 pub mod rule;
 pub mod rules;
+mod sched;
 pub mod tsconfig;
 pub mod utils;
