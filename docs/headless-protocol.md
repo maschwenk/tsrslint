@@ -143,4 +143,9 @@ no ordering by file). oxlint parses incrementally and stops at the first malform
 4. **Errors**: an unknown rule name makes tsgolint panic (non-zero exit, Go stack trace on stderr); a file missing
    from the program it was assigned to panics too.
 
-tsrslint implements all of the above except the Go profiling flags (accepted and ignored).
+tsrslint implements all of the above except the Go profiling flags (accepted and ignored) and, for speed, the
+checker scheduling: each checker lints the files tsrs's import-graph locality assignment gives it, a checker that runs
+out takes not-yet-started files from the busiest one, and programs get 6 checkers on machines with 8 or more hardware
+threads (`crates/tsrslint/src/sched.rs`; `TSRSLINT_CHECKERS`, `TSRSLINT_SCHEDULE=locality`,
+`TSRSLINT_CHECKER_STATS=1`). The diagnostics are the same; with another checker count a few printed type labels can
+list the members of an object-literal union in another order.
