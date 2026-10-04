@@ -500,36 +500,38 @@ fn lint_program(
     lctx: &LintCtx,
 ) {
     report_typescript_diagnostics(program, files, payload, lctx.tx);
-    let next = AtomicUsize::new(0);
-    // linter.go makeCheckerWorkloadQueue: one worker per checker; all checkers pull from one file queue.
-    program.for_each_checker_parallel(|_idx, checker| {
-        let mut worker = Worker::new(lctx.opts.debug_timings);
-        let mut out: Vec<ReportedDiagnostic> = Vec::new();
-        loop {
-            let i = next.fetch_add(1, Ordering::Relaxed);
-            if i >= files.len() {
-                break;
-            }
-            let file = files[i];
-            let set = lctx
-                .file_rules
-                .get(file.path())
-                .map(|&i| &lctx.rule_sets[i]);
-            let Some(set) = set else { continue };
-            worker.lint_file(checker, program, file, &set.rules, lctx.opts, &mut out);
-            for d in out.drain(..) {
-                let _ = lctx.tx.send(d.to_protocol());
-            }
+    // Each file goes to the checker tsrs assigned it (import-graph locality), not to whichever checker is free:
+    // with a shared queue every checker ends up resolving the types of nearly every module.
+    let workers: Mutex<Vec<(Worker, Vec<ReportedDiagnostic>)>> = Mutex::new(Vec::new());
+    program.for_each_checker_group(files, |checker, _i, file| {
+        let Some(set) = lctx
+            .file_rules
+            .get(file.path())
+            .map(|&i| &lctx.rule_sets[i])
+        else {
+            return;
+        };
+        let (mut worker, mut out) = workers
+            .lock()
+            .unwrap()
+            .pop()
+            .unwrap_or_else(|| (Worker::new(lctx.opts.debug_timings), Vec::new()));
+        worker.lint_file(checker, program, file, &set.rules, lctx.opts, &mut out);
+        for d in out.drain(..) {
+            let _ = lctx.tx.send(d.to_protocol());
         }
-        if lctx.opts.debug_timings {
-            let mut t = lctx.timings.lock().unwrap();
+        workers.lock().unwrap().push((worker, out));
+    });
+    if lctx.opts.debug_timings {
+        let mut t = lctx.timings.lock().unwrap();
+        for (worker, _) in workers.into_inner().unwrap() {
             for (name, (d, c)) in worker.timings {
                 let e = t.entry(name).or_default();
                 e.0 += d;
                 e.1 += c;
             }
         }
-    });
+    }
     let _ = (lctx.use_case_sensitive, lctx.cwd);
 }
 
