@@ -1,7 +1,6 @@
 // Port of internal/rules/consistent_type_exports/consistent_type_exports.go.
 
-use std::collections::HashSet;
-
+use rustc_hash::FxHashSet;
 use tsrs_ast::{self as ast, Kind, Node, SourceFile, Symbol, SymbolFlags};
 use tsrs_checker::Checker;
 use tsrs_core::P;
@@ -47,10 +46,8 @@ struct AnalyzedNamedExport {
 }
 
 /// Returns (is_type, resolved).
-// P<Symbol> hashes by identity, like Go's map[*ast.Symbol]bool.
-#[allow(clippy::mutable_key_type)]
 fn is_symbol_type_based(c: &mut Checker, mut symbol: Option<P<Symbol>>) -> (bool, bool) {
-    let mut visited: HashSet<P<Symbol>> = HashSet::new();
+    let mut visited: FxHashSet<P<Symbol>> = FxHashSet::default();
     while let Some(s) = symbol {
         if !visited.insert(s) {
             break;
@@ -109,7 +106,9 @@ fn get_export_specifier_text(source_file: P<SourceFile>, specifier_node: P<Node>
     if specifier.is_type_only() {
         return strip_leading_type_keyword(text);
     }
-    let local = specifier.property_name().unwrap_or(specifier.name());
+    let local = specifier
+        .property_name()
+        .unwrap_or_else(|| specifier.name());
     let exported = specifier.name();
     let local_text = get_node_text(source_file, local).trim();
     let exported_text = get_node_text(source_file, exported).trim();
@@ -267,7 +266,9 @@ impl Visitor {
                 report.type_texts.push(specifier_text);
                 continue;
             }
-            let name_node = specifier.property_name().unwrap_or(specifier.name());
+            let name_node = specifier
+                .property_name()
+                .unwrap_or_else(|| specifier.name());
             let symbol = ctx.checker.get_symbol_at_location_exported(name_node);
             let (is_type, resolved) = is_symbol_type_based(ctx.checker, symbol);
             if !resolved {

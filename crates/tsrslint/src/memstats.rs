@@ -59,7 +59,7 @@ fn rusage() -> (f64, f64, i64) {
     }
     let mut ru = Rusage::default();
     // SAFETY: getrusage(RUSAGE_SELF) fills the struct, laid out as `struct rusage` on 64-bit macOS and Linux.
-    if unsafe { getrusage(0, &mut ru) } != 0 {
+    if unsafe { getrusage(0, &raw mut ru) } != 0 {
         return (0.0, 0.0, 0);
     }
     let s = |t: &Timeval| t.sec as f64 + t.usec as f64 * 1e-6;

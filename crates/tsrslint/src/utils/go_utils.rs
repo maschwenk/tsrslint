@@ -1,6 +1,5 @@
 //! Ports of internal/utils/utils.go helpers, added as rules need them.
 
-#[allow(unused_imports)]
 use super::*;
 use tsrs_ast::CommentRange;
 use tsrs_core::TextRange;

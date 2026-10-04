@@ -4,8 +4,7 @@
 pub(crate) mod regexp2_syntax;
 mod regexp2_tables;
 
-use std::collections::HashSet;
-
+use rustc_hash::FxHashSet;
 use tsrs_ast::{self as ast, Kind, Node, NodeFlags, Symbol};
 use tsrs_checker::Type;
 use tsrs_core::P;
@@ -180,12 +179,10 @@ fn definitely_does_not_contain_global_flag(node: P<Node>) -> bool {
     !flags.text().contains('g')
 }
 
-// P<Symbol> hashes by identity, like Go's map[*ast.Symbol].
-#[allow(clippy::mutable_key_type)]
 fn get_static_argument_value(
     ctx: &mut Ctx,
     node: P<Node>,
-    visited: &mut HashSet<P<Symbol>>,
+    visited: &mut FxHashSet<P<Symbol>>,
 ) -> StaticArgumentValue {
     use StaticArgumentValueKind as K;
     let node = ast::skip_parentheses(node);
@@ -305,8 +302,6 @@ impl RuleVisitor for Visitor {
     fn listeners(&self) -> &[Listener] {
         LISTENERS
     }
-    // P<Symbol> hashes by identity, like Go's map[*ast.Symbol].
-    #[allow(clippy::mutable_key_type)]
     fn visit(&mut self, ctx: &mut Ctx, _l: Listener, node: P<Node>) {
         let args = node.arguments();
         if args.len() != 1 {
@@ -327,7 +322,8 @@ impl RuleVisitor for Visitor {
             return;
         }
         let argument_node = args[0];
-        let static_argument = get_static_argument_value(ctx, argument_node, &mut HashSet::new());
+        let static_argument =
+            get_static_argument_value(ctx, argument_node, &mut FxHashSet::default());
         if static_argument.kind == StaticArgumentValueKind::RegExp
             && static_argument.reg_exp_flags.contains('g')
         {

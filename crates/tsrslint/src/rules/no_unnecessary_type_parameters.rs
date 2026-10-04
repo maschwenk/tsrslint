@@ -1,6 +1,4 @@
 // Port of internal/rules/no_unnecessary_type_parameters/no_unnecessary_type_parameters.go.
-// P<Symbol>/P<Type> hash by identity; their interior mutability does not affect Hash/Eq.
-#![allow(clippy::mutable_key_type)]
 
 use rustc_hash::{FxHashMap, FxHashSet};
 use tsrs_ast::{self as ast, Kind, Node, Symbol};

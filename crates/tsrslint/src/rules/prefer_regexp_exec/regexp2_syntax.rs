@@ -5,14 +5,7 @@
 //! whether a parse error is reported (options stack, group stack, current unit, capture slots and names);
 //! the regex tree and character sets themselves are not built.
 
-// Kept structurally parallel to parser.go rather than idiomatic.
-#![allow(
-    clippy::collapsible_match,
-    clippy::if_same_then_else,
-    clippy::only_used_in_recursion
-)]
-
-use std::collections::{HashMap, HashSet};
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use super::regexp2_tables as tables;
 
@@ -224,10 +217,10 @@ struct Parser {
     current_pos: isize,
     options: u32,
     options_stack: Vec<u32>,
-    caps: HashMap<i64, isize>,
+    caps: FxHashMap<i64, isize>,
     capcount: i64,
     captop: i64,
-    capnames: Option<HashMap<String, i64>>,
+    capnames: Option<FxHashMap<String, i64>>,
     autocap: i64,
     ignore_next_paren: bool,
     maintain_capture_order: bool,
@@ -254,7 +247,7 @@ impl Parser {
 
     fn note_capture_name(&mut self, name: String, pos: isize) -> Result<()> {
         if self.capnames.is_none() {
-            self.capnames = Some(HashMap::new());
+            self.capnames = Some(FxHashMap::default());
         }
         if !self.capnames.as_ref().unwrap().contains_key(&name) {
             if self.maintain_capture_order {
@@ -278,13 +271,13 @@ impl Parser {
                 return;
             }
             if self.capnames.is_none() {
-                self.capnames = Some(HashMap::new());
+                self.capnames = Some(FxHashMap::default());
             }
             if !self.use_option_e() {
                 // Unnamed slots get their number as name.
                 let mut slots: Vec<i64> = self.caps.keys().copied().collect();
-                slots.sort();
-                let named: HashSet<i64> =
+                slots.sort_unstable();
+                let named: FxHashSet<i64> =
                     self.capnames.as_ref().unwrap().values().copied().collect();
                 for slot in slots {
                     if !named.contains(&slot) {
@@ -422,6 +415,10 @@ impl Parser {
         self.stack.clear();
     }
 
+    #[expect(
+        clippy::if_same_then_else,
+        reason = "parser.go sets lazy or possessive in the quantifier branches; the port builds no tree"
+    )]
     fn scan_regex(&mut self) -> Result<()> {
         let mut ch: char;
         let mut is_quant = false;
@@ -1163,6 +1160,10 @@ impl Parser {
     }
 
     // Scans contents of [] (not including []'s).
+    #[expect(
+        clippy::only_used_in_recursion,
+        reason = "parser.go signature: case_insensitive only shapes the char set, which the port does not build"
+    )]
     fn scan_char_set(&mut self, case_insensitive: bool, scan_only: bool) -> Result<()> {
         let mut ch: char;
         let mut ch_prev = '\0';
@@ -1715,7 +1716,7 @@ pub(crate) fn compiles_ecmascript(pattern: &str) -> bool {
         current_pos: 0,
         options,
         options_stack: Vec::new(),
-        caps: HashMap::new(),
+        caps: FxHashMap::default(),
         capcount: 0,
         captop: 0,
         capnames: None,

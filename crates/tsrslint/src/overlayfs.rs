@@ -59,7 +59,7 @@ impl FS for OverlayFS {
         let mut entries = self.base.get_accessible_entries(path);
         for k in self.files.keys() {
             if tspath::get_directory_path(k) == path.trim_end_matches('/') {
-                let name = tspath::get_base_file_name(k).to_string();
+                let name = tspath::get_base_file_name(k);
                 if !entries.files.contains(&name) {
                     entries.files.push(name);
                 }

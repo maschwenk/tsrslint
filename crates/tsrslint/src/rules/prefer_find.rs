@@ -1,7 +1,8 @@
 // Port of internal/rules/prefer_find/prefer_find.go.
 
-use std::collections::HashSet;
+use std::fmt::Write;
 
+use rustc_hash::FxHashSet;
 use tsrs_ast::{self as ast, Kind, Node, NodeFlags, Symbol};
 use tsrs_checker::Type;
 use tsrs_core::P;
@@ -138,7 +139,7 @@ impl BigInt {
         let mut iter = self.limbs.iter().rev();
         out.push_str(&iter.next().unwrap().to_string());
         for limb in iter {
-            out.push_str(&format!("{limb:09}"));
+            let _ = write!(out, "{limb:09}");
         }
         out
     }
@@ -328,12 +329,10 @@ fn get_const_initializer(symbol: Option<P<Symbol>>) -> Option<P<Node>> {
     decl.initializer()
 }
 
-// P<Symbol> hashes by identity, like Go's map[*ast.Symbol].
-#[allow(clippy::mutable_key_type)]
 fn get_static_value(
     ctx: &mut Ctx,
     node: P<Node>,
-    visited: &mut HashSet<P<Symbol>>,
+    visited: &mut FxHashSet<P<Symbol>>,
 ) -> Option<StaticValue> {
     let node = ast::skip_parentheses(node);
     match node.kind() {
@@ -415,7 +414,8 @@ fn is_static_member_access_of_value(ctx: &mut Ctx, node: P<Node>, value: &str) -
     }
     if ast::is_element_access_expression(node) {
         let argument = node.as_element_access_expression().argument_expression;
-        let Some(property_value) = get_static_value(ctx, argument, &mut HashSet::new()) else {
+        let Some(property_value) = get_static_value(ctx, argument, &mut FxHashSet::default())
+        else {
             return false;
         };
         return static_value_to_property_name(&property_value).is_some_and(|n| n == value);
@@ -507,7 +507,7 @@ fn get_object_if_array_at_zero_expression(ctx: &mut Ctx, node: P<Node>) -> Optio
     if !is_static_member_access_of_value(ctx, callee, "at") {
         return None;
     }
-    let at_argument_value = get_static_value(ctx, args[0], &mut HashSet::new());
+    let at_argument_value = get_static_value(ctx, args[0], &mut FxHashSet::default());
     if at_argument_value.is_some_and(|v| is_treated_as_zero_by_array_at(&v)) {
         return callee.expression();
     }
@@ -522,7 +522,7 @@ fn is_member_access_of_zero(ctx: &mut Ctx, node: P<Node>) -> bool {
         return false;
     }
     let argument = node.as_element_access_expression().argument_expression;
-    get_static_value(ctx, argument, &mut HashSet::new())
+    get_static_value(ctx, argument, &mut FxHashSet::default())
         .is_some_and(|v| is_treated_as_zero_by_member_access(&v))
 }
 
@@ -575,7 +575,7 @@ fn report_prefer_find(
     ctx: &mut Ctx,
     node: P<Node>,
     array_node: P<Node>,
-    filter_expressions: Vec<FilterExpressionData>,
+    filter_expressions: &[FilterExpressionData],
 ) {
     let Some(start) = find_array_element_access_start(ctx, array_node, node) else {
         return;
@@ -583,7 +583,7 @@ fn report_prefer_find(
     let remove_fix = ctx.fix_remove_range(start, node.end());
     ctx.report_node_with_suggestions(node, build_prefer_find_message(), |ctx| {
         let mut fixes: Vec<RuleFix> = Vec::with_capacity(filter_expressions.len() + 1);
-        for filter_expression in &filter_expressions {
+        for filter_expression in filter_expressions {
             let replacement = if filter_expression.is_bracket_syntax_for_filter {
                 "\"find\""
             } else {
@@ -635,7 +635,7 @@ impl RuleVisitor for Visitor {
                 if filter_expressions.is_empty() {
                     return;
                 }
-                report_prefer_find(ctx, node, object, filter_expressions);
+                report_prefer_find(ctx, node, object, &filter_expressions);
             }
             Listener::Enter(Kind::ElementAccessExpression) => {
                 if !is_member_access_of_zero(ctx, node) {
@@ -646,7 +646,7 @@ impl RuleVisitor for Visitor {
                 if filter_expressions.is_empty() {
                     return;
                 }
-                report_prefer_find(ctx, node, object, filter_expressions);
+                report_prefer_find(ctx, node, object, &filter_expressions);
             }
             _ => {}
         }

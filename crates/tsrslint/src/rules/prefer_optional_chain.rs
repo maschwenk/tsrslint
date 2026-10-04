@@ -29,7 +29,10 @@ fn build_optional_chain_suggest_message() -> RuleMessage {
 enum OperandType {
     Invalid,
     Plain,
-    #[allow(dead_code)] // never constructed upstream either
+    #[expect(
+        dead_code,
+        reason = "tsgolint never constructs OperandTypeNotEqualNull either"
+    )]
     NotEqualNull,
     NotStrictEqualNull,
     NotStrictEqualUndef,
@@ -735,13 +738,13 @@ fn src(ctx: &Ctx, pos: i32, end: i32) -> &'static str {
     &ctx.text()[pos as usize..end as usize]
 }
 
-fn unsafe_fixes(opts: &PreferOptionalChainOptions) -> bool {
+fn unsafe_fixes(opts: PreferOptionalChainOptions) -> bool {
     opts.allow_potentially_unsafe_fixes_that_modify_the_return_type_i_know_what_im_doing
 }
 
 impl ChainProcessor {
     fn unsafe_ok(&self) -> bool {
-        unsafe_fixes(&self.opts)
+        unsafe_fixes(self.opts)
     }
 
     fn get_type_info(&mut self, ctx: &mut Ctx, node: P<Node>) -> Rc<TypeInfo> {

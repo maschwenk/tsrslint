@@ -1,6 +1,4 @@
 // Port of internal/rules/prefer_readonly/prefer_readonly.go.
-// P<Type> hashes by identity; its interior mutability does not affect Hash/Eq.
-#![allow(clippy::mutable_key_type)]
 
 use rustc_hash::{FxHashMap, FxHashSet};
 use tsrs_ast::{self as ast, Kind, ModifierFlags, Node, SymbolFlags};

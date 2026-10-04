@@ -1,8 +1,5 @@
 // Port of internal/rules/prefer_nullish_coalescing (prefer_nullish_coalescing.go, options.go).
 
-// P<_> hashes and compares by identity, like the Go pointer-keyed sets this ports.
-#![allow(clippy::mutable_key_type)]
-
 use rustc_hash::FxHashSet;
 use tsrs_ast::{self as ast, Kind, Node};
 use tsrs_checker::{Type, TypeFlags};

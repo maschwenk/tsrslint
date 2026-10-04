@@ -1,6 +1,5 @@
 //! Port of internal/utils/type_matches_specifier.go.
 
-#[allow(unused_imports)]
 use super::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]

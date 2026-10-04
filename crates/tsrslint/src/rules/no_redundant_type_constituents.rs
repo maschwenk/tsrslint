@@ -1,5 +1,7 @@
 // Port of internal/rules/no_redundant_type_constituents/no_redundant_type_constituents.go.
 
+use std::fmt::Write;
+
 use tsrs_ast::{self as ast, Kind, Node};
 use tsrs_checker::{Checker, Type, TypeFlags};
 use tsrs_core::P;
@@ -58,13 +60,13 @@ fn go_quote(s: &str) -> String {
             '\t' => out.push_str("\\t"),
             '\u{b}' => out.push_str("\\v"),
             c if (c as u32) < 0x20 || c as u32 == 0x7f => {
-                out.push_str(&format!("\\x{:02x}", c as u32))
+                let _ = write!(out, "\\x{:02x}", c as u32);
             }
             c if c.is_control() => {
                 if (c as u32) < 0x10000 {
-                    out.push_str(&format!("\\u{:04x}", c as u32))
+                    let _ = write!(out, "\\u{:04x}", c as u32);
                 } else {
-                    out.push_str(&format!("\\U{:08x}", c as u32))
+                    let _ = write!(out, "\\U{:08x}", c as u32);
                 }
             }
             c => out.push(c),
