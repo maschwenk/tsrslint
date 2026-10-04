@@ -144,7 +144,7 @@ pub fn run(
     use_sparse_id_pages();
     let fs = base_fs(payload);
     let host: &'static ParseHost = Box::leak(Box::new(ParseHost {
-        fs: fs.clone(),
+        fs: Arc::clone(&fs),
         cwd: cwd.to_string(),
     }));
     let ext_cache: &'static ExtendedConfigCache = Box::leak(Box::default());
@@ -259,7 +259,7 @@ pub fn run(
         let compiler_host = shared_declarations_host(
             new_compiler_host(
                 &dir,
-                fs.clone(),
+                Arc::clone(&fs),
                 &bundled::lib_path(),
                 Some(Arc::new(ProgramExtCache(ext_cache))),
                 None,
@@ -313,7 +313,7 @@ pub fn run(
         let compiler_host = shared_declarations_host(
             new_compiler_host(
                 cwd,
-                fs.clone(),
+                Arc::clone(&fs),
                 &bundled::lib_path(),
                 Some(Arc::new(ProgramExtCache(ext_cache))),
                 None,
@@ -355,7 +355,7 @@ pub fn run(
     result?;
 
     if opts.debug_timings {
-        let rules = timings
+        let mut rules: Vec<protocol::RuleTiming> = timings
             .into_inner()
             .unwrap()
             .into_iter()
@@ -365,6 +365,12 @@ pub fn run(
                 calls,
             })
             .collect();
+        // RuleTimingStore.Collect's order: slowest first, ties by name.
+        rules.sort_by(|a, b| {
+            b.duration
+                .cmp(&a.duration)
+                .then_with(|| a.rule_name.cmp(&b.rule_name))
+        });
         let mut out = std::io::stdout().lock();
         protocol::write_message(
             &mut out,
@@ -606,6 +612,10 @@ fn lint_program(
         |(worker, _)| {
             if lctx.opts.debug_timings {
                 let mut t = lctx.timings.lock().unwrap();
+                #[expect(
+                    clippy::iter_over_hash_type,
+                    reason = "adding to per-rule sums gives the same totals in any order, and the timing output is sorted before it is written"
+                )]
                 for (name, (d, c)) in worker.timings {
                     let e = t.entry(name).or_default();
                     e.0 += d;

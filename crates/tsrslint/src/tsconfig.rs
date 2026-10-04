@@ -164,14 +164,14 @@ impl TsConfigResolver {
     /// `resolve_all`'s threads all start on the same few configs, and each parse walks the include globs' whole
     /// directory tree.
     pub fn load(&self, config_file_name: &str) -> Arc<ParsedConfig> {
-        let cell = self
-            .configs
-            .lock()
-            .unwrap()
-            .entry(config_file_name.to_string())
-            .or_default()
-            .clone();
-        cell.get_or_init(|| {
+        let cell = Arc::clone(
+            self.configs
+                .lock()
+                .unwrap()
+                .entry(config_file_name.to_string())
+                .or_default(),
+        );
+        Arc::clone(cell.get_or_init(|| {
             let (parsed, errors) = config_pool().install(|| {
                 tsoptions::get_parsed_command_line_of_config_file(
                     config_file_name,
@@ -188,8 +188,7 @@ impl TsConfigResolver {
                 config: parsed.map(P::new),
                 errors,
             })
-        })
-        .clone()
+        }))
     }
 
     /// find_tsconfig.go findConfigWithReferences: breadth-first over the config and its project

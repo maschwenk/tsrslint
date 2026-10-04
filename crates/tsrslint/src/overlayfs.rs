@@ -57,12 +57,18 @@ impl FS for OverlayFS {
     }
     fn get_accessible_entries(&self, path: &str) -> Entries {
         let mut entries = self.base.get_accessible_entries(path);
-        for k in self.files.keys() {
-            if tspath::get_directory_path(k) == path.trim_end_matches('/') {
-                let name = tspath::get_base_file_name(k);
-                if !entries.files.contains(&name) {
-                    entries.files.push(name);
-                }
+        let dir = path.trim_end_matches('/');
+        // Sorted, not in hash order: a tsconfig's include globs list files in entry order.
+        let mut names: Vec<String> = self
+            .files
+            .keys()
+            .filter(|k| tspath::get_directory_path(k) == dir)
+            .map(|k| tspath::get_base_file_name(k))
+            .collect();
+        names.sort_unstable();
+        for name in names {
+            if !entries.files.contains(&name) {
+                entries.files.push(name);
             }
         }
         entries
