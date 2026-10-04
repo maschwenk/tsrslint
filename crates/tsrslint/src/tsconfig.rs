@@ -3,8 +3,9 @@
 // findOrCreateDefaultConfiguredProjectForOpenScriptInfo.
 
 use std::collections::VecDeque;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 
+use rayon::prelude::*;
 use rustc_hash::{FxHashMap, FxHashSet};
 use tsrs_core::tspath::{self, Path};
 use tsrs_core::CompilerOptions;
@@ -64,7 +65,8 @@ pub struct ParsedConfig {
 pub struct TsConfigResolver {
     pub host: &'static ParseHost,
     pub ext_cache: &'static ExtendedConfigCache,
-    configs: Mutex<FxHashMap<String, Arc<ParsedConfig>>>,
+    configs: Mutex<FxHashMap<String, Arc<OnceLock<Arc<ParsedConfig>>>>>,
+    directory_configs: Mutex<FxHashMap<String, String>>,
 }
 
 impl TsConfigResolver {
@@ -76,6 +78,7 @@ impl TsConfigResolver {
             host,
             ext_cache,
             configs: Mutex::new(FxHashMap::default()),
+            directory_configs: Mutex::new(FxHashMap::default()),
         }
     }
 
@@ -98,6 +101,9 @@ impl TsConfigResolver {
         skip_search_in_directory_of_file: bool,
     ) -> String {
         let search_path = tspath::get_directory_path(file_name);
+        if !skip_search_in_directory_of_file {
+            return self.config_file_name_of_directory(&search_path);
+        }
         let mut skip_tsconfig = skip_search_in_directory_of_file;
         let mut skip_jsconfig =
             skip_search_in_directory_of_file && !file_name.ends_with("/tsconfig.json");
@@ -124,31 +130,66 @@ impl TsConfigResolver {
         .unwrap_or_default()
     }
 
-    /// Parses (once) and returns a config file.
-    pub fn load(&self, config_file_name: &str) -> Arc<ParsedConfig> {
-        if let Some(c) = self.configs.lock().unwrap().get(config_file_name) {
+    /// `compute_config_file_name` of a file in `directory` without skipping: the nearest tsconfig.json or
+    /// jsconfig.json, stopping at a node_modules directory. Memoized per directory: every linted file asks, and most
+    /// share their directory or its ancestors with others.
+    fn config_file_name_of_directory(&self, directory: &str) -> String {
+        if let Some(c) = self.directory_configs.lock().unwrap().get(directory) {
             return c.clone();
         }
-        let (parsed, errors) = tsoptions::get_parsed_command_line_of_config_file(
-            config_file_name,
-            Some(&CompilerOptions {
-                checkers: crate::sched::checkers(),
-                ..Default::default()
-            }),
-            None,
-            self.host,
-            Some(self.ext_cache),
-        );
-        let entry = Arc::new(ParsedConfig {
-            config: parsed.map(P::new),
-            errors,
-        });
-        self.configs
+        let found = ["tsconfig.json", "jsconfig.json"]
+            .iter()
+            .map(|name| tspath::combine_paths(directory, &[name]))
+            .find(|p| self.fs().file_exists(p));
+        let config = match found {
+            Some(p) => p,
+            None if directory.ends_with("/node_modules") => String::new(),
+            None => {
+                let parent = tspath::get_directory_path(directory);
+                if parent == directory {
+                    String::new()
+                } else {
+                    self.config_file_name_of_directory(&parent)
+                }
+            }
+        };
+        self.directory_configs
+            .lock()
+            .unwrap()
+            .insert(directory.to_string(), config.clone());
+        config
+    }
+
+    /// Parses (once) and returns a config file. Threads asking for a config that is being parsed wait for it:
+    /// `resolve_all`'s threads all start on the same few configs, and each parse walks the include globs' whole
+    /// directory tree.
+    pub fn load(&self, config_file_name: &str) -> Arc<ParsedConfig> {
+        let cell = self
+            .configs
             .lock()
             .unwrap()
             .entry(config_file_name.to_string())
-            .or_insert(entry)
-            .clone()
+            .or_default()
+            .clone();
+        cell.get_or_init(|| {
+            let (parsed, errors) = config_pool().install(|| {
+                tsoptions::get_parsed_command_line_of_config_file(
+                    config_file_name,
+                    Some(&CompilerOptions {
+                        checkers: crate::sched::checkers(),
+                        ..Default::default()
+                    }),
+                    None,
+                    self.host,
+                    Some(self.ext_cache),
+                )
+            });
+            Arc::new(ParsedConfig {
+                config: parsed.map(P::new),
+                errors,
+            })
+        })
+        .clone()
     }
 
     /// find_tsconfig.go findConfigWithReferences: breadth-first over the config and its project
@@ -201,31 +242,56 @@ impl TsConfigResolver {
     /// Returns the tsconfig for `file`, or "" when no configured program contains it.
     pub fn resolve(&self, file: &str) -> String {
         let config = self.compute_config_file_name(file, false);
-        if config.is_empty() {
+        self.resolve_from(file, &config)
+    }
+
+    fn resolve_from(&self, file: &str, nearest_config: &str) -> String {
+        if nearest_config.is_empty() {
             return String::new();
         }
         let path = self.to_path(file);
         let mut visited = FxHashSet::default();
-        self.find_config_with_references(file, &path, &config, &mut visited)
+        self.find_config_with_references(file, &path, nearest_config, &mut visited)
     }
 
-    pub fn resolve_all(&self, files: &[String], threads: usize) -> Vec<String> {
-        let next = std::sync::atomic::AtomicUsize::new(0);
-        let results: Vec<Mutex<String>> = files.iter().map(|_| Mutex::new(String::new())).collect();
-        std::thread::scope(|s| {
-            for _ in 0..threads.max(1) {
-                s.spawn(|| loop {
-                    let i = next.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                    if i >= files.len() {
-                        break;
-                    }
-                    *results[i].lock().unwrap() = self.resolve(&files[i]);
-                });
-            }
+    /// `resolve` for every file. Only the config parses are worth parallelizing: the nearest config of each directory
+    /// is memoized, and once the configs are parsed, assigning a file is a few map lookups, which on many threads
+    /// mostly contend on the caches' locks.
+    pub fn resolve_all(&self, files: &[String]) -> Vec<String> {
+        let nearest: Vec<String> = files
+            .iter()
+            .map(|f| self.compute_config_file_name(f, false))
+            .collect();
+        let mut configs: Vec<&str> = nearest
+            .iter()
+            .filter(|c| !c.is_empty())
+            .map(String::as_str)
+            .collect();
+        configs.sort_unstable();
+        configs.dedup();
+        config_pool().install(|| {
+            configs.par_iter().for_each(|c| {
+                self.load(c);
+            })
         });
-        results
-            .into_iter()
-            .map(|m| m.into_inner().unwrap())
+        files
+            .iter()
+            .zip(&nearest)
+            .map(|(file, config)| self.resolve_from(file, config))
             .collect()
     }
+}
+
+/// Threads for parsing configs. A config parse lists the include globs' directory tree on the current rayon pool;
+/// on macOS, listing directories on more threads than this costs much more system time (kernel lock contention)
+/// for no shorter wall time (the monolith: 5,274 directories).
+fn config_pool() -> &'static rayon::ThreadPool {
+    static POOL: OnceLock<rayon::ThreadPool> = OnceLock::new();
+    POOL.get_or_init(|| {
+        let threads = std::thread::available_parallelism().map_or(4, |n| n.get().min(4));
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(threads)
+            .build()
+            .unwrap()
+    })
 }
