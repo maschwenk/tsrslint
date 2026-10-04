@@ -54,12 +54,16 @@ from `pgo-train.sh` and refuses to run if the two pin different commits or insta
   names the build.
 - Per project: one untimed warm-up run (stock), then N reps (default 3); within a rep the binaries alternate and the
   order flips every rep. Tables report medians.
-- Wall: process wall clock. Peak: max RSS from `wait4` rusage. The JSON also has CPU time (user + sys) per run.
+- Wall: process wall clock. Peak: max RSS from `wait4` rusage. Each run is spawned by a fresh helper interpreter, not
+  by the harness: on Linux a child's `ru_maxrss` starts at the peak RSS of the process it was forked from, and the
+  harness holds over 1 GiB of decoded diagnostics after vscode (the first CI run reported 1.19 GiB for both binaries
+  on xstate and webpack because of it). The JSON also has CPU time (user + sys) per run.
 - Diagnostics: the rule diagnostics (`kind` 0) of each run; internal diagnostics (tsconfig/program errors) are counted
   separately and shown when there are any. A run fails on a non-zero exit, an error frame or the timeout (900 s).
-- Same diagnostics: the multisets of (file, range, rule, message id) of the first good run of each binary are
-  compared; "no: N differ" counts the diagnostics only one of them reports (the JSON has a sample). Every run's key
-  set is hashed too, and the cell says so if it varies between runs of one binary. "text differs" counts diagnostics
+- Same diagnostics: the multisets of (file, range, rule, message id) of the two binaries are compared; "no: N
+  differ" counts the diagnostics only one of them reports (the JSON has a sample). When the runs of one binary report
+  different sets (multi-threaded nondeterminism; seen for stock tsgolint on vscode), each distinct set is kept, the
+  closest stock / tsrslint pair is compared, and the cell says by how many diagnostics that binary's runs differ. "text differs" counts diagnostics
   both report whose text (message, labels) differs: tsrs ports TypeScript 7.1-dev, stock tsgolint 7.0.2002 is built
   on TypeScript 7.0, and the two print some types differently (union member order, `typeof import("…")`). Like
   maschwenk/tsrs's bench, which finds tsgo 7.0.2 and 7.1-dev disagreeing on webpack's type errors, a difference

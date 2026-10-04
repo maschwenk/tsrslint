@@ -25,7 +25,6 @@ import statistics
 import struct
 import subprocess
 import sys
-import threading
 import time
 from pathlib import Path
 
@@ -193,28 +192,37 @@ def diag_full(d: dict) -> str:
     return json.dumps(d, sort_keys=True)
 
 
+# Spawns, times and reaps one measured process, in a fresh interpreter. On Linux a child's ru_maxrss starts from the
+# high-water RSS of the process it was forked from (fork copies the memory map, exec records its peak): spawned from
+# this harness, which holds the decoded diagnostics of earlier runs (over 1 GiB after vscode), every run would report
+# at least the harness's peak. The helper's own peak is ~10 MB.
+MEASURE = r"""
+import json, os, subprocess, sys, threading, time
+argv, cwd, stdin, stdout, stderr, timeout = json.loads(sys.argv[1])
+timed_out = []
+with open(stdin, "rb") as i, open(stdout, "wb") as o, open(stderr, "wb") as e:
+    t0 = time.perf_counter()
+    p = subprocess.Popen(argv, cwd=cwd, stdin=i, stdout=o, stderr=e)
+    timer = threading.Timer(timeout, lambda: (timed_out.append(1), p.kill()))
+    timer.start()
+    _, status, ru = os.wait4(p.pid, 0)
+    wall = time.perf_counter() - t0
+    timer.cancel()
+print(json.dumps({"exit": os.waitstatus_to_exitcode(status), "wall_s": wall, "cpu_s": ru.ru_utime + ru.ru_stime,
+                  "maxrss": ru.ru_maxrss, "timed_out": bool(timed_out)}))
+"""
+
+
 def run_once(exe: Path, cwd: Path, payload: Path, logs: Path, tag: str, timeout: float) -> dict:
     out_path, err_path = logs / f"{tag}.out", logs / f"{tag}.stderr"
     logs.mkdir(parents=True, exist_ok=True)
-    timed_out = threading.Event()
-    with open(payload, "rb") as stdin, open(out_path, "wb") as out, open(err_path, "wb") as err:
-        t0 = time.perf_counter()
-        p = subprocess.Popen([str(exe), "headless"], cwd=cwd, stdin=stdin, stdout=out, stderr=err)
-
-        def kill() -> None:
-            timed_out.set()
-            p.kill()
-
-        timer = threading.Timer(timeout, kill)
-        timer.start()
-        _, status, ru = os.wait4(p.pid, 0)
-        wall = time.perf_counter() - t0
-        timer.cancel()
-    p.returncode = os.waitstatus_to_exitcode(status)  # keep Popen from waiting on a reaped pid
+    spec = json.dumps([[str(exe), "headless"], str(cwd), str(payload), str(out_path), str(err_path), timeout])
+    m = json.loads(subprocess.run([sys.executable, "-c", MEASURE, spec], capture_output=True, text=True,
+                                  check=True).stdout)
     # ru_maxrss: KiB on Linux, bytes on macOS (the number `/usr/bin/time -v` / `-l` print).
-    peak = ru.ru_maxrss * (1 if sys.platform == "darwin" else 1024)
-    r: dict = {"exit": p.returncode, "wall_s": round(wall, 3), "cpu_s": round(ru.ru_utime + ru.ru_stime, 2),
-               "peak_rss_bytes": peak, "timed_out": timed_out.is_set()}
+    peak = m["maxrss"] * (1 if sys.platform == "darwin" else 1024)
+    r: dict = {"exit": m["exit"], "wall_s": round(m["wall_s"], 3), "cpu_s": round(m["cpu_s"], 2),
+               "peak_rss_bytes": peak, "timed_out": m["timed_out"]}
     diags, error = decode(out_path)
     out_path.unlink()  # up to ~100 MB per run; the decoded summary below is what is kept
     rule = [d for d in diags if d.get("kind") == 0]
@@ -224,7 +232,7 @@ def run_once(exe: Path, cwd: Path, payload: Path, logs: Path, tag: str, timeout:
     r["per_rule"] = dict(sorted(collections.Counter(d.get("rule") for d in rule).items()))
     keys = collections.Counter(diag_key(d) for d in diags)
     r["keys_sha"] = hashlib.sha256(repr(sorted(keys.elements())).encode()).hexdigest()[:16]
-    r["ok"] = p.returncode == 0 and error is None and not r["timed_out"]
+    r["ok"] = r["exit"] == 0 and error is None and not r["timed_out"]
     r["_keys"] = keys
     r["_full"] = collections.Counter(diag_full(d) for d in diags)
     if r["internal"]:
@@ -342,15 +350,16 @@ def markdown(result: dict) -> str:
             failed = [c for c, s in (("stock", g), ("tsrslint", t)) if not s["ok_runs"]]
             lines.append(f"{head} **FAILED: {', '.join(failed)}** | | | | | | | | |")
             continue
-        counts = " / ".join("/".join(f"{c:,}" for c in s["diagnostic_counts"]) for s in (g, t))
+        counts = " / ".join("–".join(f"{c:,}" for c in s["diagnostic_counts"][::max(1, len(s["diagnostic_counts"]) - 1)])
+                            for s in (g, t))
         internal = [f"{c} {int(s['internal'])}" for c, s in (("stock", g), ("tsrslint", t)) if s["internal"]]
         if internal:
             counts += f" (internal: {', '.join(internal)})"
         par = pr["parity"]
         same = "yes" if par["same_keys"] else f"**no: {par['keys_differ']:,} differ**"
-        unstable = [c for c, s in (("stock", g), ("tsrslint", t)) if not s["stable_keys"]]
-        if unstable:
-            same += f" (**varies between runs: {', '.join(unstable)}**)"
+        for c, s in (("stock", g), ("tsrslint", t)):
+            if "varies" in s:
+                same += f"; {c}'s runs differ by {s['varies']['keys_differ']:,}"
         speed = g["wall_s"] / t["wall_s"] if g["wall_s"] and t["wall_s"] else None
         mem = t["peak_rss_bytes"] / g["peak_rss_bytes"] if g["peak_rss_bytes"] and t["peak_rss_bytes"] else None
         lines.append(f"{head} {counts} | {same} | {par['text_differs']:,} | {fmt_num(g['wall_s'])} | "
@@ -361,7 +370,7 @@ def markdown(result: dict) -> str:
         "in PGO training: the release binaries' profile is trained on these files (`.github/scripts/pgo-train.sh`), "
         "which flatters tsrslint there; the other projects are held out. diagnostics: rule diagnostics each binary "
         "reports. same diagnostics: both report the same multiset of (file, range, rule, message id); a bold cell is "
-        "a disagreement. text differs: diagnostics both report whose message text differs; expected in small numbers, "
+        "a disagreement. When one binary's runs report different sets (multi-threaded nondeterminism), the closest pair is compared and the cell says by how many diagnostics that binary's runs differ. text differs: diagnostics both report whose message text differs; expected in small numbers, "
         "since tsrs ports TypeScript 7.1-dev and tsgolint 7.0.2002 is built on TypeScript 7.0, which print some types "
         "differently. wall: process wall-clock time. speedup: stock wall / tsrslint wall. peak RSS: maximum resident "
         "set size; memory below 1x = tsrslint uses less.",
@@ -479,8 +488,8 @@ def main() -> None:
                     + (", TIMED OUT" if r["timed_out"] else ""))
                 if not r["ok"]:
                     log(f"  FAILED; stderr: {logs / f'{name}-{c}-{rep}.stderr'}")
-                # The (large) multisets are only needed from the first good run of each binary.
-                if any(x["ok"] for x in runs[c]):
+                # The (large) multisets are only kept for the first good run of each distinct output.
+                if not r["ok"] or any(x["keys_sha"] == r["keys_sha"] and "_keys" in x for x in runs[c]):
                     r.pop("_keys"), r.pop("_full")
                 runs[c].append(r)
                 result["raw"].append({"project": name, "binary": c, "rep": rep,
@@ -488,9 +497,16 @@ def main() -> None:
         pr: dict = {"commit": p["commit"], "lint": p.get("lint", []), "files": n_files,
                     "pgo_training": name in pgo,
                     "stock": summarize(runs["stock"]), "tsrslint": summarize(runs["tsrslint"])}
-        first = {c: next((r for r in runs[c] if r["ok"]), None) for c in runs}
-        if first["stock"] and first["tsrslint"]:
-            pr["parity"] = compare(first["stock"], first["tsrslint"], cwd)
+        # Distinct (file, range, rule, message id) multisets per binary: more than one when its runs disagree
+        # (multi-threaded nondeterminism). Parity is the closest stock / tsrslint pair.
+        outs = {c: [r for r in runs[c] if "_keys" in r] for c in runs}
+        for c in outs:
+            if len(outs[c]) > 1:
+                pr[c]["varies"] = compare(outs[c][0], outs[c][1], cwd)
+                log(f"{name}: {c} runs differ: {pr[c]['varies']['keys_differ']} diagnostics")
+        if outs["stock"] and outs["tsrslint"]:
+            pr["parity"] = min((compare(g, t, cwd) for g in outs["stock"] for t in outs["tsrslint"]),
+                               key=lambda x: x["keys_differ"])
             log(f"{name}: same diagnostics: {pr['parity']['same_keys']} ({pr['parity']['keys_differ']} differ), "
                 f"text differs: {pr['parity']['text_differs']}")
         for c in runs:
