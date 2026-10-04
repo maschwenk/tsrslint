@@ -93,6 +93,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8f42a60cbdf9a97f5d2305f08a87dc4e09308d1276d28c869c684d7777685682"
 
 [[package]]
+name = "libc"
+version = "0.2.190"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce5d3ddc6d3fa000eb1536d85e147bfe31aacaba692ed6a876f95cb7c855be78"
+
+[[package]]
 name = "libmimalloc-sys"
 version = "0.1.49"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -251,8 +257,8 @@ dependencies = [
 
 [[package]]
 name = "tsrs_ast"
-version = "0.2.2"
-source = "git+https://github.com/maschwenk/tsrs?branch=lint-api#60a8d12e60778ff390013642e5c953e25be7e6af"
+version = "0.3.0"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-exports#4da8206f7c4225494464a0c454c7c8f735049924"
 dependencies = [
  "bitflags",
  "hashbrown",
@@ -264,8 +270,8 @@ dependencies = [
 
 [[package]]
 name = "tsrs_astnav"
-version = "0.2.2"
-source = "git+https://github.com/maschwenk/tsrs?branch=lint-api#60a8d12e60778ff390013642e5c953e25be7e6af"
+version = "0.3.0"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-exports#4da8206f7c4225494464a0c454c7c8f735049924"
 dependencies = [
  "tsrs_ast",
  "tsrs_core",
@@ -274,8 +280,8 @@ dependencies = [
 
 [[package]]
 name = "tsrs_binder"
-version = "0.2.2"
-source = "git+https://github.com/maschwenk/tsrs?branch=lint-api#60a8d12e60778ff390013642e5c953e25be7e6af"
+version = "0.3.0"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-exports#4da8206f7c4225494464a0c454c7c8f735049924"
 dependencies = [
  "bitflags",
  "rustc-hash",
@@ -287,8 +293,8 @@ dependencies = [
 
 [[package]]
 name = "tsrs_checker"
-version = "0.2.2"
-source = "git+https://github.com/maschwenk/tsrs?branch=lint-api#60a8d12e60778ff390013642e5c953e25be7e6af"
+version = "0.3.0"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-exports#4da8206f7c4225494464a0c454c7c8f735049924"
 dependencies = [
  "bitflags",
  "hashbrown",
@@ -311,8 +317,8 @@ dependencies = [
 
 [[package]]
 name = "tsrs_compiler"
-version = "0.2.2"
-source = "git+https://github.com/maschwenk/tsrs?branch=lint-api#60a8d12e60778ff390013642e5c953e25be7e6af"
+version = "0.3.0"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-exports#4da8206f7c4225494464a0c454c7c8f735049924"
 dependencies = [
  "bitflags",
  "indexmap",
@@ -327,26 +333,30 @@ dependencies = [
  "tsrs_module",
  "tsrs_modulespecifiers",
  "tsrs_parser",
+ "tsrs_printer",
  "tsrs_scanner",
+ "tsrs_sourcemap",
+ "tsrs_transformers",
  "tsrs_tsoptions",
  "tsrs_vfs",
 ]
 
 [[package]]
 name = "tsrs_core"
-version = "0.2.2"
-source = "git+https://github.com/maschwenk/tsrs?branch=lint-api#60a8d12e60778ff390013642e5c953e25be7e6af"
+version = "0.3.0"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-exports#4da8206f7c4225494464a0c454c7c8f735049924"
 dependencies = [
  "bitflags",
  "indexmap",
+ "libc",
  "memchr",
  "rustc-hash",
 ]
 
 [[package]]
 name = "tsrs_declarations"
-version = "0.2.2"
-source = "git+https://github.com/maschwenk/tsrs?branch=lint-api#60a8d12e60778ff390013642e5c953e25be7e6af"
+version = "0.3.0"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-exports#4da8206f7c4225494464a0c454c7c8f735049924"
 dependencies = [
  "rustc-hash",
  "tsrs_ast",
@@ -356,13 +366,14 @@ dependencies = [
  "tsrs_modulespecifiers",
  "tsrs_printer",
  "tsrs_scanner",
+ "tsrs_transformers",
  "tsrs_tsoptions",
 ]
 
 [[package]]
 name = "tsrs_diagnostics"
-version = "0.2.2"
-source = "git+https://github.com/maschwenk/tsrs?branch=lint-api#60a8d12e60778ff390013642e5c953e25be7e6af"
+version = "0.3.0"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-exports#4da8206f7c4225494464a0c454c7c8f735049924"
 dependencies = [
  "rustc-hash",
  "tsrs_core",
@@ -370,8 +381,8 @@ dependencies = [
 
 [[package]]
 name = "tsrs_module"
-version = "0.2.2"
-source = "git+https://github.com/maschwenk/tsrs?branch=lint-api#60a8d12e60778ff390013642e5c953e25be7e6af"
+version = "0.3.0"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-exports#4da8206f7c4225494464a0c454c7c8f735049924"
 dependencies = [
  "bitflags",
  "indexmap",
@@ -384,8 +395,8 @@ dependencies = [
 
 [[package]]
 name = "tsrs_modulespecifiers"
-version = "0.2.2"
-source = "git+https://github.com/maschwenk/tsrs?branch=lint-api#60a8d12e60778ff390013642e5c953e25be7e6af"
+version = "0.3.0"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-exports#4da8206f7c4225494464a0c454c7c8f735049924"
 dependencies = [
  "regex",
  "rustc-hash",
@@ -397,8 +408,8 @@ dependencies = [
 
 [[package]]
 name = "tsrs_parser"
-version = "0.2.2"
-source = "git+https://github.com/maschwenk/tsrs?branch=lint-api#60a8d12e60778ff390013642e5c953e25be7e6af"
+version = "0.3.0"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-exports#4da8206f7c4225494464a0c454c7c8f735049924"
 dependencies = [
  "bitflags",
  "rustc-hash",
@@ -410,8 +421,8 @@ dependencies = [
 
 [[package]]
 name = "tsrs_printer"
-version = "0.2.2"
-source = "git+https://github.com/maschwenk/tsrs?branch=lint-api#60a8d12e60778ff390013642e5c953e25be7e6af"
+version = "0.3.0"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-exports#4da8206f7c4225494464a0c454c7c8f735049924"
 dependencies = [
  "bitflags",
  "indexmap",
@@ -419,12 +430,13 @@ dependencies = [
  "tsrs_ast",
  "tsrs_core",
  "tsrs_scanner",
+ "tsrs_sourcemap",
 ]
 
 [[package]]
 name = "tsrs_pseudochecker"
-version = "0.2.2"
-source = "git+https://github.com/maschwenk/tsrs?branch=lint-api#60a8d12e60778ff390013642e5c953e25be7e6af"
+version = "0.3.0"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-exports#4da8206f7c4225494464a0c454c7c8f735049924"
 dependencies = [
  "tsrs_ast",
  "tsrs_core",
@@ -432,8 +444,8 @@ dependencies = [
 
 [[package]]
 name = "tsrs_scanner"
-version = "0.2.2"
-source = "git+https://github.com/maschwenk/tsrs?branch=lint-api#60a8d12e60778ff390013642e5c953e25be7e6af"
+version = "0.3.0"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-exports#4da8206f7c4225494464a0c454c7c8f735049924"
 dependencies = [
  "bitflags",
  "memchr",
@@ -445,9 +457,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "tsrs_sourcemap"
+version = "0.3.0"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-exports#4da8206f7c4225494464a0c454c7c8f735049924"
+dependencies = [
+ "rustc-hash",
+ "tsrs_ast",
+ "tsrs_core",
+ "tsrs_scanner",
+]
+
+[[package]]
+name = "tsrs_transformers"
+version = "0.3.0"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-exports#4da8206f7c4225494464a0c454c7c8f735049924"
+dependencies = [
+ "bitflags",
+ "rustc-hash",
+ "tsrs_ast",
+ "tsrs_binder",
+ "tsrs_checker",
+ "tsrs_core",
+ "tsrs_diagnostics",
+ "tsrs_printer",
+ "tsrs_scanner",
+ "tsrs_tsoptions",
+]
+
+[[package]]
 name = "tsrs_tsoptions"
-version = "0.2.2"
-source = "git+https://github.com/maschwenk/tsrs?branch=lint-api#60a8d12e60778ff390013642e5c953e25be7e6af"
+version = "0.3.0"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-exports#4da8206f7c4225494464a0c454c7c8f735049924"
 dependencies = [
  "bitflags",
  "indexmap",
@@ -463,8 +503,8 @@ dependencies = [
 
 [[package]]
 name = "tsrs_vfs"
-version = "0.2.2"
-source = "git+https://github.com/maschwenk/tsrs?branch=lint-api#60a8d12e60778ff390013642e5c953e25be7e6af"
+version = "0.3.0"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-exports#4da8206f7c4225494464a0c454c7c8f735049924"
 dependencies = [
  "bitflags",
  "rayon",

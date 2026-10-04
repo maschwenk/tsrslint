@@ -29,4 +29,4 @@ regex = "1"
 mimalloc = "0.1.52"
 
 [dev-dependencies]
-tsrs_parser = { git = "https://github.com/maschwenk/tsrs", branch = "lint-api" }
+tsrs_parser = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-exports" }
