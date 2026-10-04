@@ -1,8 +1,2 @@
 # Lint ratchet baseline: findings that predate the ratchet, as count<TAB>lint<TAB>file.
 # Written by `tools/lint/ratchet.py --update` with clippy from Rust 1.99.0. Counts only go down; never edit by hand.
-3	clippy::clone_on_ref_ptr	crates/tsrslint/src/linter.rs
-6	clippy::clone_on_ref_ptr	crates/tsrslint/src/rules/prefer_optional_chain.rs
-2	clippy::clone_on_ref_ptr	crates/tsrslint/src/tsconfig.rs
-1	clippy::iter_over_hash_type	crates/tsrslint/src/linter.rs
-1	clippy::iter_over_hash_type	crates/tsrslint/src/overlayfs.rs
-1	clippy::iter_over_hash_type	crates/tsrslint/src/rules/prefer_optional_chain.rs

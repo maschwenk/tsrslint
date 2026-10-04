@@ -749,7 +749,7 @@ impl ChainProcessor {
 
     fn get_type_info(&mut self, ctx: &mut Ctx, node: P<Node>) -> Rc<TypeInfo> {
         if let Some(info) = self.type_cache.get(&node) {
-            return info.clone();
+            return Rc::clone(info);
         }
         let node_type = ctx.checker.get_type_at_location(node);
         let parts = utils::union_type_parts(node_type);
@@ -797,7 +797,7 @@ impl ChainProcessor {
         }
         info.parts = parts;
         let info = Rc::new(info);
-        self.type_cache.insert(node, info.clone());
+        self.type_cache.insert(node, Rc::clone(&info));
         info
     }
 
@@ -807,7 +807,7 @@ impl ChainProcessor {
         node: P<Node>,
     ) -> Rc<FxHashMap<String, String>> {
         if let Some(cached) = self.call_sig_cache.get(&node) {
-            return cached.clone();
+            return Rc::clone(cached);
         }
         let mut signatures: FxHashMap<String, String> = FxHashMap::default();
         let mut n = Some(node);
@@ -827,7 +827,7 @@ impl ChainProcessor {
             };
         }
         let signatures = Rc::new(signatures);
-        self.call_sig_cache.insert(node, signatures.clone());
+        self.call_sig_cache.insert(node, Rc::clone(&signatures));
         signatures
     }
 
@@ -1026,6 +1026,10 @@ impl ChainProcessor {
 
         let left_sigs = self.extract_call_signatures(ctx, left);
         let right_sigs = self.extract_call_signatures(ctx, right);
+        #[expect(
+            clippy::iter_over_hash_type,
+            reason = "the loop only asks whether any callee has different call text on each side; visiting order cannot change that"
+        )]
         for (base_expr, left_sig) in left_sigs.iter() {
             if let Some(right_sig) = right_sigs.get(base_expr) {
                 if left_sig != right_sig {
@@ -1179,12 +1183,12 @@ impl ChainProcessor {
 
     fn flatten_for_fix(&mut self, ctx: &Ctx, node: P<Node>) -> Parts {
         if let Some(cached) = self.flatten_cache.get(&node) {
-            return cached.clone();
+            return Rc::clone(cached);
         }
         let mut parts: Vec<ChainPart> = Vec::new();
         flatten_visit(ctx, node, false, &mut parts);
         let parts = Rc::new(RefCell::new(parts));
-        self.flatten_cache.insert(node, parts.clone());
+        self.flatten_cache.insert(node, Rc::clone(&parts));
         parts
     }
 
