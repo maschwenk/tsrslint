@@ -6,9 +6,11 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use rustc_hash::FxHashMap;
-use tsrs_ast::{self as ast, Kind, Node, SourceFile};
+use tsrs_ast::{self as ast, Kind, Node, SourceFile, SourceFileParseOptions};
 use tsrs_checker::Checker;
-use tsrs_compiler::{new_cached_fs_compiler_host, new_program, Program, ProgramOptions};
+use tsrs_compiler::{
+    new_cached_fs_compiler_host, new_program, CompilerHost, Program, ProgramOptions,
+};
 use tsrs_core::tspath::{self, Path};
 use tsrs_core::CompilerOptions;
 use tsrs_core::{Tristate, P};
@@ -144,6 +146,7 @@ pub fn run(
         cwd: cwd.to_string(),
     }));
     let ext_cache: &'static ExtendedConfigCache = Box::leak(Box::default());
+    let declarations: &'static DeclarationCache = Box::leak(Box::default());
 
     // Rules: one instance per distinct (name, options); unknown rules are a hard error (Go panics).
     let mut rule_cache: FxHashMap<String, &'static dyn Rule> = FxHashMap::default();
@@ -252,12 +255,15 @@ pub fn run(
             continue;
         }
         let dir = tspath::get_directory_path(config_file_name);
-        let compiler_host = new_cached_fs_compiler_host(
-            &dir,
-            fs.clone(),
-            &bundled::lib_path(),
-            Some(Arc::new(ProgramExtCache(ext_cache))),
-            None,
+        let compiler_host = shared_declarations_host(
+            new_cached_fs_compiler_host(
+                &dir,
+                fs.clone(),
+                &bundled::lib_path(),
+                Some(Arc::new(ProgramExtCache(ext_cache))),
+                None,
+            ),
+            declarations,
         );
         let mut popts = ProgramOptions::new(config, compiler_host);
         popts.use_source_of_project_reference = true;
@@ -303,12 +309,15 @@ pub fn run(
             "Running linter on inferred program with {} files",
             unmatched.len()
         ));
-        let compiler_host = new_cached_fs_compiler_host(
-            cwd,
-            fs.clone(),
-            &bundled::lib_path(),
-            Some(Arc::new(ProgramExtCache(ext_cache))),
-            None,
+        let compiler_host = shared_declarations_host(
+            new_cached_fs_compiler_host(
+                cwd,
+                fs.clone(),
+                &bundled::lib_path(),
+                Some(Arc::new(ProgramExtCache(ext_cache))),
+                None,
+            ),
+            declarations,
         );
         let config = P::new(tsrs_tsoptions::new_parsed_command_line(
             P::new(inferred_compiler_options()),
@@ -382,6 +391,62 @@ fn suppress_program_diagnostics() -> bool {
 }
 
 struct ProgramExtCache(&'static ExtendedConfigCache);
+
+/// Declaration and JSON files parsed for one program, by parse options.
+type DeclarationCache = Mutex<FxHashMap<SourceFileParseOptions, P<SourceFile>>>;
+
+/// Programs are built one after another and most of what they parse is shared: lib files and `node_modules`
+/// declarations. Like `tsc --build`'s host (execute/build/host.go), every program gets declaration and JSON files
+/// from one cache, so a later program (the inferred one, or another tsconfig) reuses the parsed and bound files of an
+/// earlier one instead of parsing them again. A parse depends only on its `SourceFileParseOptions` and the file
+/// text, binding only on the file, and checkers never write parser or binder data (several checkers of one program
+/// already share it).
+fn shared_declarations_host(
+    inner: Arc<dyn CompilerHost>,
+    cache: &'static DeclarationCache,
+) -> Arc<dyn CompilerHost> {
+    Arc::new(SharedDeclarationsHost { inner, cache })
+}
+
+struct SharedDeclarationsHost {
+    inner: Arc<dyn CompilerHost>,
+    cache: &'static DeclarationCache,
+}
+
+impl CompilerHost for SharedDeclarationsHost {
+    fn fs(&self) -> &dyn FS {
+        self.inner.fs()
+    }
+    fn default_library_path(&self) -> &str {
+        self.inner.default_library_path()
+    }
+    fn get_current_directory(&self) -> &str {
+        self.inner.get_current_directory()
+    }
+    fn trace(&self, msg: &'static tsrs_diagnostics::Message, args: &[&dyn std::fmt::Display]) {
+        self.inner.trace(msg, args)
+    }
+    fn get_source_file(&self, opts: SourceFileParseOptions) -> Option<P<SourceFile>> {
+        if !tspath::is_declaration_file_name(&opts.file_name)
+            && !tspath::file_extension_is(&opts.file_name, tspath::EXTENSION_JSON)
+        {
+            return self.inner.get_source_file(opts);
+        }
+        if let Some(&file) = self.cache.lock().unwrap().get(&opts) {
+            return Some(file);
+        }
+        // Parse outside the lock: the files of one program are parsed in parallel.
+        let file = self.inner.get_source_file(opts.clone())?;
+        Some(*self.cache.lock().unwrap().entry(opts).or_insert(file))
+    }
+    fn get_resolved_project_reference(
+        &self,
+        file_name: &str,
+        path: Path,
+    ) -> Option<P<tsrs_tsoptions::ParsedCommandLine>> {
+        self.inner.get_resolved_project_reference(file_name, path)
+    }
+}
 
 impl tsrs_tsoptions::ExtendedConfigCache for ProgramExtCache {
     fn get_extended_config(
