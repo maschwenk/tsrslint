@@ -53,8 +53,8 @@ fn build_comparison_diagnostic(
     right_type: P<Type>,
 ) -> RuleDiagnostic {
     let (pos, end) = utils::trim_node_text_range(source_file, node);
-    let left_text = c.type_to_string_exported(left_type);
-    let right_text = c.type_to_string_exported(right_type);
+    let left_text = utils::type_to_string(c, left_type);
+    let right_text = utils::type_to_string(c, right_type);
     RuleDiagnostic {
         pos,
         end,
@@ -294,7 +294,7 @@ fn enum_qualifier_from_type(
     enum_type: P<Type>,
     enum_declaration: P<Node>,
 ) -> String {
-    let qualifier = c.type_to_string_exported(enum_type);
+    let qualifier = utils::type_to_string(c, enum_type);
     if !is_qualified_identifier_text(&qualifier) {
         return String::new();
     }

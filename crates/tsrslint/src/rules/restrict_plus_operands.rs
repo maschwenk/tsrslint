@@ -231,12 +231,12 @@ impl Visitor {
 
         if left_invalid {
             let range = ctx.trim(left);
-            let ts = ctx.checker.type_to_string_exported(left_type);
+            let ts = utils::type_to_string(ctx.checker, left_type);
             ctx.report_diagnostic(build_invalid_diagnostic(range, &ts, &opts.string_like));
         }
         if right_invalid {
             let range = ctx.trim(right);
-            let ts = ctx.checker.type_to_string_exported(right_type);
+            let ts = utils::type_to_string(ctx.checker, right_type);
             ctx.report_diagnostic(build_invalid_diagnostic(range, &ts, &opts.string_like));
         }
         if left_invalid || right_invalid {
@@ -250,8 +250,8 @@ impl Visitor {
                     && other_type_flags.intersects(TypeFlags::NumberLike | TypeFlags::BigIntLike)
                 {
                     let (er, lr, rr) = (ctx.trim(node), ctx.trim(left), ctx.trim(right));
-                    let lt = ctx.checker.type_to_string_exported(left_type);
-                    let rt = ctx.checker.type_to_string_exported(right_type);
+                    let lt = utils::type_to_string(ctx.checker, left_type);
+                    let rt = utils::type_to_string(ctx.checker, right_type);
                     ctx.report_diagnostic(build_mismatched_diagnostic(
                         er,
                         lr,
@@ -266,8 +266,8 @@ impl Visitor {
                     && other_type_flags.intersects(TypeFlags::BigIntLike)
                 {
                     let (er, lr, rr) = (ctx.trim(node), ctx.trim(left), ctx.trim(right));
-                    let lt = ctx.checker.type_to_string_exported(left_type);
-                    let rt = ctx.checker.type_to_string_exported(right_type);
+                    let lt = utils::type_to_string(ctx.checker, left_type);
+                    let rt = utils::type_to_string(ctx.checker, right_type);
                     ctx.report_diagnostic(build_bigint_and_number_diagnostic(er, lr, rr, &lt, &rt));
                     return true;
                 }

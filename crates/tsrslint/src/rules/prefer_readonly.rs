@@ -324,7 +324,7 @@ fn get_type_annotation_for_violating_node(
     violating_type: P<Type>,
     initializer_type: P<Type>,
 ) -> String {
-    let annotation = ctx.checker.type_to_string_exported(violating_type);
+    let annotation = utils::type_to_string(ctx.checker, violating_type);
     if annotation.is_empty() {
         return String::new();
     }

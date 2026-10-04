@@ -212,7 +212,7 @@ fn report_binary_plus(ctx: &mut Ctx, node: P<Node>) {
     if is_empty_string_literal(right) {
         let left_type = utils::get_constrained_type_at_location(ctx.checker, left);
         if does_underlying_type_match_flag(left_type, TypeFlags::StringLike) {
-            let type_string = ctx.checker.type_to_string_exported(left_type);
+            let type_string = utils::type_to_string(ctx.checker, left_type);
             let d = build_unnecessary_type_conversion_diagnostic(
                 (left.end(), node.end()),
                 ctx.trim(left),
@@ -228,7 +228,7 @@ fn report_binary_plus(ctx: &mut Ctx, node: P<Node>) {
         let right_type = utils::get_constrained_type_at_location(ctx.checker, right);
         if does_underlying_type_match_flag(right_type, TypeFlags::StringLike) {
             let right_start = ctx.trim(right).0;
-            let type_string = ctx.checker.type_to_string_exported(right_type);
+            let type_string = utils::type_to_string(ctx.checker, right_type);
             let d = build_unnecessary_type_conversion_diagnostic(
                 (ctx.trim(node).0, right_start),
                 ctx.trim(right),
@@ -254,7 +254,7 @@ fn report_plus_equals(ctx: &mut Ctx, node: P<Node>) {
     if !does_underlying_type_match_flag(left_type, TypeFlags::StringLike) {
         return;
     }
-    let type_string = ctx.checker.type_to_string_exported(left_type);
+    let type_string = utils::type_to_string(ctx.checker, left_type);
     let d =
         build_unnecessary_type_conversion_diagnostic(ctx.trim(node), ctx.trim(left), &type_string);
     ctx.report_diagnostic_with_suggestions(d, |ctx| {
@@ -305,7 +305,7 @@ fn report_built_in_conversion_call(ctx: &mut Ctx, node: P<Node>) {
         return;
     }
     let primitive_type = callee_name.to_lowercase();
-    let type_string = ctx.checker.type_to_string_exported(arg_type);
+    let type_string = utils::type_to_string(ctx.checker, arg_type);
     let d =
         build_unnecessary_type_conversion_diagnostic(ctx.trim(callee), ctx.trim(arg), &type_string);
     ctx.report_diagnostic_with_suggestions(d, |ctx| {
@@ -331,7 +331,7 @@ fn report_string_to_string_call(ctx: &mut Ctx, node: P<Node>) {
     if !does_underlying_type_match_flag(object_type, TypeFlags::StringLike) {
         return;
     }
-    let type_string = ctx.checker.type_to_string_exported(object_type);
+    let type_string = utils::type_to_string(ctx.checker, object_type);
     let d = build_unnecessary_type_conversion_diagnostic(
         (name.pos(), node.end()),
         ctx.trim(object),
@@ -352,7 +352,7 @@ fn report_unary_plus(ctx: &mut Ctx, node: P<Node>) {
     if !does_underlying_type_match_flag(arg_type, TypeFlags::NumberLike) {
         return;
     }
-    let type_string = ctx.checker.type_to_string_exported(arg_type);
+    let type_string = utils::type_to_string(ctx.checker, arg_type);
     let d = build_unnecessary_type_conversion_diagnostic(
         (ctx.trim(node).0, ctx.trim(operand).0),
         ctx.trim(operand),
@@ -388,7 +388,7 @@ fn report_double_bang(ctx: &mut Ctx, node: P<Node>) {
     }
     let outer_start = ctx.trim(outer_node).0;
     let inner_start = ctx.trim(node).0;
-    let type_string = ctx.checker.type_to_string_exported(arg_type);
+    let type_string = utils::type_to_string(ctx.checker, arg_type);
     let d = build_unnecessary_type_conversion_diagnostic(
         (outer_start, inner_start + 1),
         ctx.trim(operand),
@@ -410,7 +410,7 @@ fn report_double_tilde(ctx: &mut Ctx, node: P<Node>) {
     }
     let outer_start = ctx.trim(outer_node).0;
     let inner_start = ctx.trim(node).0;
-    let type_string = ctx.checker.type_to_string_exported(arg_type);
+    let type_string = utils::type_to_string(ctx.checker, arg_type);
     let d = build_unnecessary_type_conversion_diagnostic(
         (outer_start, inner_start + 1),
         ctx.trim(operand),

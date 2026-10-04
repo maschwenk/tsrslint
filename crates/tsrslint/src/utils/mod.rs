@@ -335,3 +335,23 @@ pub fn is_builtin_symbol_like(
 pub fn is_promise_like(program: &Program, c: &mut Checker, t: P<Type>) -> bool {
     is_builtin_symbol_like(program, c, t, &["Promise"])
 }
+
+thread_local! {
+    /// Type strings printed for the file being linted: several rules print the same types (labels and messages of
+    /// no-unsafe-*), and printing is one of the costlier checker calls. Cleared per file by the linter.
+    static TYPE_STRINGS: std::cell::RefCell<rustc_hash::FxHashMap<P<Type>, String>> = Default::default();
+}
+
+pub fn clear_type_strings() {
+    TYPE_STRINGS.with(|m| m.borrow_mut().clear());
+}
+
+/// `checker.TypeToString(t)`, memoized per file.
+pub fn type_to_string(c: &mut Checker, t: P<Type>) -> String {
+    if let Some(s) = TYPE_STRINGS.with(|m| m.borrow().get(&t).cloned()) {
+        return s;
+    }
+    let s = c.type_to_string_exported(t);
+    TYPE_STRINGS.with(|m| m.borrow_mut().insert(t, s.clone()));
+    s
+}

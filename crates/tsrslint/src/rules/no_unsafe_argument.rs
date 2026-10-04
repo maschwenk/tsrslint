@@ -209,7 +209,7 @@ fn describe_type(c: &mut Checker, t: P<Type>) -> String {
     if utils::is_intrinsic_error_type(t) {
         return "error typed".to_string();
     }
-    c.type_to_string_exported(t)
+    utils::type_to_string(c, t)
 }
 
 fn describe_type_for_spread(c: &mut Checker, t: P<Type>) -> String {
@@ -223,7 +223,7 @@ fn describe_type_for_tuple(c: &mut Checker, t: P<Type>) -> String {
     if utils::is_intrinsic_error_type(t) {
         return "error typed".to_string();
     }
-    format!("of type {}", c.type_to_string_exported(t))
+    format!("of type {}", utils::type_to_string(c, t))
 }
 
 fn check_unsafe_arguments(ctx: &mut Ctx, args: &[P<Node>], callee: P<Node>, node: P<Node>) {

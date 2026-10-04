@@ -267,7 +267,7 @@ fn build_diagnostic(
     } else {
         "This expression"
     };
-    let ts = ctx.checker.type_to_string_exported(t);
+    let ts = utils::type_to_string(ctx.checker, t);
     let (pp, pe) = promise_range(ctx, node);
     let mut labeled_ranges = vec![LabeledRange {
         label: format!("{value_description} has type `{ts}`."),
@@ -276,7 +276,7 @@ fn build_diagnostic(
     }];
     if let Some(e) = expectation {
         if let Some(et) = e.t {
-            let ets = ctx.checker.type_to_string_exported(et);
+            let ets = utils::type_to_string(ctx.checker, et);
             let (ep, ee) = expectation_range(ctx, &e);
             labeled_ranges.push(LabeledRange {
                 label: format!(
@@ -410,7 +410,7 @@ fn check_heritage_type_for_member_returning_void(
     if !is_void_returning_function_type(ctx, node_member, member_type) {
         return;
     }
-    let name = ctx.checker.type_to_string_exported(heritage_type);
+    let name = utils::type_to_string(ctx.checker, heritage_type);
     let e = local_expectation_for_symbol(ctx, Some(heritage_member), member_type);
     report_node(ctx, node_member, void_return_inherited_method(&name), e);
 }

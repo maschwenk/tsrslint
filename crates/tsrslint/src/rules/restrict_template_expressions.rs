@@ -121,7 +121,7 @@ impl RuleVisitor for Visitor {
             let expression_type = utils::get_constrained_type_at_location(ctx.checker, expression);
             if !self.is_type_allowed(ctx, expression_type) {
                 let (pos, end) = ctx.trim(expression);
-                let type_string = ctx.checker.type_to_string_exported(expression_type);
+                let type_string = crate::utils::type_to_string(ctx.checker, expression_type);
                 ctx.report_diagnostic(build_invalid_type_diagnostic(pos, end, &type_string));
             }
         }

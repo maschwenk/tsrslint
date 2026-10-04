@@ -110,9 +110,9 @@ impl TypeFlagsWithNodeOrType {
         }
         let t = self.t.unwrap();
         if utils::is_type_flag_set(t, TypeFlags::StringLiteral) {
-            return go_quote(&c.type_to_string_exported(t));
+            return go_quote(&utils::type_to_string(c, t));
         }
-        c.type_to_string_exported(t)
+        utils::type_to_string(c, t)
     }
 }
 

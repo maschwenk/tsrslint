@@ -175,7 +175,7 @@ fn build_case_test(
     let case_test = if utils::is_type_flag_set(missing_branch_type, TypeFlags::ESSymbolLike) {
         missing_branch_name.clone()
     } else {
-        checker.type_to_string_exported(missing_branch_type)
+        utils::type_to_string(checker, missing_branch_type)
     };
     if !symbol_name.is_empty() && requires_quoting(&missing_branch_name) {
         return format!(
@@ -314,7 +314,7 @@ impl Visitor {
                     continue;
                 }
             }
-            missing_branches.push(ctx.checker.type_to_string_exported(missing_type));
+            missing_branches.push(utils::type_to_string(ctx.checker, missing_type));
         }
         let expression = node.as_switch_statement().expression;
         ctx.report_node_with_suggestions(

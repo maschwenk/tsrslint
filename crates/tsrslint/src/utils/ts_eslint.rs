@@ -130,7 +130,7 @@ pub fn get_type_name(c: &mut Checker, t: P<Type>) -> String {
     {
         return "string".to_string();
     }
-    c.type_to_string_exported(t)
+    super::type_to_string(c, t)
 }
 
 /// ts_eslint.go GetContextualType.

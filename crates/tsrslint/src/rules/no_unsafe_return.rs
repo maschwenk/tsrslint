@@ -61,7 +61,7 @@ fn render_return_type(c: &mut Checker, t: P<Type>) -> String {
     if utils::is_intrinsic_error_type(t) {
         return "error".to_string();
     }
-    c.type_to_string_exported(t)
+    crate::utils::type_to_string(c, t)
 }
 
 pub struct NoUnsafeReturn;
@@ -257,8 +257,8 @@ impl Visitor {
             return;
         };
 
-        let s = ctx.checker.type_to_string_exported(sender);
-        let r = ctx.checker.type_to_string_exported(receiver);
+        let s = crate::utils::type_to_string(ctx.checker, sender);
+        let r = crate::utils::type_to_string(ctx.checker, receiver);
         report(ctx, build_unsafe_return_assignment_message(&s, &r));
     }
 }
