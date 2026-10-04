@@ -2,6 +2,20 @@
 
 TSGolint is a static analysis tool, based on typescript-go, for implementing and running type aware linting rules on TypeScript code.
 
+## Rust port (`crates/tsrslint`)
+
+This repository is tsrslint, the Rust port of tsgolint; the rest of this guide describes the Go sources it is ported
+from. For Rust changes, [docs/porting.md](docs/porting.md) has the conventions and
+[docs/rust-practices.md](docs/rust-practices.md) the rules:
+
+- Run `tools/lint/ratchet.py` before a change lands. It fails when a file has more findings of a clippy lint than
+  `tools/lint/baseline.tsv` records.
+- Fix what it reports in the code you wrote. If the flagged code is intended, use
+  `#[expect(clippy::<lint>, reason = "...")]` on the smallest item. Never a bare `#[allow]`, and never raise
+  `baseline.tsv`.
+- A performance change needs numbers (instructions retired and peak memory, before and after) and a write-up under
+  `docs/`.
+
 ## ⚠️ CRITICAL: typescript-go Submodule Warning
 
 **DO NOT COMMIT SUBMODULE POINTER CHANGES**

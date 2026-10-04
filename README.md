@@ -85,7 +85,7 @@ All 59 rules run every case extracted from tsgolint's Go tests: 7,341 pass, 28 a
 marked `Skip: true` upstream), none fail and none are unconverted.
 
 CI runs on Depot ([.depot/workflows/ci.yml](.depot/workflows/ci.yml): fmt, release build, rule tests, headless and npm
-packaging smoke tests). Releases: [.github/workflows/release.yml](.github/workflows/release.yml), see
+packaging smoke tests, and the lint ratchet of [docs/rust-practices.md](docs/rust-practices.md)). Releases: [.github/workflows/release.yml](.github/workflows/release.yml), see
 [npm/README.md](npm/README.md#releasing).
 
 The release binaries are PGO builds: profile `dist` (fat LTO) trained on the rule tests and two open-source projects
