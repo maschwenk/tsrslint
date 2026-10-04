@@ -3,7 +3,7 @@
 // findOrCreateDefaultConfiguredProjectForOpenScriptInfo.
 
 use std::collections::VecDeque;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, OnceLock};
 
 use rustc_hash::{FxHashMap, FxHashSet};
 use tsrs_core::tspath::{self, Path};
@@ -64,7 +64,7 @@ pub struct ParsedConfig {
 pub struct TsConfigResolver {
     pub host: &'static ParseHost,
     pub ext_cache: &'static ExtendedConfigCache,
-    configs: Mutex<FxHashMap<String, Arc<ParsedConfig>>>,
+    configs: Mutex<FxHashMap<String, Arc<OnceLock<Arc<ParsedConfig>>>>>,
 }
 
 impl TsConfigResolver {
@@ -124,31 +124,34 @@ impl TsConfigResolver {
         .unwrap_or_default()
     }
 
-    /// Parses (once) and returns a config file.
+    /// Parses (once) and returns a config file. Threads asking for a config that is being parsed wait for it:
+    /// `resolve_all`'s threads all start on the same few configs, and each parse walks the include globs' whole
+    /// directory tree.
     pub fn load(&self, config_file_name: &str) -> Arc<ParsedConfig> {
-        if let Some(c) = self.configs.lock().unwrap().get(config_file_name) {
-            return c.clone();
-        }
-        let (parsed, errors) = tsoptions::get_parsed_command_line_of_config_file(
-            config_file_name,
-            Some(&CompilerOptions {
-                checkers: crate::sched::checkers(),
-                ..Default::default()
-            }),
-            None,
-            self.host,
-            Some(self.ext_cache),
-        );
-        let entry = Arc::new(ParsedConfig {
-            config: parsed.map(P::new),
-            errors,
-        });
-        self.configs
+        let cell = self
+            .configs
             .lock()
             .unwrap()
             .entry(config_file_name.to_string())
-            .or_insert(entry)
-            .clone()
+            .or_default()
+            .clone();
+        cell.get_or_init(|| {
+            let (parsed, errors) = tsoptions::get_parsed_command_line_of_config_file(
+                config_file_name,
+                Some(&CompilerOptions {
+                    checkers: crate::sched::checkers(),
+                    ..Default::default()
+                }),
+                None,
+                self.host,
+                Some(self.ext_cache),
+            );
+            Arc::new(ParsedConfig {
+                config: parsed.map(P::new),
+                errors,
+            })
+        })
+        .clone()
     }
 
     /// find_tsconfig.go findConfigWithReferences: breadth-first over the config and its project
