@@ -1,0 +1,37 @@
+{
+  "stock": {
+    "package": "@oxlint-tsgolint/{platform}",
+    "version": "7.0.2002",
+    "note": "the native binary of npm oxlint-tsgolint@7.0.2002, the tsgolint release tsrslint ports"
+  },
+  "projects": [
+    {
+      "name": "vscode",
+      "repo": "https://github.com/microsoft/vscode.git",
+      "commit": "9cf0128b9822dcd8a533f08ef7312956a4390301",
+      "install": "npm ci --ignore-scripts --no-audit --no-fund",
+      "lint": ["--include", "src"]
+    },
+    {
+      "name": "mui-docs",
+      "repo": "https://github.com/mui/material-ui.git",
+      "commit": "6780195595c12252a130aa5ae5c5bd461229c6b7",
+      "install": "npx --yes $(node -p 'require(\"./package.json\").packageManager') install --ignore-scripts",
+      "lint": ["--include", "docs"]
+    },
+    {
+      "name": "xstate",
+      "repo": "https://github.com/statelyai/xstate.git",
+      "commit": "fbee62e7c1586315ed478c2fedf530d7e0ff5a3e",
+      "install": "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npx --yes $(node -p 'require(\"./package.json\").packageManager') install",
+      "lint": ["--include", "packages"]
+    },
+    {
+      "name": "webpack",
+      "repo": "https://github.com/webpack/webpack.git",
+      "commit": "b54c5e2aa26dd0267bc904d45402f811f100186c",
+      "install": "npx --yes yarn@1.22.22 install --ignore-scripts --ignore-engines && npx --yes yarn@1.22.22 link --link-folder \"$PWD/node_modules/.yarn-link\" && npx --yes yarn@1.22.22 link --link-folder \"$PWD/node_modules/.yarn-link\" webpack",
+      "lint": ["--ext", "js", "--include", "lib", "--include", "bin"]
+    }
+  ]
+}
