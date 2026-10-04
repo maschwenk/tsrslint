@@ -2,6 +2,8 @@
 //! top of tsrs, the Rust port of the TypeScript 7 checker. It speaks tsgolint's headless protocol, so
 //! oxlint can use it as a drop-in `tsgolint` binary through `OXLINT_TSGOLINT_PATH`.
 
+#[cfg(target_os = "macos")]
+mod boundedfs;
 pub mod linter;
 mod memstats;
 pub mod overlayfs;

@@ -125,6 +125,8 @@ pub fn run_headless(args: &[String]) -> i32 {
 /// (`new_compiler_host`, not `new_cached_fs_compiler_host`), so lookups are cached once for the whole run.
 fn base_fs(payload: &Payload) -> Arc<dyn FS> {
     let os: Arc<dyn FS> = Arc::new(osvfs::fs());
+    #[cfg(target_os = "macos")]
+    let os: Arc<dyn FS> = Arc::new(crate::boundedfs::BoundedReadsFS::new(os, 4));
     let base: Arc<dyn FS> = match &payload.source_overrides {
         Some(o) if !o.is_empty() => Arc::new(OverlayFS::new(os, o.clone())),
         _ => os,
