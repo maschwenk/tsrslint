@@ -258,7 +258,7 @@ dependencies = [
 [[package]]
 name = "tsrs_ast"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=main#06027d29a717e0a5997958da5e67e8125282f9dd"
+source = "git+https://github.com/maschwenk/tsrs?branch=main#4f54c4c250dfc8cba5bdd0580cc731aa0da7b243"
 dependencies = [
  "bitflags",
  "hashbrown",
@@ -271,7 +271,7 @@ dependencies = [
 [[package]]
 name = "tsrs_astnav"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=main#06027d29a717e0a5997958da5e67e8125282f9dd"
+source = "git+https://github.com/maschwenk/tsrs?branch=main#4f54c4c250dfc8cba5bdd0580cc731aa0da7b243"
 dependencies = [
  "tsrs_ast",
  "tsrs_core",
@@ -281,7 +281,7 @@ dependencies = [
 [[package]]
 name = "tsrs_binder"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=main#06027d29a717e0a5997958da5e67e8125282f9dd"
+source = "git+https://github.com/maschwenk/tsrs?branch=main#4f54c4c250dfc8cba5bdd0580cc731aa0da7b243"
 dependencies = [
  "bitflags",
  "rustc-hash",
@@ -294,7 +294,7 @@ dependencies = [
 [[package]]
 name = "tsrs_checker"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=main#06027d29a717e0a5997958da5e67e8125282f9dd"
+source = "git+https://github.com/maschwenk/tsrs?branch=main#4f54c4c250dfc8cba5bdd0580cc731aa0da7b243"
 dependencies = [
  "bitflags",
  "hashbrown",
@@ -318,7 +318,7 @@ dependencies = [
 [[package]]
 name = "tsrs_compiler"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=main#06027d29a717e0a5997958da5e67e8125282f9dd"
+source = "git+https://github.com/maschwenk/tsrs?branch=main#4f54c4c250dfc8cba5bdd0580cc731aa0da7b243"
 dependencies = [
  "bitflags",
  "indexmap",
@@ -344,7 +344,7 @@ dependencies = [
 [[package]]
 name = "tsrs_core"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=main#06027d29a717e0a5997958da5e67e8125282f9dd"
+source = "git+https://github.com/maschwenk/tsrs?branch=main#4f54c4c250dfc8cba5bdd0580cc731aa0da7b243"
 dependencies = [
  "bitflags",
  "indexmap",
@@ -357,7 +357,7 @@ dependencies = [
 [[package]]
 name = "tsrs_declarations"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=main#06027d29a717e0a5997958da5e67e8125282f9dd"
+source = "git+https://github.com/maschwenk/tsrs?branch=main#4f54c4c250dfc8cba5bdd0580cc731aa0da7b243"
 dependencies = [
  "rustc-hash",
  "tsrs_ast",
@@ -374,7 +374,7 @@ dependencies = [
 [[package]]
 name = "tsrs_diagnostics"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=main#06027d29a717e0a5997958da5e67e8125282f9dd"
+source = "git+https://github.com/maschwenk/tsrs?branch=main#4f54c4c250dfc8cba5bdd0580cc731aa0da7b243"
 dependencies = [
  "rustc-hash",
  "tsrs_core",
@@ -383,7 +383,7 @@ dependencies = [
 [[package]]
 name = "tsrs_module"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=main#06027d29a717e0a5997958da5e67e8125282f9dd"
+source = "git+https://github.com/maschwenk/tsrs?branch=main#4f54c4c250dfc8cba5bdd0580cc731aa0da7b243"
 dependencies = [
  "bitflags",
  "indexmap",
@@ -397,7 +397,7 @@ dependencies = [
 [[package]]
 name = "tsrs_modulespecifiers"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=main#06027d29a717e0a5997958da5e67e8125282f9dd"
+source = "git+https://github.com/maschwenk/tsrs?branch=main#4f54c4c250dfc8cba5bdd0580cc731aa0da7b243"
 dependencies = [
  "regex",
  "rustc-hash",
@@ -410,7 +410,7 @@ dependencies = [
 [[package]]
 name = "tsrs_parser"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=main#06027d29a717e0a5997958da5e67e8125282f9dd"
+source = "git+https://github.com/maschwenk/tsrs?branch=main#4f54c4c250dfc8cba5bdd0580cc731aa0da7b243"
 dependencies = [
  "bitflags",
  "rustc-hash",
@@ -423,7 +423,7 @@ dependencies = [
 [[package]]
 name = "tsrs_printer"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=main#06027d29a717e0a5997958da5e67e8125282f9dd"
+source = "git+https://github.com/maschwenk/tsrs?branch=main#4f54c4c250dfc8cba5bdd0580cc731aa0da7b243"
 dependencies = [
  "bitflags",
  "indexmap",
@@ -437,7 +437,7 @@ dependencies = [
 [[package]]
 name = "tsrs_pseudochecker"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=main#06027d29a717e0a5997958da5e67e8125282f9dd"
+source = "git+https://github.com/maschwenk/tsrs?branch=main#4f54c4c250dfc8cba5bdd0580cc731aa0da7b243"
 dependencies = [
  "tsrs_ast",
  "tsrs_core",
@@ -446,7 +446,7 @@ dependencies = [
 [[package]]
 name = "tsrs_scanner"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=main#06027d29a717e0a5997958da5e67e8125282f9dd"
+source = "git+https://github.com/maschwenk/tsrs?branch=main#4f54c4c250dfc8cba5bdd0580cc731aa0da7b243"
 dependencies = [
  "bitflags",
  "memchr",
@@ -460,7 +460,7 @@ dependencies = [
 [[package]]
 name = "tsrs_sourcemap"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=main#06027d29a717e0a5997958da5e67e8125282f9dd"
+source = "git+https://github.com/maschwenk/tsrs?branch=main#4f54c4c250dfc8cba5bdd0580cc731aa0da7b243"
 dependencies = [
  "rustc-hash",
  "tsrs_ast",
@@ -471,7 +471,7 @@ dependencies = [
 [[package]]
 name = "tsrs_transformers"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=main#06027d29a717e0a5997958da5e67e8125282f9dd"
+source = "git+https://github.com/maschwenk/tsrs?branch=main#4f54c4c250dfc8cba5bdd0580cc731aa0da7b243"
 dependencies = [
  "bitflags",
  "rustc-hash",
@@ -488,7 +488,7 @@ dependencies = [
 [[package]]
 name = "tsrs_tsoptions"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=main#06027d29a717e0a5997958da5e67e8125282f9dd"
+source = "git+https://github.com/maschwenk/tsrs?branch=main#4f54c4c250dfc8cba5bdd0580cc731aa0da7b243"
 dependencies = [
  "bitflags",
  "indexmap",
@@ -505,7 +505,7 @@ dependencies = [
 [[package]]
 name = "tsrs_vfs"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=main#06027d29a717e0a5997958da5e67e8125282f9dd"
+source = "git+https://github.com/maschwenk/tsrs?branch=main#4f54c4c250dfc8cba5bdd0580cc731aa0da7b243"
 dependencies = [
  "bitflags",
  "rayon",
