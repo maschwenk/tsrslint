@@ -5,7 +5,7 @@ use std::sync::mpsc;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 use tsrs_ast::{self as ast, Kind, Node, SourceFile, SourceFileParseOptions};
 use tsrs_checker::Checker;
 use tsrs_compiler::{new_compiler_host, new_program, CompilerHost, Program, ProgramOptions};
@@ -37,8 +37,8 @@ fn parse_flags(args: &[String]) -> Result<Options, String> {
             None => (a, None),
         };
         match name {
-            "fix" => o.fix = value.map_or(true, |v| v == "true"),
-            "fix-suggestions" => o.fix_suggestions = value.map_or(true, |v| v == "true"),
+            "fix" => o.fix = value.is_none_or(|v| v == "true"),
+            "fix-suggestions" => o.fix_suggestions = value.is_none_or(|v| v == "true"),
             "debug" => {
                 let v = match value {
                     Some(v) => v,
@@ -109,7 +109,7 @@ pub fn run_headless(args: &[String]) -> i32 {
             return 1;
         }
     };
-    match run(payload, &cwd, &opts, &log) {
+    match run(&payload, &cwd, &opts, &log) {
         Ok(()) => {
             crate::sched::report_totals(t0.elapsed());
             0
@@ -135,14 +135,14 @@ fn base_fs(payload: &Payload) -> Arc<dyn FS> {
 }
 
 pub fn run(
-    payload: Payload,
+    payload: &Payload,
     cwd: &str,
     opts: &Options,
     log: &dyn Fn(String),
 ) -> Result<(), String> {
     crate::memstats::mark("run start");
     use_sparse_id_pages();
-    let fs = base_fs(&payload);
+    let fs = base_fs(payload);
     let host: &'static ParseHost = Box::leak(Box::new(ParseHost {
         fs: fs.clone(),
         cwd: cwd.to_string(),
@@ -301,7 +301,7 @@ pub fn run(
             break;
         }
         crate::memstats::mark("program built and bound");
-        lint_program(program, &source_files, &payload, &ctx);
+        lint_program(program, &source_files, payload, &ctx);
         crate::memstats::mark("program linted");
     }
 
@@ -333,18 +333,18 @@ pub fn run(
         popts.single_threaded = Tristate::False;
         let program = new_program(popts);
         program.bind_source_files();
-        let wanted: FxHashMap<Path, ()> = unmatched
+        let wanted: FxHashSet<Path> = unmatched
             .iter()
-            .map(|f| (tspath::to_path(f, cwd, use_case_sensitive), ()))
+            .map(|f| tspath::to_path(f, cwd, use_case_sensitive))
             .collect();
         let source_files: Vec<P<SourceFile>> = program
             .source_files()
             .iter()
             .copied()
-            .filter(|sf| wanted.contains_key(sf.path()))
+            .filter(|sf| wanted.contains(sf.path()))
             .collect();
         crate::memstats::mark("inferred program built");
-        lint_program(program, &source_files, &payload, &ctx);
+        lint_program(program, &source_files, payload, &ctx);
         crate::memstats::mark("inferred program linted");
     }
 

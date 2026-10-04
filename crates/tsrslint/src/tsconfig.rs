@@ -196,7 +196,6 @@ impl TsConfigResolver {
     /// references for a config whose file list contains `path`; then the same from the next ancestor config.
     fn find_config_with_references(
         &self,
-        file_name: &str,
         path: &Path,
         config_file_name: &str,
         visited: &mut FxHashSet<String>,
@@ -234,7 +233,7 @@ impl TsConfigResolver {
         }
         let ancestor = self.compute_config_file_name(config_file_name, true);
         if !ancestor.is_empty() {
-            return self.find_config_with_references(file_name, path, &ancestor, visited);
+            return self.find_config_with_references(path, &ancestor, visited);
         }
         String::new()
     }
@@ -251,7 +250,7 @@ impl TsConfigResolver {
         }
         let path = self.to_path(file);
         let mut visited = FxHashSet::default();
-        self.find_config_with_references(file, &path, nearest_config, &mut visited)
+        self.find_config_with_references(&path, nearest_config, &mut visited)
     }
 
     /// `resolve` for every file. Only the config parses are worth parallelizing: the nearest config of each directory

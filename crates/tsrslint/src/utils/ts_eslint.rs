@@ -1,6 +1,5 @@
 //! Ports of internal/utils/ts_eslint.go helpers, added as rules need them.
 
-#[allow(unused_imports)]
 use super::*;
 use rustc_hash::{FxHashMap, FxHashSet};
 
@@ -177,7 +176,6 @@ pub fn is_unsafe_assignment(
     is_unsafe_assignment_worker(t, receiver_t, c, sender_node, &mut FxHashMap::default())
 }
 
-#[allow(clippy::mutable_key_type)]
 fn is_unsafe_assignment_worker(
     t: P<Type>,
     receiver: P<Type>,
@@ -283,7 +281,6 @@ pub enum DiscriminatedAnyType {
 
 /// ts_eslint.go DiscriminateAnyType: Any if the type is `any`, AnyArray if it is `any[]` or
 /// `readonly any[]`, PromiseAny if it is `Promise<any>`, otherwise Safe.
-#[allow(clippy::mutable_key_type)]
 pub fn discriminate_any_type(
     t: P<Type>,
     c: &mut Checker,
@@ -294,7 +291,10 @@ pub fn discriminate_any_type(
     discriminate_any_type_worker(t, c, program, node, &mut visited)
 }
 
-#[allow(clippy::mutable_key_type, clippy::only_used_in_recursion)]
+#[expect(
+    clippy::only_used_in_recursion,
+    reason = "Go signature: discriminateAnyTypeWorker passes program through the recursion"
+)]
 fn discriminate_any_type_worker(
     t: P<Type>,
     c: &mut Checker,

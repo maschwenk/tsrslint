@@ -271,7 +271,7 @@ fn thread_cpu_seconds() -> f64 {
         tv_nsec: 0,
     };
     // SAFETY: clock_gettime writes one timespec through the valid pointer.
-    if unsafe { clock_gettime(CLOCK_THREAD_CPUTIME_ID, &mut ts) } != 0 {
+    if unsafe { clock_gettime(CLOCK_THREAD_CPUTIME_ID, &raw mut ts) } != 0 {
         return 0.0;
     }
     ts.tv_sec as f64 + ts.tv_nsec as f64 * 1e-9

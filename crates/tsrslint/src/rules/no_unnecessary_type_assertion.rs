@@ -4,9 +4,6 @@
 // typescript-go represents parentheses as AST nodes. Expression and parent lookups skip these nodes to
 // match ESTree semantics.
 
-// P<_> hashes and compares by identity, like the Go pointer-keyed maps this ports.
-#![allow(clippy::mutable_key_type)]
-
 use rustc_hash::{FxHashMap, FxHashSet};
 use tsrs_ast::{
     self as ast, CheckFlags, Kind, ModifierFlags, Node, NodeFlags, Symbol, SymbolFlags,

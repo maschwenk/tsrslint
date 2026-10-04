@@ -1,6 +1,4 @@
 // Port of internal/rules/consistent_return/consistent_return.go.
-// P<Type> hashes by identity; its interior mutability does not affect Hash/Eq.
-#![allow(clippy::mutable_key_type)]
 
 use rustc_hash::FxHashSet;
 use tsrs_ast::{self as ast, FunctionFlags, Kind, Node, NodeFlags};

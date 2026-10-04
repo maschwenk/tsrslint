@@ -1,8 +1,5 @@
 // Port of internal/rules/no_unnecessary_type_arguments/no_unnecessary_type_arguments.go.
 
-// P<_> hashes and compares by identity, like the Go pointer-keyed maps this ports.
-#![allow(clippy::mutable_key_type)]
-
 use rustc_hash::FxHashSet;
 use tsrs_ast::{self as ast, Kind, Node, NodeList, Symbol, SymbolFlags};
 use tsrs_checker::{CheckMode, Checker, ObjectFlags, Type};

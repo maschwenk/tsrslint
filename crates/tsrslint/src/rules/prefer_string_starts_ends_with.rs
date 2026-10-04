@@ -1,5 +1,7 @@
 // Port of internal/rules/prefer_string_starts_ends_with/prefer_string_starts_ends_with.go.
 
+use std::fmt::Write;
+
 use tsrs_ast::{self as ast, Kind, Node};
 use tsrs_core::P;
 
@@ -104,11 +106,11 @@ fn go_strconv_quote(s: &str) -> String {
             _ => {
                 let c = r as u32;
                 if c < 0x20 || c == 0x7f {
-                    out.push_str(&format!("\\x{c:02x}"));
+                    let _ = write!(out, "\\x{c:02x}");
                 } else if c < 0x10000 {
-                    out.push_str(&format!("\\u{c:04x}"));
+                    let _ = write!(out, "\\u{c:04x}");
                 } else {
-                    out.push_str(&format!("\\U{c:08x}"));
+                    let _ = write!(out, "\\U{c:08x}");
                 }
             }
         }

@@ -227,7 +227,7 @@ fn local_expectation_for_symbol(
     None
 }
 
-fn expectation_range(ctx: &Ctx, expectation: &VoidExpectation) -> (i32, i32) {
+fn expectation_range(ctx: &Ctx, expectation: VoidExpectation) -> (i32, i32) {
     let declaration = expectation.declaration;
     if let Some(t) = declaration.type_node() {
         return ctx.trim(t);
@@ -277,7 +277,7 @@ fn build_diagnostic(
     if let Some(e) = expectation {
         if let Some(et) = e.t {
             let ets = utils::type_to_string(ctx.checker, et);
-            let (ep, ee) = expectation_range(ctx, &e);
+            let (ep, ee) = expectation_range(ctx, e);
             labeled_ranges.push(LabeledRange {
                 label: format!(
                     "This context accepts a `void`-returning callback through type `{ets}`."

@@ -39,7 +39,10 @@ fn build_operand_range(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(
+    clippy::too_many_arguments,
+    reason = "Go signature: buildComparisonDiagnostic takes label, node and type of both operands"
+)]
 fn build_comparison_diagnostic(
     source_file: P<SourceFile>,
     c: &mut Checker,
@@ -105,7 +108,6 @@ fn type_violates(left_type_parts: &[P<Type>], right_type: P<Type>) -> bool {
     false
 }
 
-#[allow(clippy::mutable_key_type)]
 fn is_mismatched_comparison(c: &mut Checker, left_type: P<Type>, right_type: P<Type>) -> bool {
     if left_type == right_type {
         return false;

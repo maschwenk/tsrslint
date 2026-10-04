@@ -1,8 +1,5 @@
 // Port of internal/rules/non_nullable_type_assertion_style/non_nullable_type_assertion_style.go.
 
-// P<_> hashes and compares by identity, like the Go pointer-keyed sets this ports.
-#![allow(clippy::mutable_key_type)]
-
 use rustc_hash::FxHashSet;
 use tsrs_ast::{self as ast, Kind, Node, OperatorPrecedence};
 use tsrs_checker::{Checker, Type, TypeFlags};

@@ -1,8 +1,5 @@
 //! Ports of internal/utils/string_literal.go helpers, added as rules need them.
 
-#[allow(unused_imports)]
-use super::*;
-
 /// string_literal.go QuoteSingleStringLiteral.
 pub fn quote_single_string_literal(value: &str) -> String {
     let mut b = String::with_capacity(value.len() + 2);

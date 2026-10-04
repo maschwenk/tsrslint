@@ -1,5 +1,7 @@
 // Port of internal/rules/dot_notation (dot_notation.go, options.go).
 
+use std::fmt::Write;
+
 use tsrs_ast::{self as ast, Kind, ModifierFlags, Node, Symbol};
 use tsrs_core::P;
 
@@ -114,7 +116,7 @@ fn go_quote(s: &str) -> String {
             '\u{c}' => out.push_str("\\f"),
             '\u{b}' => out.push_str("\\v"),
             c if (c as u32) < 0x20 || c as u32 == 0x7f => {
-                out.push_str(&format!("\\x{:02x}", c as u32))
+                let _ = write!(out, "\\x{:02x}", c as u32);
             }
             c => out.push(c),
         }
