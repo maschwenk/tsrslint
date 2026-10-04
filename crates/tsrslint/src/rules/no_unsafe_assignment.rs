@@ -165,7 +165,7 @@ fn diagnostic_type_text(c: &mut Checker, t: P<Type>) -> String {
     if utils::is_intrinsic_error_type(t) {
         return "error".to_string();
     }
-    c.type_to_string_exported(t)
+    utils::type_to_string(c, t)
 }
 
 fn assignment_relation_range(

@@ -64,10 +64,10 @@ impl RuleVisitor for Visitor {
             ctx.fix_remove_range(pos, arg.pos())
         };
         if is_always_void_like {
-            let msg = meaningless_void_operator(&ctx.checker.type_to_string_exported(arg_type));
+            let msg = meaningless_void_operator(&utils::type_to_string(ctx.checker, arg_type));
             ctx.report_node_with_fixes(node, msg, |ctx| vec![fix_remove_void_keyword(ctx)]);
         } else if self.o.check_never && is_always_void_like_or_never {
-            let msg = meaningless_void_operator(&ctx.checker.type_to_string_exported(arg_type));
+            let msg = meaningless_void_operator(&utils::type_to_string(ctx.checker, arg_type));
             ctx.report_node_with_suggestions(node, msg, |ctx| {
                 vec![RuleSuggestion {
                     message: remove_void(),

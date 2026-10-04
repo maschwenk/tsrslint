@@ -358,7 +358,7 @@ impl Visitor {
         } else {
             "This unhandled promise-like value"
         };
-        let type_string = ctx.checker.type_to_string_exported(result.t);
+        let type_string = utils::type_to_string(ctx.checker, result.t);
         let mut labels = vec![LabeledRange {
             label: format!("{description} has type `{type_string}`."),
             pos,
@@ -366,7 +366,7 @@ impl Visitor {
         }];
         if let Some(h) = result.non_function_handler {
             let ht = ctx.checker.get_type_at_location(h);
-            let hs = ctx.checker.type_to_string_exported(ht);
+            let hs = utils::type_to_string(ctx.checker, ht);
             let (hp, he) = ctx.trim(h);
             labels.push(LabeledRange {
                 label: format!("This rejection handler has type `{hs}`, which is not callable."),

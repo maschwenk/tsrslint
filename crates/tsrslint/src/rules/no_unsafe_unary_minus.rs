@@ -57,7 +57,7 @@ impl RuleVisitor for Visitor {
                 t,
                 TypeFlags::Any | TypeFlags::Never | TypeFlags::BigIntLike | TypeFlags::NumberLike,
             ) {
-                let type_string = ctx.checker.type_to_string_exported(t);
+                let type_string = utils::type_to_string(ctx.checker, t);
                 ctx.report_node(node, build_unary_minus_message(&type_string));
                 break;
             }

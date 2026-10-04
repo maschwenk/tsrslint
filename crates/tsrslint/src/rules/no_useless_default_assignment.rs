@@ -310,7 +310,7 @@ fn report_useless_default_assignment(
     let mut message = build_useless_default_assignment_message(assignment_type);
     let mut type_text = String::new();
     if is_simple_type_for_message(value_type) {
-        type_text = ctx.checker.type_to_string_exported(value_type.unwrap());
+        type_text = utils::type_to_string(ctx.checker, value_type.unwrap());
         message = build_useless_default_assignment_with_type_message(assignment_type, &type_text);
     }
     let (pos, end) = ctx.trim(initializer);

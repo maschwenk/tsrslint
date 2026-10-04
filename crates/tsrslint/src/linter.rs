@@ -619,6 +619,7 @@ impl Worker {
         opts: &Options,
         out: &mut Vec<ReportedDiagnostic>,
     ) {
+        crate::utils::clear_type_strings();
         let mut visitors: Vec<Box<dyn RuleVisitor>> = Vec::with_capacity(rules.len());
         for (idx, rule) in rules.iter().enumerate() {
             let mut ctx = Ctx {

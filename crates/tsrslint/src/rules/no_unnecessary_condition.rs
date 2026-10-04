@@ -188,7 +188,7 @@ fn truncate_type_name_for_diagnostic(type_name: &str) -> String {
 }
 
 fn type_name_for_diagnostic(ctx: &mut Ctx, t: P<Type>) -> String {
-    truncate_type_name_for_diagnostic(&ctx.checker.type_to_string_exported(t))
+    truncate_type_name_for_diagnostic(&utils::type_to_string(ctx.checker, t))
 }
 
 fn is_self_explanatory_literal(node: P<Node>) -> bool {
@@ -1186,7 +1186,7 @@ impl Visitor {
                         if representative_type.is_none() {
                             representative_type = Some(prop_type);
                         }
-                        let property_type_name = ctx.checker.type_to_string_exported(prop_type);
+                        let property_type_name = utils::type_to_string(ctx.checker, prop_type);
                         if !property_type_names.contains(&property_type_name) {
                             property_type_names.push(property_type_name);
                         }

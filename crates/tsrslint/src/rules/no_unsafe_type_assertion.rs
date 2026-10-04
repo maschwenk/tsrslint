@@ -74,7 +74,7 @@ fn type_label(c: &mut Checker, t: P<Type>) -> String {
     if utils::is_intrinsic_error_type(t) {
         return "error".to_string();
     }
-    c.type_to_string_exported(t)
+    utils::type_to_string(c, t)
 }
 
 pub struct NoUnsafeTypeAssertion;
@@ -209,7 +209,7 @@ impl RuleVisitor for Visitor {
                 ctx.checker.get_base_constraint_of_type(asserted_type)
             else {
                 // asserting to an unconstrained type parameter is unsafe
-                let s = ctx.checker.type_to_string_exported(asserted_type);
+                let s = utils::type_to_string(ctx.checker, asserted_type);
                 report(
                     ctx,
                     build_unsafe_to_unconstrained_type_assertion_message(&s),
@@ -223,7 +223,7 @@ impl RuleVisitor for Visitor {
                 .checker
                 .is_type_assignable_to(expression_widened_type, asserted_type_constraint)
             {
-                let s = ctx.checker.type_to_string_exported(asserted_type);
+                let s = utils::type_to_string(ctx.checker, asserted_type);
                 report(
                     ctx,
                     build_unsafe_type_assertion_assignable_to_constraint_message(&s),
@@ -232,7 +232,7 @@ impl RuleVisitor for Visitor {
             }
         }
 
-        let s = ctx.checker.type_to_string_exported(asserted_type);
+        let s = utils::type_to_string(ctx.checker, asserted_type);
         report(ctx, build_unsafe_type_assertion_message(&s));
     }
 }
