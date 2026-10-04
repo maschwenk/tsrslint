@@ -65,6 +65,7 @@ pub struct TsConfigResolver {
     pub host: &'static ParseHost,
     pub ext_cache: &'static ExtendedConfigCache,
     configs: Mutex<FxHashMap<String, Arc<OnceLock<Arc<ParsedConfig>>>>>,
+    directory_configs: Mutex<FxHashMap<String, String>>,
 }
 
 impl TsConfigResolver {
@@ -76,6 +77,7 @@ impl TsConfigResolver {
             host,
             ext_cache,
             configs: Mutex::new(FxHashMap::default()),
+            directory_configs: Mutex::new(FxHashMap::default()),
         }
     }
 
@@ -98,6 +100,9 @@ impl TsConfigResolver {
         skip_search_in_directory_of_file: bool,
     ) -> String {
         let search_path = tspath::get_directory_path(file_name);
+        if !skip_search_in_directory_of_file {
+            return self.config_file_name_of_directory(&search_path);
+        }
         let mut skip_tsconfig = skip_search_in_directory_of_file;
         let mut skip_jsconfig =
             skip_search_in_directory_of_file && !file_name.ends_with("/tsconfig.json");
@@ -122,6 +127,36 @@ impl TsConfigResolver {
             None
         })
         .unwrap_or_default()
+    }
+
+    /// `compute_config_file_name` of a file in `directory` without skipping: the nearest tsconfig.json or
+    /// jsconfig.json, stopping at a node_modules directory. Memoized per directory: every linted file asks, and most
+    /// share their directory or its ancestors with others.
+    fn config_file_name_of_directory(&self, directory: &str) -> String {
+        if let Some(c) = self.directory_configs.lock().unwrap().get(directory) {
+            return c.clone();
+        }
+        let found = ["tsconfig.json", "jsconfig.json"]
+            .iter()
+            .map(|name| tspath::combine_paths(directory, &[name]))
+            .find(|p| self.fs().file_exists(p));
+        let config = match found {
+            Some(p) => p,
+            None if directory.ends_with("/node_modules") => String::new(),
+            None => {
+                let parent = tspath::get_directory_path(directory);
+                if parent == directory {
+                    String::new()
+                } else {
+                    self.config_file_name_of_directory(&parent)
+                }
+            }
+        };
+        self.directory_configs
+            .lock()
+            .unwrap()
+            .insert(directory.to_string(), config.clone());
+        config
     }
 
     /// Parses (once) and returns a config file. Threads asking for a config that is being parsed wait for it:
