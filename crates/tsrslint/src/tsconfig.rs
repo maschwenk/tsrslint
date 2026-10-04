@@ -5,6 +5,7 @@
 use std::collections::VecDeque;
 use std::sync::{Arc, Mutex, OnceLock};
 
+use rayon::prelude::*;
 use rustc_hash::{FxHashMap, FxHashSet};
 use tsrs_core::tspath::{self, Path};
 use tsrs_core::CompilerOptions;
@@ -171,16 +172,18 @@ impl TsConfigResolver {
             .or_default()
             .clone();
         cell.get_or_init(|| {
-            let (parsed, errors) = tsoptions::get_parsed_command_line_of_config_file(
-                config_file_name,
-                Some(&CompilerOptions {
-                    checkers: crate::sched::checkers(),
-                    ..Default::default()
-                }),
-                None,
-                self.host,
-                Some(self.ext_cache),
-            );
+            let (parsed, errors) = config_pool().install(|| {
+                tsoptions::get_parsed_command_line_of_config_file(
+                    config_file_name,
+                    Some(&CompilerOptions {
+                        checkers: crate::sched::checkers(),
+                        ..Default::default()
+                    }),
+                    None,
+                    self.host,
+                    Some(self.ext_cache),
+                )
+            });
             Arc::new(ParsedConfig {
                 config: parsed.map(P::new),
                 errors,
@@ -239,31 +242,56 @@ impl TsConfigResolver {
     /// Returns the tsconfig for `file`, or "" when no configured program contains it.
     pub fn resolve(&self, file: &str) -> String {
         let config = self.compute_config_file_name(file, false);
-        if config.is_empty() {
+        self.resolve_from(file, &config)
+    }
+
+    fn resolve_from(&self, file: &str, nearest_config: &str) -> String {
+        if nearest_config.is_empty() {
             return String::new();
         }
         let path = self.to_path(file);
         let mut visited = FxHashSet::default();
-        self.find_config_with_references(file, &path, &config, &mut visited)
+        self.find_config_with_references(file, &path, nearest_config, &mut visited)
     }
 
-    pub fn resolve_all(&self, files: &[String], threads: usize) -> Vec<String> {
-        let next = std::sync::atomic::AtomicUsize::new(0);
-        let results: Vec<Mutex<String>> = files.iter().map(|_| Mutex::new(String::new())).collect();
-        std::thread::scope(|s| {
-            for _ in 0..threads.max(1) {
-                s.spawn(|| loop {
-                    let i = next.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                    if i >= files.len() {
-                        break;
-                    }
-                    *results[i].lock().unwrap() = self.resolve(&files[i]);
-                });
-            }
+    /// `resolve` for every file. Only the config parses are worth parallelizing: the nearest config of each directory
+    /// is memoized, and once the configs are parsed, assigning a file is a few map lookups, which on many threads
+    /// mostly contend on the caches' locks.
+    pub fn resolve_all(&self, files: &[String]) -> Vec<String> {
+        let nearest: Vec<String> = files
+            .iter()
+            .map(|f| self.compute_config_file_name(f, false))
+            .collect();
+        let mut configs: Vec<&str> = nearest
+            .iter()
+            .filter(|c| !c.is_empty())
+            .map(String::as_str)
+            .collect();
+        configs.sort_unstable();
+        configs.dedup();
+        config_pool().install(|| {
+            configs.par_iter().for_each(|c| {
+                self.load(c);
+            })
         });
-        results
-            .into_iter()
-            .map(|m| m.into_inner().unwrap())
+        files
+            .iter()
+            .zip(&nearest)
+            .map(|(file, config)| self.resolve_from(file, config))
             .collect()
     }
+}
+
+/// Threads for parsing configs. A config parse lists the include globs' directory tree on the current rayon pool;
+/// on macOS, listing directories on more threads than this costs much more system time (kernel lock contention)
+/// for no shorter wall time (the monolith: 5,274 directories).
+fn config_pool() -> &'static rayon::ThreadPool {
+    static POOL: OnceLock<rayon::ThreadPool> = OnceLock::new();
+    POOL.get_or_init(|| {
+        let threads = std::thread::available_parallelism().map_or(4, |n| n.get().min(4));
+        rayon::ThreadPoolBuilder::new()
+            .num_threads(threads)
+            .build()
+            .unwrap()
+    })
 }

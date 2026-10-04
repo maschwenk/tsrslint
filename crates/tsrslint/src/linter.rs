@@ -192,8 +192,7 @@ pub fn run(
         files.len()
     ));
     let resolver = TsConfigResolver::new(host, ext_cache);
-    let threads = std::thread::available_parallelism().map_or(4, |n| n.get());
-    let assignment = resolver.resolve_all(&files, threads);
+    let assignment = resolver.resolve_all(&files);
     crate::memstats::mark("files assigned to configs");
     let mut programs: Vec<(String, Vec<String>)> = Vec::new();
     let mut program_index: FxHashMap<String, usize> = FxHashMap::default();
