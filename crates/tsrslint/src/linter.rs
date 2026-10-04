@@ -137,6 +137,7 @@ pub fn run(
     log: &dyn Fn(String),
 ) -> Result<(), String> {
     crate::memstats::mark("run start");
+    use_sparse_id_pages();
     let fs = base_fs(&payload);
     let host: &'static ParseHost = Box::leak(Box::new(ParseHost {
         fs: fs.clone(),
@@ -367,6 +368,14 @@ pub fn run(
     Ok(())
 }
 
+/// Every program gets several checkers, and node and symbol ids come from process-wide counters, so each checker's
+/// id-keyed link pages are mostly empty. Sparse pages hold the same links in less memory (the monolith, 6 checkers: -4%
+/// peak footprint for about +1.5% lint-phase instructions; tsrs notes/mem-shared-base.md). Must run before
+/// checkers exist.
+fn use_sparse_id_pages() {
+    tsrs_checker::links::set_sparse_id_pages(true);
+}
+
 fn suppress_program_diagnostics() -> bool {
     std::env::var("OXLINT_TSGOLINT_DANGEROUSLY_SUPPRESS_PROGRAM_DIAGNOSTICS")
         .is_ok_and(|v| v == "true")
@@ -550,6 +559,7 @@ pub fn lint_files(
     rules: &[&'static dyn Rule],
     opts: &Options,
 ) -> Vec<ReportedDiagnostic> {
+    use_sparse_id_pages();
     let all: Mutex<Vec<ReportedDiagnostic>> = Mutex::new(Vec::new());
     let todo: Vec<usize> = (0..files.len()).collect();
     crate::sched::for_each_file(

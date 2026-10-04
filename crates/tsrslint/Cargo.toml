@@ -33,4 +33,4 @@ mimalloc = "0.1.52"
 alloc-profile = ["tsrs_core/alloc-profile"]
 
 [dev-dependencies]
-tsrs_parser = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-checker-index" }
+tsrs_parser = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-mem" }

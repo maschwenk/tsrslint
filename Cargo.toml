@@ -8,17 +8,18 @@ edition = "2021"
 license = "MIT"
 
 # tsrs (the Rust port of the TypeScript 7 checker) supplies the program, binder and type checker.
-# Branch `claude/lint-checker-index` is tsrs main plus the visibility changes lint rules need (tsrs PR #43) and
-# `Program::checker_index_of_file` (stacked on #43); switch to `main` once those are merged.
+# Branch `claude/lint-mem` is tsrs main plus the visibility changes lint rules need (tsrs PR #43),
+# `Program::checker_index_of_file` (#46) and sparse id-keyed link pages with an embedder switch (#47), stacked in
+# that order; switch to `main` once they are merged.
 [workspace.dependencies]
-tsrs_core = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-checker-index" }
-tsrs_ast = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-checker-index" }
-tsrs_scanner = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-checker-index" }
-tsrs_checker = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-checker-index" }
-tsrs_compiler = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-checker-index" }
-tsrs_tsoptions = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-checker-index" }
-tsrs_vfs = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-checker-index" }
-tsrs_diagnostics = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-checker-index" }
+tsrs_core = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-mem" }
+tsrs_ast = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-mem" }
+tsrs_scanner = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-mem" }
+tsrs_checker = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-mem" }
+tsrs_compiler = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-mem" }
+tsrs_tsoptions = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-mem" }
+tsrs_vfs = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-mem" }
+tsrs_diagnostics = { git = "https://github.com/maschwenk/tsrs", branch = "claude/lint-mem" }
 
 [profile.release]
 opt-level = 3
