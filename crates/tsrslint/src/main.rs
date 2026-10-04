@@ -1,5 +1,6 @@
 // Port of cmd/tsgolint/main.go + headless.go (headless mode only).
 
+#[cfg(not(feature = "alloc-profile"))]
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
@@ -24,7 +25,11 @@ fn main() {
     // coordinating thread gets a large stack too (Go's goroutine stacks grow on demand).
     let status = std::thread::Builder::new()
         .stack_size(512 << 20)
-        .spawn(move || tsrslint::linter::run_headless(&rest))
+        .spawn(move || {
+            let status = tsrslint::linter::run_headless(&rest);
+            tsrs_core::alloc_profile_dump();
+            status
+        })
         .unwrap()
         .join()
         .unwrap_or(1);

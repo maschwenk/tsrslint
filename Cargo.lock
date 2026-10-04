@@ -258,7 +258,7 @@ dependencies = [
 [[package]]
 name = "tsrs_ast"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-checker-index#4d490ab8cc000d61d68cfec835f128a69eb6e6e6"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-mem#d92561da48ecb43ab2b48895ca6d819840c0b4e5"
 dependencies = [
  "bitflags",
  "hashbrown",
@@ -271,7 +271,7 @@ dependencies = [
 [[package]]
 name = "tsrs_astnav"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-checker-index#4d490ab8cc000d61d68cfec835f128a69eb6e6e6"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-mem#d92561da48ecb43ab2b48895ca6d819840c0b4e5"
 dependencies = [
  "tsrs_ast",
  "tsrs_core",
@@ -281,7 +281,7 @@ dependencies = [
 [[package]]
 name = "tsrs_binder"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-checker-index#4d490ab8cc000d61d68cfec835f128a69eb6e6e6"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-mem#d92561da48ecb43ab2b48895ca6d819840c0b4e5"
 dependencies = [
  "bitflags",
  "rustc-hash",
@@ -294,7 +294,7 @@ dependencies = [
 [[package]]
 name = "tsrs_checker"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-checker-index#4d490ab8cc000d61d68cfec835f128a69eb6e6e6"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-mem#d92561da48ecb43ab2b48895ca6d819840c0b4e5"
 dependencies = [
  "bitflags",
  "hashbrown",
@@ -318,7 +318,7 @@ dependencies = [
 [[package]]
 name = "tsrs_compiler"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-checker-index#4d490ab8cc000d61d68cfec835f128a69eb6e6e6"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-mem#d92561da48ecb43ab2b48895ca6d819840c0b4e5"
 dependencies = [
  "bitflags",
  "indexmap",
@@ -344,19 +344,20 @@ dependencies = [
 [[package]]
 name = "tsrs_core"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-checker-index#4d490ab8cc000d61d68cfec835f128a69eb6e6e6"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-mem#d92561da48ecb43ab2b48895ca6d819840c0b4e5"
 dependencies = [
  "bitflags",
  "indexmap",
  "libc",
  "memchr",
+ "mimalloc",
  "rustc-hash",
 ]
 
 [[package]]
 name = "tsrs_declarations"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-checker-index#4d490ab8cc000d61d68cfec835f128a69eb6e6e6"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-mem#d92561da48ecb43ab2b48895ca6d819840c0b4e5"
 dependencies = [
  "rustc-hash",
  "tsrs_ast",
@@ -373,7 +374,7 @@ dependencies = [
 [[package]]
 name = "tsrs_diagnostics"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-checker-index#4d490ab8cc000d61d68cfec835f128a69eb6e6e6"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-mem#d92561da48ecb43ab2b48895ca6d819840c0b4e5"
 dependencies = [
  "rustc-hash",
  "tsrs_core",
@@ -382,7 +383,7 @@ dependencies = [
 [[package]]
 name = "tsrs_module"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-checker-index#4d490ab8cc000d61d68cfec835f128a69eb6e6e6"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-mem#d92561da48ecb43ab2b48895ca6d819840c0b4e5"
 dependencies = [
  "bitflags",
  "indexmap",
@@ -396,7 +397,7 @@ dependencies = [
 [[package]]
 name = "tsrs_modulespecifiers"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-checker-index#4d490ab8cc000d61d68cfec835f128a69eb6e6e6"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-mem#d92561da48ecb43ab2b48895ca6d819840c0b4e5"
 dependencies = [
  "regex",
  "rustc-hash",
@@ -409,7 +410,7 @@ dependencies = [
 [[package]]
 name = "tsrs_parser"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-checker-index#4d490ab8cc000d61d68cfec835f128a69eb6e6e6"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-mem#d92561da48ecb43ab2b48895ca6d819840c0b4e5"
 dependencies = [
  "bitflags",
  "rustc-hash",
@@ -422,7 +423,7 @@ dependencies = [
 [[package]]
 name = "tsrs_printer"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-checker-index#4d490ab8cc000d61d68cfec835f128a69eb6e6e6"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-mem#d92561da48ecb43ab2b48895ca6d819840c0b4e5"
 dependencies = [
  "bitflags",
  "indexmap",
@@ -436,7 +437,7 @@ dependencies = [
 [[package]]
 name = "tsrs_pseudochecker"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-checker-index#4d490ab8cc000d61d68cfec835f128a69eb6e6e6"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-mem#d92561da48ecb43ab2b48895ca6d819840c0b4e5"
 dependencies = [
  "tsrs_ast",
  "tsrs_core",
@@ -445,7 +446,7 @@ dependencies = [
 [[package]]
 name = "tsrs_scanner"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-checker-index#4d490ab8cc000d61d68cfec835f128a69eb6e6e6"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-mem#d92561da48ecb43ab2b48895ca6d819840c0b4e5"
 dependencies = [
  "bitflags",
  "memchr",
@@ -459,7 +460,7 @@ dependencies = [
 [[package]]
 name = "tsrs_sourcemap"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-checker-index#4d490ab8cc000d61d68cfec835f128a69eb6e6e6"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-mem#d92561da48ecb43ab2b48895ca6d819840c0b4e5"
 dependencies = [
  "rustc-hash",
  "tsrs_ast",
@@ -470,7 +471,7 @@ dependencies = [
 [[package]]
 name = "tsrs_transformers"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-checker-index#4d490ab8cc000d61d68cfec835f128a69eb6e6e6"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-mem#d92561da48ecb43ab2b48895ca6d819840c0b4e5"
 dependencies = [
  "bitflags",
  "rustc-hash",
@@ -487,7 +488,7 @@ dependencies = [
 [[package]]
 name = "tsrs_tsoptions"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-checker-index#4d490ab8cc000d61d68cfec835f128a69eb6e6e6"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-mem#d92561da48ecb43ab2b48895ca6d819840c0b4e5"
 dependencies = [
  "bitflags",
  "indexmap",
@@ -504,7 +505,7 @@ dependencies = [
 [[package]]
 name = "tsrs_vfs"
 version = "0.3.0"
-source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-checker-index#4d490ab8cc000d61d68cfec835f128a69eb6e6e6"
+source = "git+https://github.com/maschwenk/tsrs?branch=claude%2Flint-mem#d92561da48ecb43ab2b48895ca6d819840c0b4e5"
 dependencies = [
  "bitflags",
  "rayon",
