@@ -8,9 +8,7 @@ use std::time::{Duration, Instant};
 use rustc_hash::FxHashMap;
 use tsrs_ast::{self as ast, Kind, Node, SourceFile, SourceFileParseOptions};
 use tsrs_checker::Checker;
-use tsrs_compiler::{
-    new_cached_fs_compiler_host, new_program, CompilerHost, Program, ProgramOptions,
-};
+use tsrs_compiler::{new_compiler_host, new_program, CompilerHost, Program, ProgramOptions};
 use tsrs_core::tspath::{self, Path};
 use tsrs_core::CompilerOptions;
 use tsrs_core::{Tristate, P};
@@ -123,6 +121,8 @@ pub fn run_headless(args: &[String]) -> i32 {
     }
 }
 
+/// The FS of the config parses and of every program. Its cache is the only one: program hosts use it as is
+/// (`new_compiler_host`, not `new_cached_fs_compiler_host`), so lookups are cached once for the whole run.
 fn base_fs(payload: &Payload) -> Arc<dyn FS> {
     let os: Arc<dyn FS> = Arc::new(osvfs::fs());
     let base: Arc<dyn FS> = match &payload.source_overrides {
@@ -255,7 +255,7 @@ pub fn run(
         }
         let dir = tspath::get_directory_path(config_file_name);
         let compiler_host = shared_declarations_host(
-            new_cached_fs_compiler_host(
+            new_compiler_host(
                 &dir,
                 fs.clone(),
                 &bundled::lib_path(),
@@ -309,7 +309,7 @@ pub fn run(
             unmatched.len()
         ));
         let compiler_host = shared_declarations_host(
-            new_cached_fs_compiler_host(
+            new_compiler_host(
                 cwd,
                 fs.clone(),
                 &bundled::lib_path(),
