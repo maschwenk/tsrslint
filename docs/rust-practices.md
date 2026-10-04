@@ -45,12 +45,15 @@ the set tsrs uses:
 | Group | Lints | Why |
 | --- | --- | --- |
 | Clones | `redundant_clone`, `clone_on_copy`, `implicit_clone`, `clone_on_ref_ptr`, `assigning_clones`, `cloned_instead_of_copied` | Go copies pointers; a port turns many of those into `.clone()`. With these on, a `.clone()` that remains is a real copy, and a reference-count bump reads `Arc::clone(&x)`. |
-| Allocations | `format_push_string`, `inefficient_to_string`, `needless_collect`, `or_fun_call`, `unnecessary_box_returns`, `rc_buffer`, `vec_box`, `stable_sort_primitive` | A temporary `String`, `Vec` or `Box` that the code did not need. |
+| Allocations | `format_push_string`, `inefficient_to_string`, `needless_collect`, `unnecessary_box_returns`, `rc_buffer`, `vec_box`, `stable_sort_primitive` | A temporary `String`, `Vec` or `Box` that the code did not need. |
 | Arguments and stack | `needless_pass_by_value`, `trivially_copy_pass_by_ref`, `large_types_passed_by_value`, `large_stack_arrays`, `large_stack_frames`, `inline_always` | `&str` and `&[T]` in, small `Copy` values by value. `#[inline(always)]` needs a measurement. |
 | Hashing | `disallowed_types` (`std::collections::HashMap` / `HashSet`), `set_contains_or_insert`, `zero_sized_map_values`, `iter_over_hash_type` | std's maps use SipHash; use `rustc_hash`. Iterating a hash map or set must never decide the order of diagnostics: output has to match tsgolint byte for byte. |
 | Locks and threads | `mutex_atomic`, `mutex_integer`, `rc_mutex`, `significant_drop_in_scrutinee`, `non_send_fields_in_send_ty` | A mutex around a flag or counter, a lock guard held across a whole `match`, a new `unsafe impl Send` over non-`Send` fields. |
 | `unsafe` | `unsafe_op_in_unsafe_fn`, `undocumented_unsafe_blocks`, `missing_safety_doc`, `ptr_as_ptr`, `ptr_cast_constness`, `ref_as_ptr`, `borrow_as_ptr`, `cast_ptr_alignment`, `as_ptr_cast_mut`, `transmute_ptr_to_ptr`, `mem_forget`, `disallowed_methods` | Every `unsafe` block states its invariant in a `// SAFETY:` comment. `clippy.toml` lists the unchecked operations (`get_unchecked`, `unwrap_unchecked`, `unreachable_unchecked`, `from_utf8_unchecked`): each needs a reason that cites a measurement. |
 | Leftovers | `dbg_macro`, `todo`, `unimplemented`, `disallowed_macros`, `allow_attributes`, `allow_attributes_without_reason` | Debugging output and placeholders do not land; suppressions are `#[expect]` with a reason. |
+
+`or_fun_call` is off, as in tsrs: its fix makes an eager call lazy (`unwrap_or(f())` → `unwrap_or_else(f)`), and Go
+evaluates `f` eagerly, so the rewrite can skip a side effect the Go code performs.
 
 ## Rules that only review checks
 
