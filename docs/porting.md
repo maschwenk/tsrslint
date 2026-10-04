@@ -30,7 +30,8 @@ messages, ranges, fixes and suggestions exactly, so tsrslint output is byte-for-
    A case may be skipped only if it is skipped upstream. Do not edit extracted cases to make them pass.
 3. If cases are `unconverted`, convert them (extend the extractor only in your own branch, or dump them at runtime
    from the Go tests) so the rule is fully covered.
-4. `cargo fmt`, no new warnings (`cargo clippy` clean for your files).
+4. `cargo fmt`, no new warnings, and `tools/lint/ratchet.py` passes: no new clippy findings
+   ([rust-practices.md](rust-practices.md)).
 
 ## tsrs API
 

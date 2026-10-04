@@ -103,7 +103,8 @@ All 59 rules run every case extracted from tsgolint's Go tests; per-rule counts 
 [Rule coverage](#rule-coverage).
 
 CI runs on Depot ([.depot/workflows/ci.yml](.depot/workflows/ci.yml): fmt, release build, rule tests, headless and npm
-packaging smoke tests, and a check that the rule coverage table below is current). The benchmark at the top runs in
+packaging smoke tests, a check that the rule coverage table below is current, and the lint ratchet of
+[docs/rust-practices.md](docs/rust-practices.md)). The benchmark at the top runs in
 its own Depot workflow ([.depot/workflows/bench.yml](.depot/workflows/bench.yml), [bench/README.md](bench/README.md)). Releases: [.github/workflows/release.yml](.github/workflows/release.yml), see
 [npm/README.md](npm/README.md#releasing).
 

@@ -13,6 +13,9 @@ path = "src/main.rs"
 name = "tsrslint"
 path = "src/lib.rs"
 
+[lints]
+workspace = true
+
 [dependencies]
 tsrs_core.workspace = true
 tsrs_ast.workspace = true
