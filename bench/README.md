@@ -72,6 +72,21 @@ from `pgo-train.sh` and refuses to run if the two pin different commits or insta
 - Per-rule diagnostic counts of each binary are in the JSON; `tools/rule_coverage.py` puts the newest CI run's into
   the README's rule table.
 
+## Regression flag
+
+Wall time on a shared VM moves a few percent between runs with no code change, so it cannot show a small regression.
+Each run therefore also counts the user-space instructions of one tsrslint lint per project with a single checker
+(`bench/count.py`, Linux `perf_event_open`; untimed, after the timed runs; `TSRSLINT_CHECKERS=1`,
+`RAYON_NUM_THREADS=1`). That count repeats to about 0.01% (four runs on the bench machine: 0.006% on webpack, 0.014%
+on xstate), so a change of more than 1% comes from the code. Stock tsgolint is not counted: the Go runtime makes its
+count vary by a few percent.
+
+`bench/regressions.py --latest` compares the counts with the newest earlier result from the same runner label and
+build, and only when the CPU model and C library match. A project up more than 1% is a regression: the step prints a
+warning and comments on the pull request merged in between, or, when the run covers more than three merges, on the
+commit. It never fails the job. Results store the count under `projects.<name>.tsrslint.instructions`. `count.py` and
+`regressions.py` are copies of maschwenk/tsrs's (`regressions.py` differs in the constants at the top).
+
 ## CI
 
 `.depot/workflows/bench.yml` on [Depot CI](https://depot.dev/docs/ci/overview), the mechanism `ci.yml` already uses.
