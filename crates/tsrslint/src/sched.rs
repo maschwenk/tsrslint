@@ -77,6 +77,7 @@ impl FileQueue {
     }
 
     fn remaining(&self) -> u64 {
+        // Relaxed: an estimate for choosing a queue to steal from; a stale value only changes that choice.
         let r = self.range.load(Ordering::Relaxed);
         let (front, back) = ((r & LOW) as usize, (r >> 32) as usize);
         if front < back {
@@ -87,12 +88,15 @@ impl FileQueue {
     }
 
     fn take(&self, front: bool) -> Option<usize> {
+        // Relaxed (here and in the CAS): `range` only hands out indices into `files`, which never changes after
+        // new(), so no other data is published through it; the CAS alone gives each position to one taker.
         let mut r = self.range.load(Ordering::Relaxed);
         loop {
             if (r & LOW) >= (r >> 32) {
                 return None;
             }
             let new = if front { r + 1 } else { r - (1 << 32) };
+            // Relaxed: see above.
             match self
                 .range
                 .compare_exchange_weak(r, new, Ordering::Relaxed, Ordering::Relaxed)

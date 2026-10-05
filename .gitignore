@@ -16,3 +16,6 @@ node_modules/
 
 # bench/run.py work dir (clones, installs, logs)
 /bench/.work
+
+# Python bytecode from the tools/ scripts
+__pycache__/

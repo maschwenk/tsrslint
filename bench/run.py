@@ -240,8 +240,9 @@ def run_once(exe: Path, cwd: Path, payload: Path, logs: Path, tag: str, timeout:
     return r
 
 
-def count_instructions(exe: Path, cwd: Path, payload: Path, logs: Path, name: str, timeout: float) -> int | None:
-    """User-space instructions of one single-checker lint (bench/count.py), or None where it cannot count.
+def count_instructions(exe: Path, cwd: Path, payload: Path, logs: Path, name: str, timeout: float) -> dict | None:
+    """User-space instructions and peak RSS of one single-checker lint (bench/count.py), or None where it cannot
+    count.
 
     Untimed and separate from the timed runs. One checker (TSRSLINT_CHECKERS=1) and one rayon thread make the count
     reproducible, so one run is enough (bench/README.md "Regression flag")."""
@@ -254,7 +255,9 @@ def count_instructions(exe: Path, cwd: Path, payload: Path, logs: Path, name: st
         subprocess.run([sys.executable, str(BENCH / "count.py"), str(out), "--", str(exe), "headless"], cwd=cwd,
                        stdin=stdin, stdout=subprocess.DEVNULL, stderr=stderr, env=env, timeout=timeout)
     r = json.loads(out.read_text())
-    return r["instructions"] if r.get("exit") == 0 else None
+    if r.get("exit") != 0 or r.get("instructions") is None:
+        return None
+    return {"instructions": r["instructions"], "max_rss_bytes": r["max_rss_bytes"]}
 
 
 def median(xs: list) -> float | None:
@@ -535,10 +538,11 @@ def main() -> None:
             for r in runs[c]:
                 r.pop("_keys", None), r.pop("_full", None)
         if not args.no_instructions:
-            n = count_instructions(tsrslint, cwd, payload, logs, name, args.timeout)
-            if n is not None:
-                pr["tsrslint"]["instructions"] = n
-                log(f"{name} tsrslint: {n / 1e9:.3f} G instructions (user space, one checker)")
+            counted = count_instructions(tsrslint, cwd, payload, logs, name, args.timeout)
+            if counted is not None:
+                pr["tsrslint"].update(counted)
+                log(f"{name} tsrslint: {counted['instructions'] / 1e9:.3f} G instructions, peak "
+                    f"{fmt_mem(counted['max_rss_bytes'])} (one checker, untimed)")
         result["projects"][name] = pr
     result["duration_s"] = round(time.perf_counter() - t_start)
 

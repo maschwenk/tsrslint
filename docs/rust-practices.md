@@ -37,6 +37,14 @@ Details:
 - `tools/lint/ratchet.py` is a copy of the one in tsrs; the differences are the constants at the top. Fix a bug in
   both.
 
+## Source checks
+
+`tools/lint/source.py` (CI: the `lint-ratchet` job; a copy of tsrs's) checks what clippy cannot express. A new
+`unsafe impl Send` / `Sync` fails until `tools/lint/source.py --update` records it in `tools/lint/send_sync.tsv` (none
+today), so every cross-thread escape is a reviewed diff. A `Relaxed` / `Acquire` / `Release` / `AcqRel` ordering needs
+a `//` comment on its line or in the three lines above saying why it is enough (`tools/lint/atomics.tsv`: none
+without one today).
+
 ## What the lints check
 
 Clippy's default groups stay on, as porting.md already asked ("`cargo clippy` clean for your files"). Added on top,

@@ -87,6 +87,11 @@ warning and comments on the pull request merged in between, or, when the run cov
 commit. It never fails the job. Results store the count under `projects.<name>.tsrslint.instructions`. `count.py` and
 `regressions.py` are copies of maschwenk/tsrs's (`regressions.py` differs in the constants at the top).
 
+The same untimed run records the process's peak RSS (`ru_maxrss` via `wait4`), stored as
+`projects.<name>.tsrslint.max_rss_bytes`. With one checker it still moves more than tsrs's (the tsconfig pool and the
+file readers run several threads): five identical runs spread 0.65% on mui-docs, 1.37% on webpack and 1.79% (5.7 MiB)
+on xstate. Peak memory is therefore flagged when it rises by more than 4% and more than 12 MiB.
+
 ## CI
 
 `.depot/workflows/bench.yml` on [Depot CI](https://depot.dev/docs/ci/overview), the mechanism `ci.yml` already uses.

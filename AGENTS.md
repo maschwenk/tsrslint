@@ -10,6 +10,8 @@ from. For Rust changes, [docs/porting.md](docs/porting.md) has the conventions a
 
 - Run `tools/lint/ratchet.py` before a change lands. It fails when a file has more findings of a clippy lint than
   `tools/lint/baseline.tsv` records.
+- Run `tools/lint/source.py` too: a new `unsafe impl Send`/`Sync` needs a SAFETY comment and an `--update`, and a
+  weakened atomic ordering needs a comment saying why it is enough.
 - Fix what it reports in the code you wrote. If the flagged code is intended, use
   `#[expect(clippy::<lint>, reason = "...")]` on the smallest item. Never a bare `#[allow]`, and never raise
   `baseline.tsv`.
