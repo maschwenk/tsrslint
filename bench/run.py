@@ -240,6 +240,23 @@ def run_once(exe: Path, cwd: Path, payload: Path, logs: Path, tag: str, timeout:
     return r
 
 
+def count_instructions(exe: Path, cwd: Path, payload: Path, logs: Path, name: str, timeout: float) -> int | None:
+    """User-space instructions of one single-checker lint (bench/count.py), or None where it cannot count.
+
+    Untimed and separate from the timed runs. One checker (TSRSLINT_CHECKERS=1) and one rayon thread make the count
+    reproducible, so one run is enough (bench/README.md "Regression flag")."""
+    if sys.platform != "linux":
+        return None
+    out = logs / f"{name}-instructions.json"
+    logs.mkdir(parents=True, exist_ok=True)
+    env = dict(os.environ, TSRSLINT_CHECKERS="1", RAYON_NUM_THREADS="1")
+    with open(payload, "rb") as stdin, open(logs / f"{name}-instructions.stderr", "wb") as stderr:
+        subprocess.run([sys.executable, str(BENCH / "count.py"), str(out), "--", str(exe), "headless"], cwd=cwd,
+                       stdin=stdin, stdout=subprocess.DEVNULL, stderr=stderr, env=env, timeout=timeout)
+    r = json.loads(out.read_text())
+    return r["instructions"] if r.get("exit") == 0 else None
+
+
 def median(xs: list) -> float | None:
     xs = [x for x in xs if x is not None]
     return statistics.median(xs) if xs else None
@@ -291,6 +308,9 @@ def machine_info(local: bool, label: str | None) -> dict:
             info["memory_gb"] = round(kb / 2**20)
         except (OSError, StopIteration):
             pass
+        libc, version = platform.libc_ver()
+        if libc:
+            info["libc"] = f"{libc} {version}"
     try:
         info["load_avg_1m"] = round(os.getloadavg()[0], 1)
     except OSError:
@@ -407,6 +427,8 @@ def main() -> None:
     ap.add_argument("--reps", type=int, default=3)
     ap.add_argument("--timeout", type=float, default=900, help="per-run timeout in seconds")
     ap.add_argument("--no-warmup", action="store_true")
+    ap.add_argument("--no-instructions", action="store_true",
+                    help="skip the untimed instruction-count run of tsrslint (Linux only; bench/regressions.py compares it)")
     ap.add_argument("--setup-only", action="store_true", help="clone and install the projects and stock tsgolint")
     ap.add_argument("--print-cache-keys", action="store_true",
                     help="print `<name>=<key>` lines (GITHUB_OUTPUT format) for the CI caches of the work dir")
@@ -512,6 +534,11 @@ def main() -> None:
         for c in runs:
             for r in runs[c]:
                 r.pop("_keys", None), r.pop("_full", None)
+        if not args.no_instructions:
+            n = count_instructions(tsrslint, cwd, payload, logs, name, args.timeout)
+            if n is not None:
+                pr["tsrslint"]["instructions"] = n
+                log(f"{name} tsrslint: {n / 1e9:.3f} G instructions (user space, one checker)")
         result["projects"][name] = pr
     result["duration_s"] = round(time.perf_counter() - t_start)
 

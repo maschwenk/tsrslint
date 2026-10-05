@@ -41,6 +41,7 @@ jobs:
     runs-on: depot-ubuntu-24.04-8
     permissions:
       contents: write # pushes the results commit
+      pull-requests: write # comments on pull requests that regress instruction counts (bench/regressions.py)
     timeout-minutes: 60
     env:
       BENCH_RUNNER: Depot CI `depot-ubuntu-24.04-8`
@@ -210,6 +211,14 @@ jobs:
             bench/results
             bench/.work/logs
           if-no-files-found: ignore
+
+      # Flag only (bench/README.md "Regression flag"): compares tsrslint instruction counts with the previous run and,
+      # on a regression, comments on the pull requests merged in between. Never fails the job.
+      - name: Flag instruction-count regressions
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 bench/regressions.py --latest --comment
 
       - name: Commit results
         if: github.ref_type == 'branch'
