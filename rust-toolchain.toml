@@ -1,0 +1,6 @@
+# The one Rust version for builds, tests, rustfmt, clippy (tools/lint/ratchet.py), the bench and releases; every
+# workflow installs it. Keep it equal to maschwenk/tsrs's. Upgrading: docs/rust-practices.md, "The lint ratchet".
+[toolchain]
+channel = "1.99.0"
+components = ["clippy", "rustfmt"]
+profile = "minimal"

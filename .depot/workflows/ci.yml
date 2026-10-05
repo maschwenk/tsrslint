@@ -33,8 +33,13 @@ jobs:
       # @types/node at the repository root: some no-deprecated rule cases import node modules.
       - name: pnpm install
         run: pnpm install --frozen-lockfile
+      - name: Read the pinned Rust toolchain (rust-toolchain.toml)
+        id: rust
+        shell: bash
+        run: echo "toolchain=$(sed -n 's/^channel = "\(.*\)"$/\1/p' rust-toolchain.toml)" >> "$GITHUB_OUTPUT"
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
         with:
+          toolchain: ${{ steps.rust.outputs.toolchain }}
           components: rustfmt
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
       - name: cargo fmt
@@ -50,8 +55,7 @@ jobs:
           node npm/build.mjs --binary x86_64-unknown-linux-gnu=target/release/tsgolint --pack
           npm/smoke-install.sh npm/dist
 
-  # docs/rust-practices.md: clippy findings per (lint, file) may not grow past tools/lint/baseline.tsv. A separate job
-  # because it needs the clippy version pinned in tools/lint/ratchet.py, not the stable toolchain the build uses.
+  # docs/rust-practices.md: clippy findings per (lint, file) may not grow past tools/lint/baseline.tsv.
   lint-ratchet:
     runs-on: depot-ubuntu-22.04
     timeout-minutes: 30
@@ -59,12 +63,13 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
-      - name: Read the pinned lint toolchain
-        id: pin
-        run: echo "toolchain=$(sed -n 's/^TOOLCHAIN = "\(.*\)"$/\1/p' tools/lint/ratchet.py)" >> "$GITHUB_OUTPUT"
+      - name: Read the pinned Rust toolchain (rust-toolchain.toml)
+        id: rust
+        shell: bash
+        run: echo "toolchain=$(sed -n 's/^channel = "\(.*\)"$/\1/p' rust-toolchain.toml)" >> "$GITHUB_OUTPUT"
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
         with:
-          toolchain: ${{ steps.pin.outputs.toolchain }}
+          toolchain: ${{ steps.rust.outputs.toolchain }}
           components: clippy
       - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
         with:

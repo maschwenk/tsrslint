@@ -29,10 +29,13 @@ another OS may still have the findings.
 
 Details:
 
-- Findings depend on the clippy version, so the ratchet runs the toolchain pinned as `TOOLCHAIN` in the script. Keep
-  the pin equal to tsrs's. To bump it: change the pin, run `--update --allow-increase` on macOS and on Linux, commit
-  the result. From a Mac, the Linux half is
-  `docker run --rm -v "$PWD":/w -w /w -e CARGO_TARGET_DIR=/tmp/t rust:<toolchain> bash -c 'rustup component add clippy && python3 tools/lint/ratchet.py --update --allow-increase'`.
+- Findings depend on the clippy version, so the ratchet runs the toolchain `rust-toolchain.toml` pins. That file pins
+  one Rust version for local builds, CI, the bench and releases, and stays equal to tsrs's (the tsrs crates build
+  with it). An upgrade is a pull request of its own, done as in tsrs (`docs/RUST.md`, "Upgrading Rust"): change
+  `channel`, fix what the new compiler rejects, run `--update --allow-increase` on macOS and on Linux, and take the
+  per-project change from the next bench run on main (`bench/regressions.py` prints it and flags nothing). From a
+  Mac, the Linux half of the ratchet update is
+  `docker run --rm -v "$PWD":/w -w /w -e CARGO_TARGET_DIR=/tmp/t rust:<version> bash -c 'rustup component add clippy && python3 tools/lint/ratchet.py --update --allow-increase'`.
 - It covers the library and the binary, not the tests. The tsrs crates are dependencies and are linted in tsrs.
 - `tools/lint/ratchet.py` is a copy of the one in tsrs; the differences are the constants at the top. Fix a bug in
   both.

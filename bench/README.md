@@ -82,9 +82,10 @@ on xstate), so a change of more than 1% comes from the code. Stock tsgolint is n
 count vary by a few percent.
 
 `bench/regressions.py --latest` compares the counts with the newest earlier result from the same runner label and
-build, and only when the CPU model and C library match. A project up more than 1% is a regression: the step prints a
-warning and comments on the pull request merged in between, or, when the run covers more than three merges, on the
-commit. It never fails the job. Results store the count under `projects.<name>.tsrslint.instructions`. `count.py` and
+build, and only when the CPU model and C library match. When the Rust compiler differs (results record
+`tsrslint.rustc`; `rust-toolchain.toml` pins it), it prints the change as the upgrade's measurement and flags nothing.
+A project up more than 1% is a regression: the step prints a warning and comments on the pull request merged in
+between, or, when the run covers more than three merges, on the commit. It never fails the job. Results store the count under `projects.<name>.tsrslint.instructions`. `count.py` and
 `regressions.py` are copies of maschwenk/tsrs's (`regressions.py` differs in the constants at the top).
 
 The same untimed run records the process's peak RSS (`ru_maxrss` via `wait4`), stored as
