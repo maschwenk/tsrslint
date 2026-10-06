@@ -100,8 +100,33 @@ def pgo_training_projects() -> dict[str, dict]:
     return out
 
 
+def overlay_files(p: dict) -> list[tuple[str, bytes]]:
+    """The files of a project's `overlay` directory (bench/overlays/<name>), as (relative path, content)."""
+    if "overlay" not in p:
+        return []
+    root = REPO / p["overlay"]
+    files = sorted((f.relative_to(root).as_posix(), f.read_bytes()) for f in root.rglob("*") if f.is_file())
+    if not files:
+        sys.exit(f"{p['name']}: overlay {p['overlay']} has no files")
+    return files
+
+
+def overlay_digest(p: dict) -> str | None:
+    """Content hash of a project's overlay, computed like maschwenk/tsrs's bench so the two share checkout markers."""
+    files = overlay_files(p)
+    if not files:
+        return None
+    h = hashlib.sha256()
+    for rel, data in files:
+        h.update(rel.encode() + b"\0" + hashlib.sha256(data).digest())
+    return h.hexdigest()[:16]
+
+
 def ensure_checkout(p: dict, dest: Path, pgo: bool) -> None:
     want = {"repo": p["repo"], "commit": p["commit"], "install": p["install"]}
+    overlay = overlay_files(p)
+    if overlay:
+        want["overlay"] = overlay_digest(p)
     if read_marker(dest) == want:
         log(f"{p['name']}: cached checkout {p['commit'][:12]}")
     else:
@@ -110,6 +135,10 @@ def ensure_checkout(p: dict, dest: Path, pgo: bool) -> None:
 
         def attempt() -> None:
             git_checkout(p["repo"], p["commit"], dest)
+            # Overlay files replace or add checkout files before the install (bench/README.md "Projects").
+            for rel, data in overlay:
+                (dest / rel).parent.mkdir(parents=True, exist_ok=True)
+                (dest / rel).write_bytes(data)
             sh(p["install"], cwd=dest, env=dict(os.environ, CI="true", HUSKY="0"))
 
         retry(p["name"], attempt)
@@ -467,7 +496,8 @@ def main() -> None:
         digest = lambda x: hashlib.sha256(json.dumps(x, sort_keys=True).encode()).hexdigest()[:16]
         print(f"stock={digest([cfg['stock'], npm_platform()])}")
         for p in projects:
-            print(f"{p['name']}={p['commit'][:12]}-{digest([p['repo'], p['commit'], p['install']])}")
+            key = [p["repo"], p["commit"], p["install"]] + ([overlay_digest(p)] if "overlay" in p else [])
+            print(f"{p['name']}={p['commit'][:12]}-{digest(key)}")
         return
 
     pgo = pgo_training_projects()

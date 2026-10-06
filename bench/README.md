@@ -25,10 +25,11 @@ use the same marker file as maschwenk/tsrs's bench, so a work dir shared with it
 
 ## Projects
 
-`bench/projects.json`: the projects maschwenk/tsrs benchmarks the type checker on (from
-[microsoft/typescript-benchmarking](https://github.com/microsoft/typescript-benchmarking)), with the same commits and
-install commands, minus the two that live inside the suite repository. Linted files: the project's git-tracked files
-under the listed directories (`.github/scripts/headless-lint.mjs payload <dir> <lint options>`), never `.d.ts`.
+`bench/projects.json`: the projects maschwenk/tsrs benchmarks the type checker on, with the same commits, install
+commands and overlays: four from [microsoft/typescript-benchmarking](https://github.com/microsoft/typescript-benchmarking)
+(minus the two that live inside the suite repository) and four large applications built on Zod or Effect Schema and
+tested with Vitest. Linted files: the project's git-tracked files under the listed directories
+(`.github/scripts/headless-lint.mjs payload <dir> <lint options>`), never `.d.ts`.
 
 | project | repository @ commit | linted | PGO training |
 | --- | --- | --- | --- |
@@ -36,6 +37,17 @@ under the listed directories (`.github/scripts/headless-lint.mjs payload <dir> <
 | `mui-docs` | mui/material-ui @ `6780195595c1` | `docs/**/*.{ts,tsx,mts,cts}` (1,001 files) | no |
 | `xstate` | statelyai/xstate @ `fbee62e7c158` | `packages/**/*.{ts,tsx,mts,cts}` (253 files) | yes |
 | `webpack` | webpack/webpack @ `b54c5e2aa26d` | `{lib,bin}/**/*.js` (777 files, JSDoc types under `checkJs`) | yes |
+| `cal-diy` | calcom/cal.diy @ `54343aa685ae` | `apps/web/**/*.{ts,tsx,mts,cts}` (984 files; Zod 3, tRPC) | no |
+| `formbricks-web` | formbricks/formbricks @ `ec45c28e4d20` | `apps/web/**/*.{ts,tsx,mts,cts}` (3,408 files; Zod 4, Vitest) | no |
+| `supabase-studio` | supabase/supabase @ `12afe3999951` | `apps/studio/**/*.{ts,tsx,mts,cts}` (4,824 files; Zod 3, Vitest) | no |
+| `t3code-server` | pingdotgg/t3code @ `9bd1d8009a6b` | `apps/server/**/*.{ts,tsx,mts,cts}` (1,326 files; Effect) | no |
+
+The application projects' install commands also run the type generation their own `typecheck` needs (Prisma clients,
+workspace package declarations, Next.js route types), and cal.diy and Formbricks get an overlay
+(`bench/overlays/<name>/`, copied over the checkout before the install) that replaces tsconfig options TypeScript 7
+removed. maschwenk/tsrs's `bench/README.md` ("Application projects") documents each step; the overlay files are
+identical in both repositories, and their content hash is part of the checkout marker and the CI cache key, so a
+shared work dir reuses the checkouts.
 
 PGO training: `.github/scripts/pgo-train.sh` trains the release binaries' profile on exactly these xstate and webpack
 files, so their tsrslint numbers are flattered; vscode and mui-docs are held out. `run.py` reads the training set
