@@ -21,22 +21,22 @@ tsgolint, parity and timing on a 28.5k-file codebase, full-port estimate).
 <!-- bench:start -->
 ## Benchmark: tsrslint vs tsgolint 7.0.2002
 
-Each row lints one open-source project with all 59 rules (default options) through tsgolint's headless protocol, the way `oxlint --type-aware` runs its backend, with stock tsgolint 7.0.2002 (npm `@oxlint-tsgolint/linux-x64@7.0.2002`) and with tsrslint at commit `5c342b8e0686` (the PGO `dist` build, built like the npm release binaries). Both get the same payload; median of 3 interleaved runs, on Depot CI `depot-ubuntu-24.04-8` (8 vCPU, 31 GB RAM, Linux x86_64, AMD EPYC 9R45 96-Core Processor).
+Each row lints one open-source project with all 59 rules (default options) through tsgolint's headless protocol, the way `oxlint --type-aware` runs its backend, with stock tsgolint 7.0.2002 (npm `@oxlint-tsgolint/linux-x64@7.0.2002`) and with tsrslint at commit `1b0e43b04124` (the PGO `dist` build, built like the npm release binaries). Both get the same payload; median of 3 interleaved runs, on Depot CI `depot-ubuntu-24.04-8` (8 vCPU, 31 GB RAM, Linux x86_64, AMD EPYC 9R45 96-Core Processor).
 
 | project | in PGO training | files | diagnostics, stock / tsrslint | same diagnostics | text differs | stock wall (s) | tsrslint wall (s) | speedup | stock peak RSS | tsrslint peak RSS | memory, tsrslint / stock |
 | --- | --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| vscode | no | 9,401 | 282,717 / 282,719 | **no: 2 differ** | 179 | 14.55 | 3.37 | 4.32x | 8.73 GiB | 2.67 GiB | 0.31x |
-| mui-docs | no | 1,004 | 3,607 / 3,607 | yes | 10 | 11.86 | 2.10 | 5.64x | 7.82 GiB | 1.76 GiB | 0.22x |
-| xstate | yes | 253 | 6,513 / 6,513 | yes | 13 | 0.98 | 0.33 | 2.95x | 904 MiB | 634 MiB | 0.70x |
-| webpack | yes | 777 | 34,799 / 34,802 | **no: 3 differ** | 16 | 1.06 | 0.29 | 3.61x | 964 MiB | 549 MiB | 0.57x |
-| cal-diy | no | 984 | 11,741 / 11,741 | yes | 35 | 3.81 | 0.95 | 3.99x | 3.69 GiB | 1.54 GiB | 0.42x |
-| formbricks-web | no | 3,408 | 34,553–34,554 / 34,553 | yes; stock's runs differ by 1 | 835 | 8.18 | 1.81 | 4.51x | 6.72 GiB | 2.44 GiB | 0.36x |
-| supabase-studio | no | 4,824 | 44,916 / 44,916 | yes | 12 | 7.90 | 1.88 | 4.20x | 5.82 GiB | 2.04 GiB | 0.35x |
-| t3code-server | no | 1,326 | 19,849–19,850 / 19,849 | yes; stock's runs differ by 1 | 130 | 10.10 | 1.99 | 5.08x | 6.37 GiB | 1.61 GiB | 0.25x |
+| vscode | no | 9,401 | 282,717–282,719 / 282,719 | yes; stock's runs differ by 2 | 179 | 15.76 | 3.67 | 4.29x | 8.75 GiB | 2.67 GiB | 0.31x |
+| mui-docs | no | 1,004 | 3,607 / 3,607 | yes | 10 | 11.23 | 2.07 | 5.41x | 7.78 GiB | 1.77 GiB | 0.23x |
+| xstate | yes | 253 | 6,513 / 6,513 | yes | 13 | 0.96 | 0.33 | 2.89x | 878 MiB | 640 MiB | 0.73x |
+| webpack | yes | 777 | 34,799 / 34,802 | **no: 3 differ** | 16 | 1.05 | 0.28 | 3.70x | 925 MiB | 555 MiB | 0.60x |
+| cal-diy | no | 984 | 11,741 / 11,741 | yes | 35 | 3.62 | 0.89 | 4.07x | 3.84 GiB | 1.53 GiB | 0.40x |
+| formbricks-web | no | 3,408 | 34,553–34,554 / 34,553 | yes; stock's runs differ by 1 | 853 | 8.20 | 1.82 | 4.51x | 6.88 GiB | 2.44 GiB | 0.35x |
+| supabase-studio | no | 4,824 | 44,916 / 44,916 | yes | 2 | 7.36 | 1.81 | 4.07x | 5.78 GiB | 2.03 GiB | 0.35x |
+| t3code-server | no | 1,326 | 19,849–19,850 / 19,849 | yes; stock's runs differ by 1 | 130 | 9.55 | 1.92 | 4.96x | 6.17 GiB | 1.60 GiB | 0.26x |
 
 in PGO training: the release binaries' profile is trained on these files (`.github/scripts/pgo-train.sh`), which flatters tsrslint there; the other projects are held out. diagnostics: rule diagnostics each binary reports. same diagnostics: both report the same multiset of (file, range, rule, message id); a bold cell is a disagreement. When one binary's runs report different sets (multi-threaded nondeterminism), the closest pair is compared and the cell says by how many diagnostics that binary's runs differ. text differs: diagnostics both report whose message text differs; expected in small numbers, since tsrs ports TypeScript 7.1-dev and tsgolint 7.0.2002 is built on TypeScript 7.0, which print some types differently. wall: process wall-clock time. speedup: stock wall / tsrslint wall. peak RSS: maximum resident set size; memory below 1x = tsrslint uses less.
 
-Runner: Depot CI `depot-ubuntu-24.04-8` (8 vCPU, 31 GB RAM, Linux x86_64, AMD EPYC 9R45 96-Core Processor). Date: 2026-10-06 12:02 UTC. tsrslint commit: `5c342b8e0686`. Numbers from shared CI machines are noisy; compare trends, not single runs. How it is measured: [`bench/README.md`](bench/README.md).
+Runner: Depot CI `depot-ubuntu-24.04-8` (8 vCPU, 31 GB RAM, Linux x86_64, AMD EPYC 9R45 96-Core Processor). Date: 2026-10-06 12:30 UTC. tsrslint commit: `1b0e43b04124`. Numbers from shared CI machines are noisy; compare trends, not single runs. How it is measured: [`bench/README.md`](bench/README.md).
 <!-- bench:end -->
 
 ### An internal monolith (private, measured by hand)
@@ -185,7 +185,7 @@ Generated by `python3 tools/rule_coverage.py --write README.md`; CI fails when i
 | `unbound-method` | yes | 205 | 203 | 2 | 4,077 (7/8) |
 | `use-unknown-in-catch-callback-variable` | yes | 57 | 56 | 1 | 800 (8/8) |
 
-bench diagnostics: what tsrslint reports for the rule (default options) in the newest CI benchmark run (2026-10-06 12:02 UTC, commit `5c342b8e0686`), summed over its projects (vscode, mui-docs, xstate, webpack, cal-diy, formbricks-web, supabase-studio, t3code-server), and in how many of them it fires; ", stock N" where stock tsgolint v7.0.2002 reports a different number. 0: those projects never trigger the rule (its test cases still run).
+bench diagnostics: what tsrslint reports for the rule (default options) in the newest CI benchmark run (2026-10-06 12:30 UTC, commit `1b0e43b04124`), summed over its projects (vscode, mui-docs, xstate, webpack, cal-diy, formbricks-web, supabase-studio, t3code-server), and in how many of them it fires; ", stock N" where stock tsgolint v7.0.2002 reports a different number. 0: those projects never trigger the rule (its test cases still run).
 
 Upstream: oxc-project/tsgolint at `f69fe736c071` (2026-10-02, v7.0.2003-5-gf69fe73) has 60 rules. Not ported yet (added after v7.0.2002): `no-generated-empty-object-type` (since v7.0.2003). Commits after v7.0.2002 also change 16 existing rules (tsrslint ports their v7.0.2002 code; commits per rule): `await-thenable` 1, `no-deprecated` 1, `no-duplicate-type-constituents` 1, `no-meaningless-void-operator` 1, `no-misused-promises` 2, `no-misused-spread` 1, `no-unnecessary-condition` 3, `no-unnecessary-type-assertion` 3, `no-unnecessary-type-parameters` 1, `no-unsafe-return` 1, `no-useless-default-assignment` 2, `only-throw-error` 1, `require-array-sort-compare` 1, `return-await` 1, `strict-void-return` 1, `unbound-method` 1.
 <!-- rules:end -->
