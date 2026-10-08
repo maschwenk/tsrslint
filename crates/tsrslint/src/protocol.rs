@@ -152,16 +152,27 @@ pub struct Diagnostic {
     pub suggestions: Vec<Suggestion>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct RuleTiming {
     pub rule_name: String,
     pub duration: u64,
     pub calls: u64,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct TimingPayload {
     pub rules: Vec<RuleTiming>,
+}
+
+/// One output message of a run, as `linter::run_with_sink` delivers it: diagnostics as they are found, then the
+/// timing message (`-debug timings`), or the error that ended the run. The headless binary writes each one with
+/// `write_message`; a host that links tsrslint gets the values.
+#[derive(Debug)]
+pub enum Output {
+    Diagnostic(Diagnostic),
+    Timing(TimingPayload),
+    /// The run failed; the text is the headless protocol's error message. Always the last message.
+    Error(String),
 }
 
 /// `| payload length: u32 LE | message type: u8 | JSON payload |`

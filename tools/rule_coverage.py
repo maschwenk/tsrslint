@@ -87,8 +87,8 @@ def table() -> str:
     problems = []
     for rule in rules:
         c = case_counts(CASES / f"{rule}.json") if rule in case_files else None
-        if rule not in base:
-            problems.append(f"{rule}: not a tsgolint {BASE_TAG} rule")
+        if rule not in base and rule not in upstream.get("added_after_base", {}):
+            problems.append(f"{rule}: neither a tsgolint {BASE_TAG} rule nor one added upstream since")
         if c is None:
             problems.append(f"{rule}: no test cases")
         elif c["unconverted"] or c["only"]:

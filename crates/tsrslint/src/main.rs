@@ -1,6 +1,6 @@
 // Port of cmd/tsgolint/main.go + headless.go (headless mode only).
 
-#[cfg(not(feature = "alloc-profile"))]
+#[cfg(all(feature = "mimalloc", not(feature = "alloc-profile")))]
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 

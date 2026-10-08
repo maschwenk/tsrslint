@@ -455,6 +455,10 @@ rule_test!(
     "no-duplicate-type-constituents"
 );
 rule_test!(no_floating_promises, "no-floating-promises");
+rule_test!(
+    no_generated_empty_object_type,
+    "no-generated-empty-object-type"
+);
 rule_test!(no_for_in_array, "no-for-in-array");
 rule_test!(no_implied_eval, "no-implied-eval");
 rule_test!(no_meaningless_void_operator, "no-meaningless-void-operator");

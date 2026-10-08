@@ -15,7 +15,7 @@ use tsrs_core::{Tristate, P};
 use tsrs_vfs::{bundled, cachedvfs, osvfs, FS};
 
 use crate::overlayfs::OverlayFS;
-use crate::protocol::{self, MessageType, Payload};
+use crate::protocol::{self, MessageType, Output, Payload};
 use crate::rule::{Ctx, Listener, ReportedDiagnostic, Rule, RuleVisitor, KIND_SLOTS};
 use crate::rules;
 use crate::tsconfig::{ExtendedConfigCache, ParseHost, TsConfigResolver};
@@ -114,11 +114,42 @@ pub fn run_headless(args: &[String]) -> i32 {
             crate::sched::report_totals(t0.elapsed());
             0
         }
-        Err(e) => {
-            protocol::write_error_message(&format!("error running linter: {e}"));
-            1
-        }
+        // The error message went to stdout through the sink.
+        Err(_) => 1,
     }
+}
+
+/// Where a run's output goes (`protocol::Output`), called on the run's output thread.
+pub type Sink = Box<dyn FnMut(Output) + Send>;
+
+/// Starts a lint of `payload` on a thread with the stack type checking needs (what `main` does for the headless
+/// binary) and returns its handle; the output goes to `sink`, ending with `Output::Error` when the run fails. `cwd`
+/// is the host's working directory as `std::env::current_dir` reports it. For hosts that link tsrslint instead of
+/// running the `tsgolint headless` binary.
+pub fn spawn(
+    payload: Payload,
+    cwd: &str,
+    opts: Options,
+    sink: Sink,
+) -> std::io::Result<std::thread::JoinHandle<Result<(), String>>> {
+    let cwd = tspath::normalize_path(cwd);
+    let debug = std::env::var("OXC_LOG").is_ok_and(|v| v == "debug");
+    std::thread::Builder::new()
+        .name("tsrslint".to_string())
+        .stack_size(512 << 20)
+        .spawn(move || {
+            let t0 = Instant::now();
+            let log = |msg: String| {
+                if debug {
+                    eprintln!("[{:>9.3}s] {msg}", t0.elapsed().as_secs_f64());
+                }
+            };
+            let result = run_with_sink(&payload, &cwd, &opts, &log, sink);
+            if result.is_ok() {
+                crate::sched::report_totals(t0.elapsed());
+            }
+            result
+        })
 }
 
 /// The FS of the config parses and of every program. Its cache is the only one: program hosts use it as is
@@ -134,23 +165,50 @@ fn base_fs(payload: &Payload) -> Arc<dyn FS> {
     Arc::new(bundled::wrap_fs(cachedvfs::from(base)))
 }
 
+/// Lints `payload` and writes the output to stdout in the headless protocol's framing (the `tsgolint headless`
+/// binary).
 pub fn run(
     payload: &Payload,
     cwd: &str,
     opts: &Options,
     log: &dyn Fn(String),
 ) -> Result<(), String> {
-    crate::memstats::mark("run start");
-    use_sparse_id_pages();
-    let fs = base_fs(payload);
-    let host: &'static ParseHost = Box::leak(Box::new(ParseHost {
-        fs: Arc::clone(&fs),
-        cwd: cwd.to_string(),
-    }));
-    let ext_cache: &'static ExtendedConfigCache = Box::leak(Box::default());
-    let declarations: &'static DeclarationCache = Box::leak(Box::default());
+    let mut w = std::io::BufWriter::with_capacity(4096 * 100, std::io::stdout());
+    let sink: Sink = Box::new(move |out| {
+        let _ = match out {
+            Output::Diagnostic(d) => protocol::write_message(&mut w, MessageType::Diagnostic, &d),
+            Output::Timing(t) => {
+                protocol::write_message(&mut w, MessageType::Timing, &t).and_then(|()| w.flush())
+            }
+            Output::Error(e) => {
+                let _ = w.flush();
+                protocol::write_error_message(&e);
+                Ok(())
+            }
+        };
+    });
+    run_with_sink(payload, cwd, opts, log, sink)
+}
 
-    // Rules: one instance per distinct (name, options); unknown rules are a hard error (Go panics).
+/// Lints `payload` and hands every output message to `sink` (on the output thread); a failed run ends with
+/// `Output::Error` carrying the error this returns. The sink is dropped when the run ends.
+pub fn run_with_sink(
+    payload: &Payload,
+    cwd: &str,
+    opts: &Options,
+    log: &dyn Fn(String),
+    sink: Sink,
+) -> Result<(), String> {
+    let (mut sink, result) = lint(payload, cwd, opts, log, sink);
+    if let Err(e) = &result {
+        sink(Output::Error(format!("error running linter: {e}")));
+    }
+    result
+}
+
+/// Rules of each payload config: one instance per distinct (name, options); unknown rules are a hard error (Go
+/// panics).
+fn build_rule_sets(payload: &Payload) -> Result<Vec<RuleSet>, String> {
     let mut rule_cache: FxHashMap<String, &'static dyn Rule> = FxHashMap::default();
     let mut rule_sets: Vec<RuleSet> = Vec::new();
     for config in &payload.configs {
@@ -177,6 +235,31 @@ pub fn run(
         }
         rule_sets.push(set);
     }
+    Ok(rule_sets)
+}
+
+/// `run_with_sink` without the error message: returns the sink with the result so the caller can send it.
+fn lint(
+    payload: &Payload,
+    cwd: &str,
+    opts: &Options,
+    log: &dyn Fn(String),
+    mut sink: Sink,
+) -> (Sink, Result<(), String>) {
+    crate::memstats::mark("run start");
+    use_sparse_id_pages();
+    let fs = base_fs(payload);
+    let host: &'static ParseHost = Box::leak(Box::new(ParseHost {
+        fs: Arc::clone(&fs),
+        cwd: cwd.to_string(),
+    }));
+    let ext_cache: &'static ExtendedConfigCache = Box::leak(Box::default());
+    let declarations: &'static DeclarationCache = Box::leak(Box::default());
+
+    let rule_sets = match build_rule_sets(payload) {
+        Ok(sets) => sets,
+        Err(e) => return (sink, Err(e)),
+    };
 
     // File -> rule set.
     let use_case_sensitive = fs.use_case_sensitive_file_names();
@@ -216,15 +299,13 @@ pub fn run(
         unmatched.len()
     ));
 
-    // Output thread (headless.go's diagnostics goroutine).
+    // Output thread (headless.go's diagnostics goroutine); it owns the sink until the channel closes.
     let (tx, rx) = mpsc::sync_channel::<protocol::Diagnostic>(4096);
     let writer = std::thread::spawn(move || {
-        let stdout = std::io::stdout();
-        let mut w = std::io::BufWriter::with_capacity(4096 * 100, stdout.lock());
         for d in rx {
-            let _ = protocol::write_message(&mut w, MessageType::Diagnostic, &d);
+            sink(Output::Diagnostic(d));
         }
-        let _ = w.flush();
+        sink
     });
 
     let timings: Mutex<FxHashMap<&'static str, (Duration, u64)>> = Mutex::new(FxHashMap::default());
@@ -349,10 +430,14 @@ pub fn run(
     }
 
     drop(tx);
-    writer
-        .join()
-        .map_err(|_| "output thread panicked".to_string())?;
-    result?;
+    let mut sink = match writer.join() {
+        Ok(sink) => sink,
+        // The sink went with the thread: nothing left to report through.
+        Err(_) => return (Box::new(|_| {}), Err("output thread panicked".to_string())),
+    };
+    if let Err(e) = result {
+        return (sink, Err(e));
+    }
 
     if opts.debug_timings {
         let mut rules: Vec<protocol::RuleTiming> = timings
@@ -371,17 +456,10 @@ pub fn run(
                 .cmp(&a.duration)
                 .then_with(|| a.rule_name.cmp(&b.rule_name))
         });
-        let mut out = std::io::stdout().lock();
-        protocol::write_message(
-            &mut out,
-            MessageType::Timing,
-            &protocol::TimingPayload { rules },
-        )
-        .map_err(|e| e.to_string())?;
-        out.flush().map_err(|e| e.to_string())?;
+        sink(Output::Timing(protocol::TimingPayload { rules }));
     }
     log("Linting Complete".to_string());
-    Ok(())
+    (sink, Ok(()))
 }
 
 /// Every program gets several checkers, and node and symbol ids come from process-wide counters, so each checker's
