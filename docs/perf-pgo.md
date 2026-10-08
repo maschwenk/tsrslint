@@ -66,7 +66,7 @@ v0.1.0; (b) = (a) + PGO as above (= the release workflow's commands, without `--
 `tsgolint headless` process on a fixed payload, timed by `/usr/bin/time -l`; 5 rounds, interleaved (a, b, …).
 Medians [min-max]; % vs (a). Neither codebase is in the training set:
 
-- an internal monolith (private; measuring is fine, training is not) with all 59 rules (the stress config of the
+- An internal monolith (private; measuring is fine, training is not) with all 59 rules (the stress config of the
   v0.1.0 parity check): 28,728 files, the payload oxlint 1.73.0 sends for it.
 - vscode (`src/`, commit 9cf0128b, `npm ci --ignore-scripts`), all 59 rules: 9,401 files.
 
@@ -110,11 +110,11 @@ Binary size (arm64): a 14.5 MB (12.3 MB stripped), b 16.6 MB (14.4 MB stripped).
 
 ## Output is unchanged
 
-- oxlint 1.73.0 on monolith with the 59-rule stress config: 181,827 diagnostics with (a) and with (b), and the same
+- oxlint 1.73.0 on the monolith with the 59-rule stress config: 181,827 diagnostics with (a) and with (b), and the same
   (file, line, column, offset, length, rule, message, severity) for every one (`compare.py`: 0 only in a, 0 only in b).
 - Raw headless output, 4 checkers, all timing runs (monolith: 23 of a and 40 PGO runs; vscode: 17 and 46; all training
   variants and the CI-built binary): every run has exactly the same multiset of (file, range, rule, message id):
-  195,119 diagnostics on monolith, 282,719 on vscode. The text of up to 3 (monolith) / 1 (vscode) of them differs from
+  195,119 diagnostics on the monolith, 282,719 on vscode. The text of up to 3 (monolith) / 1 (vscode) of them differs from
   run to run, for (a) too: no-unsafe-type-assertion labels that print object-literal unions, whose synthesized
   `?: undefined` members come in a different order (sometimes with `readonly`) depending on which checker thread
   creates those types first. In round 2, two runs of (a) differ in up to 3 diagnostics, runs of different binaries in
@@ -122,7 +122,7 @@ Binary size (arm64): a 14.5 MB (12.3 MB stripped), b 16.6 MB (14.4 MB stripped).
   runs of all four binaries). A few PGO runs printed an ordering no run of (a) printed (at most one per binary), at
   the same two diagnostics where (a) itself printed 7 (monolith) and 2 (vscode) orderings, and each is a reordering of
   an (a) text (same characters).
-- With deterministic scheduling (`"checkers": 1`), (a) and (b) produce byte-identical sorted output on monolith and
+- With deterministic scheduling (`"checkers": 1`), (a) and (b) produce byte-identical sorted output on the monolith and
   vscode (2 runs each).
 - The rule test suite, built with the (unweighted) PGO profile, passes (59 rules, 7,341 cases); so does the
   instrumented suite in every release training run.

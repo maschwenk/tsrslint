@@ -1,7 +1,7 @@
 # perf-lint-cpu: where the lint phase's CPU goes
 
 Question: in the lint phase (rule listeners plus the checker work they trigger), how much CPU is rule code, the walk,
-the protocol and the allocator, and which checker calls do the rules pay for? Answer: on the payload its CI runs,
+the protocol and the allocator, and which checker calls do the rules pay for? Answer: on the payload the monolith's CI runs,
 98% of lint-phase CPU is first-time type checking that the rules ask for; rule code, the walk and the output are
 1.9% together, and repeated checker queries are 0.1%. There is no rule-side change that moves the normal payload by
 more than run-to-run noise. On the 59-rule stress payload the non-checker share is 6.5% and repeated queries are
@@ -69,7 +69,7 @@ normal:
 
 Under those calls the time is ordinary call checking: `resolve_call` 72% inclusive, `infer_type_arguments` 53%,
 `check_function_expression_or_object_literal_method` 49%. For scale, a full `tsrs --noEmit --checkers 4` of
-the monolith (tsrs main 9ba8f6d, one run) takes 30 s of user CPU including parse (7.8 s check wall), so the normal
+The monolith (tsrs main 9ba8f6d, one run) takes 30 s of user CPU including parse (7.8 s check wall), so the normal
 rules ask for very roughly two thirds of a full type check.
 
 all59: no-unsafe-assignment 31.5%, no-misused-promises 20.5% (12.2% of it in

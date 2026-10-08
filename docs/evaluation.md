@@ -17,7 +17,7 @@ Versions: oxlint 1.73.0, stock `@oxlint-tsgolint/darwin-arm64@7.0.2002` (TypeScr
 
 ## 1. Where stock tsgolint spends its time
 
-Full the monolith payload (13 rules) captured from `oxlint --type-aware`; `tsgolint headless -cpuprof -trace` plus an
+Full monolith payload (13 rules) captured from `oxlint --type-aware`; `tsgolint headless -cpuprof -trace` plus an
 `OXC_LOG=debug` run for phase timestamps and a `GODEBUG=gctrace=1` run for heap growth.
 
 **Wall time (31.1 s run):**
@@ -117,7 +117,7 @@ with printed types, help text, fixes and suggestions; order ignored).
 
 | corpus | files / programs | stock | tsrslint | identical |
 | --- | --- | ---: | ---: | ---: |
-| the monolith, slice rules with the monolith's options (oxlint's own payload, filtered) | 28,573 / 1 + inferred | 16 | 16 | 16 |
+| Monolith, slice rules with its options (oxlint's own payload, filtered) | 28,573 / 1 + inferred | 16 | 16 | 16 |
 | Internal packages with deps, half strict options, `-fix -fix-suggestions` | 1,565 / 55 + inferred | 955 | 955 | 955 (827 with fixes, 14 with suggestions, 8 with labels) |
 | smoke file covering each message variant, `-fix -fix-suggestions` | 1 | 10 | 10 | 10 |
 | `--type-check` (`report_syntactic`/`report_semantic`) | 2 | 9 | 9 | 9 |
@@ -170,7 +170,7 @@ contaminated to use (stock 79–97 s, tsrslint 28–75 s); it is in [data/](data
 
 Total about 26k Rust lines on top of the existing ~3.4k. Ported the way tsrs was (agent-driven, rule by rule, gated
 by the extracted tests and by diffing against stock tsgolint on real code), that is roughly 2–4 weeks of agent time
-plus human review; the Monolith-only scope is roughly a quarter of that.
+plus human review; the monolith-only scope is roughly a quarter of that.
 
 **Ongoing cost.** tsgolint `main` had 81 commits touching rules/utils/linter/cmd in the last 90 days (36 fixes, 21
 perf, 7 features; about 3.0k non-test lines added and 1.1k removed), so about 6 commits a week to review and port.
@@ -189,7 +189,7 @@ goes away.
   across 30k files. End to end the gain is 1.5× because oxlint's own pass is unchanged.
 * The rule code is cheap relative to the checker (under 1% of runtime) and mechanical to port with the extracted tests.
 * A full general-purpose port means owning 60 rules and tracking about 6 upstream commits a week indefinitely for rules
-  the monolith does not use. Port the 8 remaining the monolith rules (6.9k Go lines), run tsrslint in shadow mode in CI next
+  we do not use. Port the 8 remaining monolith rules (6.9k Go lines), run tsrslint in shadow mode in CI next
   to stock tsgolint (diff the decoded outputs) for a couple of weeks, then switch the monolith over with the
   `oxlint-tsgolint` catalog entry pointing at a tsrslint build. Expand only when another app enables a rule
   tsrslint lacks.

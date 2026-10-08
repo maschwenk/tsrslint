@@ -1,7 +1,7 @@
 #!/bin/bash
 # Alternating stock-tsgolint vs tsrslint timing (median-of-pairs methodology used in docs/evaluation.md).
 # Usage: bench.sh <pairs> <direct|e2e> <out.tsv>
-# Env: STOCK_TSGOLINT (stock binary), RS (tsrslint binary), MONOLITH (monolith checkout with deps built and
+# Env: STOCK_TSGOLINT (stock binary), RS (tsrslint binary), MONOLITH (the monolith's checkout with deps built and
 #      .oxlintrc.tsrslint.json), PAYLOAD (captured oxlint payload filtered to the slice rules), BENCH (this dir),
 #      TIMEFILES (scratch dir for /usr/bin/time output).
 set -u
