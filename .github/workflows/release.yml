@@ -2,8 +2,9 @@
 # workflow. Lint CI (fmt, rule tests, packaging smoke test): .github/workflows/ci.yml.
 #
 # Setup before the first release:
-#   - repository secret NPM_TOKEN: a granular npm token scoped to publishing @maschwenk/tsrslint and its
-#     platform packages (npm/tsrslint/package.json "name").
+#   - npm trusted publishing (https://docs.npmjs.com/trusted-publishers) on @maschwenk/tsrslint and on each
+#     @maschwenk/tsrslint-<os>-<cpu> package: GitHub Actions, owner maschwenk, repository tsrslint, workflow
+#     release.yml, no environment. The publish job authenticates with its OIDC token; there is no npm token.
 #   - push the tag v<workspace version> (node npm/build.mjs --print-version), e.g. v0.1.0.
 # workflow_dispatch builds, smoke-tests and packs, then runs `npm publish --dry-run` unless dry_run is unchecked.
 # Provenance (`npm publish --provenance`) is only possible from a public repository; it is enabled automatically
@@ -163,8 +164,10 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 22
+          node-version: 24
           registry-url: https://registry.npmjs.org
+      - name: npm that supports trusted publishing (11.5.1 or newer)
+        run: npm install -g npm@^11.5.1 && npm --version
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: bin-*
@@ -184,7 +187,6 @@ jobs:
           path: npm/dist/*.tgz
       - name: Publish (platform packages first, then the main package)
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run }}
           VERSION: ${{ needs.version.outputs.version }}
           PRIVATE_REPO: ${{ github.event.repository.private }}
@@ -192,9 +194,6 @@ jobs:
           flags=(--access public --tag latest)
           [ "$PRIVATE_REPO" = false ] && flags+=(--provenance)
           [ "$DRY_RUN" = true ] && flags+=(--dry-run)
-          if [ "$DRY_RUN" != true ] && [ -z "$NODE_AUTH_TOKEN" ]; then
-            echo "::error::NPM_TOKEN secret is not set"; exit 1
-          fi
           node -e 'for (const p of require("./npm/dist/packages.json").packages) console.log(p.name + " " + p.tarball)' |
           while read -r name tarball; do
             # Re-running a partially published release skips what is already on the registry.
