@@ -1,8 +1,8 @@
 {
   "stock": {
     "package": "@oxlint-tsgolint/{platform}",
-    "version": "7.0.2002",
-    "note": "the native binary of npm oxlint-tsgolint@7.0.2002, the tsgolint release tsrslint ports"
+    "version": "7.0.2003",
+    "note": "the native binary of npm oxlint-tsgolint@7.0.2003, the first release with all 60 rules tsrslint ports (bench/README.md)"
   },
   "projects": [
     {

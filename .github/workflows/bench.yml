@@ -1,4 +1,4 @@
-# Benchmarks tsrslint against stock tsgolint 7.0.2002 on open-source projects (bench/README.md; adapted from
+# Benchmarks tsrslint against stock tsgolint 7.0.2003 on open-source projects (bench/README.md; adapted from
 # maschwenk/tsrs's bench workflow), then rewrites the table between the bench markers of README.md and the rule table
 # between the rules markers (its diagnostics column reads the newest result), and commits both with the results.
 #
