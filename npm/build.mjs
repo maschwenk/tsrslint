@@ -141,6 +141,7 @@ function main() {
     const name = template.name;
     const baseName = name.split("/").pop();
     const license = fs.readFileSync(path.join(repoRoot, "LICENSE"));
+    const notice = fs.readFileSync(path.join(repoRoot, "NOTICE"));
     const thirdParty = fs.readFileSync(path.join(repoRoot, "THIRD-PARTY-LICENSE"));
 
     fs.rmSync(opts.out, { recursive: true, force: true });
@@ -165,6 +166,7 @@ function main() {
         fs.copyFileSync(binary, path.join(dir, PACKAGE_EXE));
         fs.chmodSync(path.join(dir, PACKAGE_EXE), 0o755);
         fs.writeFileSync(path.join(dir, "LICENSE"), license);
+        fs.writeFileSync(path.join(dir, "NOTICE"), notice);
         fs.writeFileSync(path.join(dir, "THIRD-PARTY-LICENSE"), thirdParty);
         const readme = fs.readFileSync(path.join(npmDir, "platform", "README.md"), "utf8")
             .replaceAll("{{name}}", platformName)
@@ -179,7 +181,7 @@ function main() {
             ...common,
             description: `The ${os}-${cpu} binary for ${name}`,
             preferUnplugged: true,
-            files: [PACKAGE_EXE, "THIRD-PARTY-LICENSE"],
+            files: [PACKAGE_EXE, "NOTICE", "THIRD-PARTY-LICENSE"],
             exports: { "./package.json": "./package.json" },
             os: [os],
             cpu: [cpu],
@@ -193,6 +195,7 @@ function main() {
     copyDir(path.join(npmDir, "tsrslint"), mainDir);
     for (const bin of Object.values(template.bin)) fs.chmodSync(path.join(mainDir, bin), 0o755);
     fs.writeFileSync(path.join(mainDir, "LICENSE"), license);
+    fs.writeFileSync(path.join(mainDir, "NOTICE"), notice);
     fs.writeFileSync(path.join(mainDir, "THIRD-PARTY-LICENSE"), thirdParty);
     writeJson(path.join(mainDir, "package.json"), {
         ...template,

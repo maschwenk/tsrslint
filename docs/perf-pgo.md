@@ -133,7 +133,7 @@ Local (same machine, clean target directories): (a) 59 s. PGO: instrumented buil
 training ~15 s (+2.5 min the first time to clone and install the two projects), final build 1 min 27 s - 1 min 37 s:
 ~4.2 min, ~3 min more than (a).
 
-On GitHub runners (release dry run 37129640167, rustc 1.99.0, nothing cached yet for the new rust-cache key):
+On GitHub runners (a release dry run, rustc 1.99.0, nothing cached yet for the new rust-cache key):
 
 | target | job | instrumented build | training | final build | job before (v0.1.0 run, warm / first dry run, cold) |
 | --- | --- | --- | --- | --- | --- |
