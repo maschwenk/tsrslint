@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Benchmarks tsrslint against stock tsgolint 7.0.2002 on open-source projects, all 59 rules, headless protocol.
+"""Benchmarks tsrslint against stock tsgolint 7.0.2003 on open-source projects, all 60 rules, headless protocol.
 
 See bench/README.md. Typical use:
 
@@ -182,7 +182,7 @@ def ensure_stock(cfg: dict, work: Path) -> Path:
 
 
 def make_payload(p: dict, cwd: Path, work: Path) -> tuple[Path, int, int]:
-    """The payload both binaries get: headless-lint.mjs's (all 59 rules, default options, one config)."""
+    """The payload both binaries get: headless-lint.mjs's (all 60 rules, default options, one config)."""
     out = work / "payloads" / f"{p['name']}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     with open(out, "wb") as f:
@@ -430,10 +430,13 @@ def markdown(result: dict) -> str:
         "in PGO training: the release binaries' profile is trained on these files (`.github/scripts/pgo-train.sh`), "
         "which flatters tsrslint there; the other projects are held out. diagnostics: rule diagnostics each binary "
         "reports. same diagnostics: both report the same multiset of (file, range, rule, message id); a bold cell is "
-        "a disagreement. When one binary's runs report different sets (multi-threaded nondeterminism), the closest pair is compared and the cell says by how many diagnostics that binary's runs differ. text differs: diagnostics both report whose message text differs; expected in small numbers, "
-        "since tsrs ports TypeScript 7.1-dev and tsgolint 7.0.2002 is built on TypeScript 7.0, which print some types "
-        "differently. wall: process wall-clock time. speedup: stock wall / tsrslint wall. peak RSS: maximum resident "
-        "set size; memory below 1x = tsrslint uses less.",
+        "a disagreement, and a few are expected: tsrslint ports tsgolint 7.0.2002's rule code and has not ported some "
+        "fixes stock got since. When one binary's runs report different sets (multi-threaded nondeterminism), the "
+        "closest pair is compared and the cell says by how many diagnostics that binary's runs differ. text differs: "
+        "diagnostics both report whose message text differs; expected in small numbers, since tsrs ports TypeScript "
+        f"7.1-dev and tsgolint {sv} is built on TypeScript 7.0, which print some types differently, and some messages "
+        "changed upstream after 7.0.2002. wall: process wall-clock time. speedup: stock wall / tsrslint wall. peak "
+        "RSS: maximum resident set size; memory below 1x = tsrslint uses less.",
         "",
         f"Runner: {m['label']}. Date: {result['date']}. tsrslint commit: `{commit}`. "
         + ("Numbers from shared CI machines are noisy; compare trends, not single runs. " if m.get("ci") else "")

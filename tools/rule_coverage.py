@@ -123,7 +123,7 @@ def table() -> str:
         out += ["", f"bench diagnostics: what tsrslint reports for the rule (default options) in the newest CI "
                     f"benchmark run ({run['date']}, commit `{run['tsrslint']['commit'][:12]}`), summed over its "
                     f"projects ({', '.join(run['projects'])}), and in how many of them it fires; \", stock N\" where "
-                    f"stock tsgolint {BASE_TAG} reports a different number. 0: those projects never trigger the "
+                    f"stock tsgolint v{run['stock']['version']} reports a different number. 0: those projects never trigger the "
                     "rule (its test cases still run)."]
     added = upstream.get("added_after_base", {})
     changed = upstream.get("changed_after_base", {})
