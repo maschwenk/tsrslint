@@ -1,0 +1,317 @@
+# Benchmarks tsrslint against stock tsgolint 7.0.2002 on open-source projects (bench/README.md; adapted from
+# maschwenk/tsrs's bench workflow), then rewrites the table between the bench markers of README.md and the rule table
+# between the rules markers (its diagnostics column reads the newest result), and commits both with the results.
+#
+# Loop guards: the results commit is pushed with GITHUB_TOKEN, whose pushes start no workflow; it also only touches
+# README.md and bench/results/** (excluded by `paths`) and carries [skip ci], which the job's `if` checks too.
+# A workflow_dispatch run (`gh workflow run bench.yml --ref <branch>`) commits to its own branch.
+
+name: Bench
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**"
+      - "!README.md"
+      - "!bench/results/**"
+  workflow_dispatch:
+
+# One bench at a time. A running bench is not cancelled (with cancelling, busy days on maschwenk/tsrs never finished
+# one); a push while one runs queues its bench, and a later push replaces that queued one.
+concurrency:
+  group: bench
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+# Fixed machine spec so runs are comparable: GitHub's standard ubuntu-24.04 runner for public repositories = 4 vCPU /
+# 16 GB / x86_64 (bench/README.md "CI"). The first step fails the job on any other machine; there is no fallback
+# runner. The largest peak RSS on record (stock tsgolint on vscode, 9.7 GiB on 8 vCPU) fits in 16 GB.
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  bench:
+    # Second loop guard: the results commit says [skip ci] (null on workflow_dispatch, which then runs).
+    if: github.repository == 'maschwenk/tsrslint' && !contains(github.event.head_commit.message, '[skip ci]')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # pushes the results commit
+      pull-requests: write # comments on pull requests that regress instruction counts (bench/regressions.py)
+    # A run with cold caches clones and installs all nine projects and builds on 4 vCPU.
+    timeout-minutes: 120
+    env:
+      BENCH_RUNNER: GitHub Actions `ubuntu-24.04`
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # full history so the results commit can be re-created on a newer branch head
+
+      - name: Runner hardware (must match the fixed spec)
+        run: |
+          nproc; free -g; df -h / | tail -1
+          lscpu | grep -E 'Model name|^CPU\(s\)' || true
+          mem_gb=$(awk '/MemTotal/ {printf "%d", $2 / 1048576}' /proc/meminfo)
+          if [ "$(nproc)" != 4 ] || [ "$mem_gb" -lt 14 ] || [ "$(uname -m)" != x86_64 ]; then
+            echo "::error::expected 4 vCPU / 16 GB / x86_64, got $(nproc) vCPU / ${mem_gb} GB / $(uname -m)"; exit 1
+          fi
+
+      # bench/count.py reads a hardware instruction counter with perf_event_open; Ubuntu's default
+      # kernel.perf_event_paranoid (4) refuses it to unprivileged processes, 2 allows counting one's own user space.
+      # Without a usable counter the bench still runs; it only records no instruction counts (bench/README.md).
+      - name: Allow user-space perf counters
+        run: |
+          echo "kernel.perf_event_paranoid was $(cat /proc/sys/kernel/perf_event_paranoid)"
+          sudo sysctl -w kernel.perf_event_paranoid=2
+
+      # pnpm version from package.json "packageManager"; Node from .node-version (as in ci.yml).
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+      # @types/node at the repository root: the rule tests of the PGO training workload need it.
+      - name: pnpm install
+        run: pnpm install --frozen-lockfile
+
+      - name: Read the pinned Rust toolchain (rust-toolchain.toml)
+        id: rust
+        shell: bash
+        run: echo "toolchain=$(sed -n 's/^channel = "\(.*\)"$/\1/p' rust-toolchain.toml)" >> "$GITHUB_OUTPUT"
+
+      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+        with:
+          toolchain: ${{ steps.rust.outputs.toolchain }}
+          targets: x86_64-unknown-linux-gnu
+          components: llvm-tools
+
+      # Caches ~/.cargo and the dependency part of target/, which holds only the instrumented build below: its
+      # RUSTFLAGS are the same in every run, so its dependencies (the tsrs crates) are reused. The final build's
+      # RUSTFLAGS contain the profile's hash, which changes every run, so it is built outside target/ and not cached.
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2.9.2
+        with:
+          key: bench-pgo
+
+      # One cache for stock tsgolint, one per cloned project (checkout + node_modules) keyed on its pinned commit and
+      # install command. GitHub evicts a repository's least recently used caches past 10 GB, and a branch's caches
+      # are not visible to main, so a run may set up some projects again.
+      - name: Cache keys
+        id: keys
+        run: python3 bench/run.py --print-cache-keys | tee -a "$GITHUB_OUTPUT"
+
+      - name: Restore stock tsgolint
+        id: cache-stock
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: bench/.work/stock
+          key: bench-stock-${{ runner.os }}-${{ steps.keys.outputs.stock }}
+
+      - name: Restore vscode
+        id: cache-vscode
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: bench/.work/solutions/vscode
+          key: bench-vscode-${{ runner.os }}-${{ steps.keys.outputs.vscode }}
+
+      - name: Restore mui-docs
+        id: cache-mui
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: bench/.work/solutions/mui-docs
+          key: bench-mui-docs-${{ runner.os }}-${{ steps.keys.outputs['mui-docs'] }}
+
+      - name: Restore xstate
+        id: cache-xstate
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: bench/.work/solutions/xstate
+          key: bench-xstate-${{ runner.os }}-${{ steps.keys.outputs.xstate }}
+
+      - name: Restore webpack
+        id: cache-webpack
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: bench/.work/solutions/webpack
+          key: bench-webpack-${{ runner.os }}-${{ steps.keys.outputs.webpack }}
+
+      - name: Restore cal-diy
+        id: cache-cal
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: bench/.work/solutions/cal-diy
+          key: bench-cal-diy-${{ runner.os }}-${{ steps.keys.outputs['cal-diy'] }}
+
+      - name: Restore formbricks-web
+        id: cache-formbricks
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: bench/.work/solutions/formbricks-web
+          key: bench-formbricks-web-${{ runner.os }}-${{ steps.keys.outputs['formbricks-web'] }}
+
+      - name: Restore supabase-studio
+        id: cache-supabase
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: bench/.work/solutions/supabase-studio
+          key: bench-supabase-studio-${{ runner.os }}-${{ steps.keys.outputs['supabase-studio'] }}
+
+      - name: Restore t3code-server
+        id: cache-t3code
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: bench/.work/solutions/t3code-server
+          key: bench-t3code-server-${{ runner.os }}-${{ steps.keys.outputs['t3code-server'] }}
+
+      # A no-op for everything restored above. Also marks xstate and webpack as set up for pgo-train.sh.
+      - name: Set up benchmark projects
+        run: python3 bench/run.py --setup-only
+
+      - name: Save stock tsgolint
+        if: steps.cache-stock.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: bench/.work/stock
+          key: ${{ steps.cache-stock.outputs.cache-primary-key }}
+
+      - name: Save vscode
+        if: steps.cache-vscode.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: bench/.work/solutions/vscode
+          key: ${{ steps.cache-vscode.outputs.cache-primary-key }}
+
+      - name: Save mui-docs
+        if: steps.cache-mui.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: bench/.work/solutions/mui-docs
+          key: ${{ steps.cache-mui.outputs.cache-primary-key }}
+
+      - name: Save xstate
+        if: steps.cache-xstate.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: bench/.work/solutions/xstate
+          key: ${{ steps.cache-xstate.outputs.cache-primary-key }}
+
+      - name: Save webpack
+        if: steps.cache-webpack.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: bench/.work/solutions/webpack
+          key: ${{ steps.cache-webpack.outputs.cache-primary-key }}
+
+      - name: Save cal-diy
+        if: steps.cache-cal.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: bench/.work/solutions/cal-diy
+          key: ${{ steps.cache-cal.outputs.cache-primary-key }}
+
+      - name: Save formbricks-web
+        if: steps.cache-formbricks.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: bench/.work/solutions/formbricks-web
+          key: ${{ steps.cache-formbricks.outputs.cache-primary-key }}
+
+      - name: Save supabase-studio
+        if: steps.cache-supabase.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: bench/.work/solutions/supabase-studio
+          key: ${{ steps.cache-supabase.outputs.cache-primary-key }}
+
+      - name: Save t3code-server
+        if: steps.cache-t3code.outputs.cache-hit != 'true'
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: bench/.work/solutions/t3code-server
+          key: ${{ steps.cache-t3code.outputs.cache-primary-key }}
+
+      # tsrslint is measured as released: the PGO build of the `dist` profile, with the commands of the build job of
+      # .github/workflows/release.yml (target x86_64-unknown-linux-gnu) and its training workload
+      # (.github/scripts/pgo-train.sh: rule tests + xstate + webpack, here on the checkouts set up above). The training
+      # processes exit before the measurement starts; every measured run is a fresh process of the final binary.
+      - name: PGO instrumented build
+        env:
+          RUSTFLAGS: -Cprofile-generate=/tmp/tsrslint-pgo/raw
+        run: |
+          mkdir -p /tmp/tsrslint-pgo
+          cargo test --profile dist --locked -p tsrslint --test rule_tests --no-run --target x86_64-unknown-linux-gnu \
+            --message-format=json-render-diagnostics > /tmp/tsrslint-pgo/artifacts.jsonl
+          node -e '
+            const fs = require("node:fs");
+            const exes = fs.readFileSync(process.argv[1], "utf8").split("\n").filter(Boolean).map(JSON.parse)
+              .filter(m => m.reason === "compiler-artifact" && m.executable);
+            for (const name of ["tsgolint", "rule_tests"]) {
+              const m = exes.find(m => m.target.name === name);
+              if (!m) { console.error("no executable for " + name); process.exit(1); }
+              fs.mkdirSync(process.argv[2], { recursive: true });
+              fs.copyFileSync(m.executable, process.argv[2] + "/" + name);
+            }' /tmp/tsrslint-pgo/artifacts.jsonl /tmp/tsrslint-pgo/bin
+
+      - name: PGO training run
+        id: profile
+        run: |
+          .github/scripts/pgo-train.sh /tmp/tsrslint-pgo/bin/tsgolint /tmp/tsrslint-pgo/bin/rule_tests \
+            bench/.work/solutions /tmp/tsrslint-pgo/merged.profdata
+          sum=$(shasum -a 256 /tmp/tsrslint-pgo/merged.profdata | cut -c1-16)
+          mv /tmp/tsrslint-pgo/merged.profdata "/tmp/tsrslint-pgo/$sum.profdata"
+          echo "path=/tmp/tsrslint-pgo/$sum.profdata" >> "$GITHUB_OUTPUT"
+
+      - name: Build tsrslint (PGO, dist profile)
+        env:
+          RUSTFLAGS: -Cprofile-use=${{ steps.profile.outputs.path }}
+          CARGO_TARGET_DIR: /tmp/tsrslint-pgo/target
+        run: cargo build --profile dist --locked -p tsrslint --target x86_64-unknown-linux-gnu
+
+      - name: Benchmark
+        run: >-
+          python3 bench/run.py --readme README.md --tsrslint-build pgo-dist
+          --tsrslint /tmp/tsrslint-pgo/target/x86_64-unknown-linux-gnu/dist/tsgolint
+
+      - name: Upload results and logs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: bench-results
+          path: |
+            bench/results
+            bench/.work/logs
+          if-no-files-found: ignore
+
+      # Flag only (bench/README.md "Regression flag"): compares tsrslint instruction counts with the previous run and,
+      # on a regression, comments on the pull requests merged in between. Never fails the job.
+      - name: Flag instruction-count regressions
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 bench/regressions.py --latest --comment
+
+      - name: Commit results
+        if: github.ref_type == 'branch'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          branch=$GITHUB_REF_NAME
+          # The results commit is re-created on top of the branch's latest head instead of rebased: README.md may be
+          # edited while a bench runs, and rebasing the table commit over such edits conflicts.
+          table=$(ls -t bench/results/*.md | head -1)
+          cp -R bench/results /tmp/bench-results
+          cp "$table" /tmp/bench-table.md
+          for attempt in 1 2 3 4 5; do
+            git fetch -q origin "$branch"
+            git checkout -q -f -B "$branch" "origin/$branch" # drops the run's README.md edit; re-applied below
+            cp /tmp/bench-results/* bench/results/
+            python3 bench/run.py --apply-table /tmp/bench-table.md --readme README.md
+            python3 tools/rule_coverage.py --write README.md
+            git add README.md bench/results
+            git commit -q -m "bench: results for ${GITHUB_SHA::12} [skip ci]"
+            git push -q origin "HEAD:$branch" && exit 0
+            sleep $((attempt * 5))
+          done
+          exit 1
