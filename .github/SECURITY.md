@@ -1,8 +1,6 @@
 # Security Policy
 
-Please refer to https://oxc.rs/docs/contribute/security.html for our established security practices.
+To report a vulnerability in tsrslint, use GitHub's private vulnerability reporting for this repository:
+https://github.com/maschwenk/tsrslint/security/advisories/new. Please do not open a public issue for it.
 
-## Security contact information
-
-To report a security vulnerability, please use the [Tidelift security contact](https://tidelift.com/security).
-Tidelift will coordinate the fix and disclosure.
+tsrslint runs on tsrs and ports tsgolint; a problem in either of those belongs with that project.
