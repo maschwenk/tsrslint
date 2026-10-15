@@ -60,9 +60,10 @@ jobs:
             echo "::error::expected 4 vCPU / 16 GB / x86_64, got $(nproc) vCPU / ${mem_gb} GB / $(uname -m)"; exit 1
           fi
 
-      # bench/count.py reads a hardware instruction counter with perf_event_open; Ubuntu's default
-      # kernel.perf_event_paranoid (4) refuses it to unprivileged processes, 2 allows counting one's own user space.
-      # Without a usable counter the bench still runs; it only records no instruction counts (bench/README.md).
+      # bench/count.py reads a hardware instruction counter with perf_event_open, which Ubuntu's default
+      # kernel.perf_event_paranoid (4) refuses to unprivileged processes; 2 allows counting one's own user space. The
+      # VMs behind GitHub's runners have exposed no such counter so far (perf_event_open: ENOENT); the bench then
+      # records no instruction counts and the regression flag compares nothing (bench/README.md "Regression flag").
       - name: Allow user-space perf counters
         run: |
           echo "kernel.perf_event_paranoid was $(cat /proc/sys/kernel/perf_event_paranoid)"

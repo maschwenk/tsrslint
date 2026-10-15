@@ -2,8 +2,8 @@
 
 `bench/run.py` lints open-source projects with all 59 rules through the headless protocol, once with stock tsgolint
 7.0.2002 and once with tsrslint, and reports wall time, peak memory, the diagnostic count of each and whether they
-report the same diagnostics. The Depot CI workflow `.depot/workflows/bench.yml` runs it on every push to `main` and
-rewrites the table at the top of `README.md`. Adapted from maschwenk/tsrs's `bench/` (same project pins, checkout
+report the same diagnostics. The GitHub Actions workflow `.github/workflows/bench.yml` runs it on every push to `main`
+and rewrites the table at the top of `README.md`. Adapted from maschwenk/tsrs's `bench/` (same project pins, checkout
 markers and cache layout).
 
 (`benchmarks/` is upstream tsgolint's ESLint-vs-tsgolint benchmark, kept from tsgolint's history; it is not run.)
@@ -91,7 +91,10 @@ Each run therefore also counts the user-space instructions of one tsrslint lint 
 (`bench/count.py`, Linux `perf_event_open`; untimed, after the timed runs; `TSRSLINT_CHECKERS=1`,
 `RAYON_NUM_THREADS=1`). That count repeats to about 0.01% (four runs on the bench machine: 0.006% on webpack, 0.014%
 on xstate), so a change of more than 1% comes from the code. Stock tsgolint is not counted: the Go runtime makes its
-count vary by a few percent.
+count vary by a few percent. GitHub's hosted runners have exposed no hardware instruction counter so far
+(`perf_event_open` fails with ENOENT on `ubuntu-24.04`), so CI results from them have no counts (nor the
+single-checker peak RSS recorded with them) and the flag below compares nothing; the counts in older results come
+from Depot's runner. On a Linux machine with a counter, `count.py` works as described.
 
 `bench/regressions.py --latest` compares the counts with the newest earlier result from the same runner label and
 build, and only when the CPU model and C library match. When the Rust compiler differs (results record
@@ -107,18 +110,21 @@ on xstate. Peak memory is therefore flagged when it rises by more than 4% and mo
 
 ## CI
 
-`.depot/workflows/bench.yml` on [Depot CI](https://depot.dev/docs/ci/overview), the mechanism `ci.yml` already uses.
-It runs on every push to `main` except pushes that touch only `README.md` / `bench/results/**`, and on
-`workflow_dispatch` (`depot ci dispatch --repo maschwenk/tsrslint --workflow bench.yml --ref <branch>`; such a run
-commits its results to that branch). One bench at a time, never cancelled (a push during a run queues the newest
-commit), network steps retried, and the results commit re-created on the branch's latest head before pushing, with
-the bench table and the rule table regenerated there.
+`.github/workflows/bench.yml` on GitHub Actions, like `ci.yml`. It runs on every push to `main` except pushes that
+touch only `README.md` / `bench/results/**`, and on `workflow_dispatch` (`gh workflow run bench.yml --ref <branch>`;
+such a run commits its results to that branch). One bench at a time, never cancelled (a push during a run queues the
+newest commit), network steps retried, and the results commit re-created on the branch's latest head before pushing,
+with the bench table and the rule table regenerated there. The results commit is pushed with the workflow's
+`GITHUB_TOKEN`, so it starts no other workflow.
 
-**Fixed machine spec**: `depot-ubuntu-24.04-8`, 8 vCPU, 32 GB RAM, Linux x86_64, as in maschwenk/tsrs, so numbers
-are comparable over time; the first step fails the job on any other machine. tsrslint uses 6 checkers on it (8 or
-more hardware threads), stock tsgolint its default.
+**Fixed machine spec**: GitHub's standard `ubuntu-24.04` runner for public repositories, 4 vCPU, 16 GB RAM, Linux
+x86_64, so numbers are comparable over time; the first step fails the job on any other machine. The CPU model is not
+fixed (the table header names the one a run got). tsrslint uses 4 checkers on it (tsrs's default below 8 hardware
+threads), stock tsgolint its default. Results whose runner label names Depot's `depot-ubuntu-24.04-8` (8 vCPU,
+32 GB RAM, the bench machine until October 2026) are not comparable in wall time with later ones.
 
-Caching (Depot Cache serves the `actions/cache` API): `Swatinem/rust-cache` for `~/.cargo` and the dependency part of
+Caching (GitHub's Actions cache: 10 GB per repository, least recently used entries evicted first, and a branch's
+entries are not visible to `main`): `Swatinem/rust-cache` for `~/.cargo` and the dependency part of
 `target/`, which holds the PGO-instrumented build (stable RUSTFLAGS, so the tsrs crates are reused); the final PGO
 build lives outside `target/` because its RUSTFLAGS contain the profile's hash, which changes every run. One cache for
 stock tsgolint and one per project (checkout + `node_modules`) keyed on its commit and install command

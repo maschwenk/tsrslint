@@ -461,7 +461,7 @@ def main() -> None:
     ap.add_argument("--work-dir", type=Path, default=BENCH / ".work", help="clones, installs, logs (default bench/.work)")
     ap.add_argument("--tsrslint", type=Path, default=REPO / "target" / "release" / "tsgolint")
     ap.add_argument("--tsrslint-build", choices=sorted(TSRSLINT_BUILDS), default="release",
-                    help="how --tsrslint was built (named in the table header; CI: pgo-dist, see .depot/workflows/bench.yml)")
+                    help="how --tsrslint was built (named in the table header; CI: pgo-dist, see .github/workflows/bench.yml)")
     ap.add_argument("--stock", type=Path, help="stock tsgolint binary (default: install it from npm)")
     ap.add_argument("--projects", help="comma-separated subset of bench/projects.json")
     ap.add_argument("--reps", type=int, default=3)
