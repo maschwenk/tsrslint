@@ -2,8 +2,8 @@
 # workflow. Lint CI (fmt, rule tests, packaging smoke test) runs on Depot: .depot/workflows/ci.yml.
 #
 # Setup before the first release:
-#   - repository secret NPM_TOKEN: an npm automation (or granular, publish-enabled) token for an account that may
-#     publish to the @maschwenk scope (npm/tsrslint/package.json "name").
+#   - repository secret NPM_TOKEN: a granular npm token scoped to publishing @maschwenk/tsrslint and its
+#     platform packages (npm/tsrslint/package.json "name").
 #   - push the tag v<workspace version> (node npm/build.mjs --print-version), e.g. v0.1.0.
 # workflow_dispatch builds, smoke-tests and packs, then runs `npm publish --dry-run` unless dry_run is unchecked.
 # Provenance (`npm publish --provenance`) is only possible from a public repository; it is enabled automatically
