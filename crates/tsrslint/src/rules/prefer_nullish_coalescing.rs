@@ -9,7 +9,7 @@ use crate::rule::{
     opt_bool, options_object, Ctx, Listener, Rule, RuleFix, RuleMessage, RuleSuggestion,
     RuleVisitor,
 };
-use crate::utils;
+use crate::utils::{self, pos_u32};
 
 fn build_no_strict_null_check_message() -> RuleMessage {
     RuleMessage::new(
@@ -552,7 +552,7 @@ fn is_mixed_logical_expression(node: P<Node>) -> bool {
 }
 
 fn node_text(ctx: &Ctx, node: P<Node>) -> &'static str {
-    &ctx.text()[node.pos() as usize..node.end() as usize]
+    &ctx.text()[pos_u32(node.pos()) as usize..pos_u32(node.end()) as usize]
 }
 
 impl Visitor {

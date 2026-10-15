@@ -1,7 +1,7 @@
 // Port of internal/rules/no_deprecated/no_deprecated.go.
 
 use tsrs_ast::{self as ast, Kind, Node, Symbol, SymbolFlags};
-use tsrs_checker::{CheckMode, ContextFlags, LiteralValue, Type, TypeFlags};
+use tsrs_checker::{CheckMode, Checker, ContextFlags, LiteralValue, Type, TypeFlags};
 use tsrs_core::P;
 
 use crate::rule::{options_object, Ctx, Listener, Rule, RuleMessage, RuleVisitor};
@@ -180,11 +180,7 @@ fn search_for_deprecation_in_aliases_chain(
         if is_deprecated {
             return (true, reason);
         }
-        if ctx
-            .checker
-            .get_declaration_of_alias_symbol(symbol)
-            .is_none()
-        {
+        if Checker::get_declaration_of_alias_symbol(symbol).is_none() {
             break;
         }
         let Some(immediate) = ctx.checker.get_immediate_aliased_symbol(symbol) else {

@@ -4,7 +4,7 @@ use tsrs_ast::{self as ast, Kind, ModifierFlags, Node, NodeFlags};
 use tsrs_core::P;
 
 use crate::rule::{Ctx, Listener, Rule, RuleFix, RuleMessage, RuleVisitor};
-use crate::utils::{self, TypeAwaitable};
+use crate::utils::{self, pos_i32, pos_u32, TypeAwaitable};
 
 fn disallowed_promise_await() -> RuleMessage {
     RuleMessage::new(
@@ -241,8 +241,8 @@ impl Visitor {
     }
 
     fn remove_await_fix(ctx: &Ctx, node: P<Node>) -> RuleFix {
-        let r = tsrs_scanner::get_range_of_token_at_position(ctx.file, node.pos());
-        ctx.fix_remove_range(r.pos(), r.end())
+        let r = tsrs_scanner::get_range_of_token_at_position(ctx.file, pos_u32(node.pos()));
+        ctx.fix_remove_range(pos_i32(r.pos()), pos_i32(r.end()))
     }
 
     fn test(&self, ctx: &mut Ctx, node: P<Node>) {

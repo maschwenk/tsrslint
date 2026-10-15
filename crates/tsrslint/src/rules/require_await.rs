@@ -6,7 +6,7 @@ use tsrs_core::P;
 use crate::rule::{
     Ctx, Listener, Rule, RuleDiagnostic, RuleFix, RuleMessage, RuleSuggestion, RuleVisitor,
 };
-use crate::utils;
+use crate::utils::{self, pos_i32, pos_u32};
 
 fn missing_await() -> RuleMessage {
     RuleMessage::new("missingAwait", "Function has no 'await' expression.")
@@ -114,18 +114,18 @@ fn build_remove_async_fixes(
 ) -> Vec<RuleFix> {
     let mut fixes = Vec::with_capacity(3);
     let text = source_file.text();
-    let async_start = tsrs_scanner::get_token_pos_of_node(async_token, source_file, false);
+    let async_start = tsrs_scanner::get_token_pos_of_node(async_token, source_file, false) as i32;
     // Remove the `async` keyword plus trailing whitespace, but preserve trailing comments.
     let remove_end = tsrs_scanner::skip_trivia_ex(
         text,
-        async_token.end(),
+        pos_u32(async_token.end()),
         Some(&tsrs_scanner::SkipTriviaOptions {
             stop_at_comments: true,
             ..Default::default()
         }),
-    );
+    ) as i32;
     let mut add_semicolon = false;
-    let next_token = tsrs_scanner::scan_token_at_position(source_file, async_token.end());
+    let next_token = tsrs_scanner::scan_token_at_position(source_file, pos_u32(async_token.end()));
     if matches!(
         next_token,
         Kind::OpenParenToken
@@ -150,19 +150,19 @@ fn build_remove_async_fixes(
         return fixes;
     }
     let type_name = return_type.as_type_reference_node().type_name;
-    let type_name_start = tsrs_scanner::get_token_pos_of_node(type_name, source_file, false);
+    let type_name_start = tsrs_scanner::get_token_pos_of_node(type_name, source_file, false) as i32;
     if is_generator && is_type_reference_named(return_type, "AsyncGenerator") {
         fixes.push(RuleFix {
             text: "Generator".to_string(),
             pos: type_name_start,
-            end: type_name.end(),
+            end: pos_i32(type_name.end()),
         });
     } else if !is_generator && is_type_reference_named(return_type, "Promise") {
         if let Some(type_arguments) = return_type.as_type_reference_node().type_arguments() {
             if !type_arguments.nodes().is_empty() {
                 // Unwrap `Promise<T>` to `T` by deleting `Promise<` and the trailing `>`.
-                let open_angle_pos = type_arguments.pos() - 1;
-                let close_angle_pos = type_arguments.end();
+                let open_angle_pos = pos_i32(type_arguments.pos()) - 1;
+                let close_angle_pos = pos_i32(type_arguments.end());
                 fixes.push(RuleFix {
                     text: String::new(),
                     pos: close_angle_pos,

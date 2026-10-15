@@ -7,7 +7,7 @@ use tsrs_compiler::Program;
 use tsrs_core::P;
 
 use crate::rule::{opt_bool, options_object, Ctx, Listener, Rule, RuleMessage, RuleVisitor};
-use crate::utils::{self, TypeOrValueSpecifier};
+use crate::utils::{self, pos_i32, TypeOrValueSpecifier};
 
 fn build_should_be_readonly_message() -> RuleMessage {
     RuleMessage::new("shouldBeReadonly", "Parameter should be a readonly type.")
@@ -395,7 +395,7 @@ impl RuleVisitor for Visitor {
                         let name_start = ctx.trim(name).0;
                         ctx.report_range(
                             name_start,
-                            actual_parameter.end(),
+                            pos_i32(actual_parameter.end()),
                             build_should_be_readonly_message(),
                         );
                         continue;

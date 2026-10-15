@@ -68,7 +68,7 @@ fn get_comment_default_case(
     let case_block = node.as_switch_statement().case_block;
     let cases = case_block.as_case_block().clauses.nodes();
     let last = *cases.last()?;
-    let comment_range = TextRange::new(last.end(), case_block.end());
+    let comment_range = TextRange::from_text_pos(last.end(), case_block.end());
     for comment in utils::get_comments_in_range(source_file, comment_range) {
         let mut comment_text = &source_file.text()[comment.pos() as usize..comment.end() as usize];
         match comment.kind {
@@ -155,7 +155,7 @@ fn requires_quoting(text: &str) -> bool {
 fn get_node_indent(source_file: P<SourceFile>, node: P<Node>) -> String {
     let (pos, _) = utils::trim_node_text_range(source_file, node);
     let (_, column) =
-        tsrs_scanner::get_ecma_line_and_utf16_character_of_position(&*source_file, pos);
+        tsrs_scanner::get_ecma_line_and_utf16_character_of_position(&*source_file, pos as u32);
     let column = column as i64;
     if column <= 0 {
         return String::new();
@@ -350,8 +350,8 @@ impl Visitor {
         {
             if let Some(comment) = &metadata.default_case_comment {
                 ctx.report_range(
-                    comment.pos(),
-                    comment.end(),
+                    comment.pos() as i32,
+                    comment.end() as i32,
                     build_dangerous_default_case_message(),
                 );
             } else if let Some(default_case) = metadata.default_case {

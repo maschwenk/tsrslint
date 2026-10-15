@@ -35,12 +35,24 @@ use tsrs_ast::{self as ast, Kind, Node, SourceFile, Symbol, SymbolFlags};
 use tsrs_checker::{Checker, Signature, SignatureKind, Type, TypeFlags};
 use tsrs_compiler::Program;
 use tsrs_core::CompilerOptions;
-use tsrs_core::{tspath, Tristate, P};
+use tsrs_core::{tspath, TextPos, Tristate, P};
+
+/// A tsrs position as the Go `int` tsgolint uses: the source offset, or -1 for a synthesized node.
+#[inline]
+pub fn pos_i32(pos: TextPos) -> i32 {
+    pos.source_offset().map_or(-1, |offset| offset as i32)
+}
+
+/// The source offset of a parsed node's position, for the tsrs scanner functions.
+#[inline]
+pub fn pos_u32(pos: TextPos) -> u32 {
+    pos.expect_source("parsed nodes have source positions")
+}
 
 /// utils.TrimNodeTextRange: the node's range without leading trivia.
 pub fn trim_node_text_range(file: P<SourceFile>, node: P<Node>) -> (i32, i32) {
-    let r = tsrs_scanner::get_range_of_token_at_position(file, node.pos());
-    (r.pos(), node.end())
+    let r = tsrs_scanner::get_range_of_token_at_position(file, pos_u32(node.pos()));
+    (pos_i32(r.pos()), pos_i32(node.end()))
 }
 
 pub fn is_type_flag_set(t: P<Type>, flags: TypeFlags) -> bool {
@@ -245,7 +257,7 @@ pub fn is_source_file_default_library(program: &Program, file: P<SourceFile>) ->
         use_case_sensitive_file_names: program.host().fs().use_case_sensitive_file_names(),
     };
     libs.iter()
-        .any(|lib| tspath::compare_paths(file.file_name(), lib, &opts) == 0)
+        .any(|lib| tspath::compare_paths(file.file_name(), lib, &opts).is_eq())
 }
 
 pub fn is_symbol_from_default_library(program: &Program, symbol: Option<P<Symbol>>) -> bool {

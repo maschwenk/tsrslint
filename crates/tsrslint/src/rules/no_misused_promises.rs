@@ -496,19 +496,17 @@ fn check_thenable_or_void_argument(
     }
     let contextual_type = ctx
         .checker
-        .get_contextual_type_for_argument_at_index(node, index as i32);
-    if let Some(contextual_type) = contextual_type {
-        if contextual_type != t {
-            check_thenable_or_void_argument(
-                ctx,
-                node,
-                contextual_type,
-                index,
-                state,
-                parameter_declaration,
-                true,
-            );
-        }
+        .get_contextual_type_for_argument_at_index(node, index);
+    if contextual_type != t {
+        check_thenable_or_void_argument(
+            ctx,
+            node,
+            contextual_type,
+            index,
+            state,
+            parameter_declaration,
+            true,
+        );
     }
 }
 

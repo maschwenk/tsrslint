@@ -6,7 +6,7 @@ use tsrs_checker::{Checker, Type};
 use tsrs_core::P;
 
 use crate::rule::{Ctx, LabeledRange, Listener, Rule, RuleDiagnostic, RuleMessage, RuleVisitor};
-use crate::utils;
+use crate::utils::{self, pos_i32, pos_u32};
 
 type Range = (i32, i32);
 
@@ -173,17 +173,18 @@ fn assignment_relation_range(
     receiver_node: P<Node>,
     sender_node: P<Node>,
 ) -> Range {
-    let mut s = tsrs_scanner::get_scanner_for_source_file(source_file, receiver_node.end());
+    let mut s =
+        tsrs_scanner::get_scanner_for_source_file(source_file, pos_u32(receiver_node.end()));
     let mut colon_range: Option<Range> = None;
     while s.token() != Kind::EndOfFile && s.token_range().pos() < sender_node.end() {
         match s.token() {
             Kind::EqualsToken => {
                 let r = s.token_range();
-                return (r.pos(), r.end());
+                return (pos_i32(r.pos()), pos_i32(r.end()));
             }
             Kind::ColonToken => {
                 let r = s.token_range();
-                colon_range = Some((r.pos(), r.end()));
+                colon_range = Some((pos_i32(r.pos()), pos_i32(r.end())));
             }
             _ => {}
         }

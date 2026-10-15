@@ -6,7 +6,7 @@ use tsrs_checker::{Checker, Type, TypeFlags};
 use tsrs_core::P;
 
 use crate::rule::{Ctx, Listener, Rule, RuleMessage, RuleSuggestion, RuleVisitor};
-use crate::utils;
+use crate::utils::{self, pos_i32};
 
 fn build_prefer_non_null_assertion_message() -> RuleMessage {
     RuleMessage::new(
@@ -105,7 +105,7 @@ impl RuleVisitor for Visitor {
         } else {
             (node.pos(), expression.pos())
         };
-        let mut fixes = vec![ctx.fix_remove_range(remove_pos, remove_end)];
+        let mut fixes = vec![ctx.fix_remove_range(pos_i32(remove_pos), pos_i32(remove_end))];
         if higher_precedence_than_unary {
             fixes.push(ctx.fix_insert_after(expression, "!"));
         } else {

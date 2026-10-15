@@ -39,14 +39,14 @@ pub fn get_number_index_type(c: &mut Checker, t: P<Type>) -> Option<P<Type>> {
 pub fn get_comments_in_range(source_file: P<SourceFile>, in_range: TextRange) -> Vec<CommentRange> {
     let text = source_file.text();
     let mut out = Vec::new();
-    for comment_range in tsrs_scanner::get_trailing_comment_ranges(text, in_range.pos()) {
-        if comment_range.pos() >= in_range.end() {
+    for comment_range in tsrs_scanner::get_trailing_comment_ranges(text, pos_u32(in_range.pos())) {
+        if comment_range.pos() >= pos_u32(in_range.end()) {
             break;
         }
         out.push(comment_range);
     }
-    for comment_range in tsrs_scanner::get_leading_comment_ranges(text, in_range.pos()) {
-        if comment_range.pos() >= in_range.end() {
+    for comment_range in tsrs_scanner::get_leading_comment_ranges(text, pos_u32(in_range.pos())) {
+        if comment_range.pos() >= pos_u32(in_range.end()) {
             break;
         }
         out.push(comment_range);

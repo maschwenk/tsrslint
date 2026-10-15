@@ -12,7 +12,7 @@ use crate::rule::{
     opt_bool, options_object, Ctx, Listener, Rule, RuleFix, RuleMessage, RuleSuggestion,
     RuleVisitor,
 };
-use crate::utils;
+use crate::utils::{self, pos_i32};
 
 fn build_prefer_optional_chain_message() -> RuleMessage {
     RuleMessage::new(
@@ -1248,7 +1248,10 @@ fn flatten_visit(ctx: &Ctx, n: P<Node>, parent_is_non_null: bool, parts: &mut Ve
         let mut type_args_text = String::new();
         if let Some(type_args) = call_expr.type_arguments() {
             if !type_args.nodes().is_empty() {
-                type_args_text = format!("<{}>", src(ctx, type_args.pos(), type_args.end()));
+                type_args_text = format!(
+                    "<{}>",
+                    src(ctx, pos_i32(type_args.pos()), pos_i32(type_args.end()))
+                );
             }
         }
 
@@ -1256,7 +1259,7 @@ fn flatten_visit(ctx: &Ctx, n: P<Node>, parent_is_non_null: bool, parts: &mut Ve
         if !call_expr.arguments.nodes().is_empty() {
             let args_start = call_expr.arguments.pos();
             let call_end = n.end();
-            args_text = format!("({})", src(ctx, args_start, call_end - 1));
+            args_text = format!("({})", src(ctx, pos_i32(args_start), pos_i32(call_end) - 1));
         }
 
         parts.push(ChainPart {
@@ -3289,7 +3292,7 @@ impl ChainProcessor {
         if chain.len() > 1 {
             let mut leading_trivia = String::new();
             for op in &chain[1..] {
-                let full_pos = op.node.pos();
+                let full_pos = pos_i32(op.node.pos());
                 let trimmed_pos = ctx.trim(op.node).0;
                 if full_pos < trimmed_pos {
                     leading_trivia.push_str(src(ctx, full_pos, trimmed_pos));
@@ -3569,7 +3572,7 @@ impl ChainProcessor {
                 } else {
                     let op_start = bin_expr.operator_token.pos();
                     let right_end = bin_expr.right.get().end();
-                    let comparison_text = src(ctx, op_start, right_end);
+                    let comparison_text = src(ctx, pos_i32(op_start), pos_i32(right_end));
                     new_code = format!("{optional_chain_code}{comparison_text}");
                 }
             } else {

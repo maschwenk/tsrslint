@@ -7,7 +7,7 @@ use tsrs_core::P;
 use crate::rule::{
     Ctx, LabeledRange, Listener, Rule, RuleDiagnostic, RuleMessage, RuleSuggestion, RuleVisitor,
 };
-use crate::utils;
+use crate::utils::{self, pos_i32, pos_u32};
 
 fn build_no_array_delete_message() -> RuleMessage {
     RuleMessage::new(
@@ -65,13 +65,14 @@ impl RuleVisitor for Visitor {
             return;
         }
 
-        let delete_token_range = tsrs_scanner::get_range_of_token_at_position(ctx.file, node.pos());
+        let delete_token_range =
+            tsrs_scanner::get_range_of_token_at_position(ctx.file, pos_u32(node.pos()));
         let array_expr_range = ctx.trim(expression.expression);
 
         ctx.report_diagnostic_with_suggestions(
             RuleDiagnostic {
-                pos: delete_token_range.pos(),
-                end: delete_token_range.end(),
+                pos: pos_i32(delete_token_range.pos()),
+                end: pos_i32(delete_token_range.end()),
                 message: build_no_array_delete_message(),
                 labeled_ranges: vec![LabeledRange {
                     label: "This expression evaluates to an array.".to_string(),
@@ -81,22 +82,27 @@ impl RuleVisitor for Visitor {
             },
             |ctx| {
                 let argument_range = ctx.trim(expression.argument_expression);
-                let left_bracket_token_range =
-                    tsrs_scanner::get_range_of_token_at_position(ctx.file, array_expr_range.1);
+                let left_bracket_token_range = tsrs_scanner::get_range_of_token_at_position(
+                    ctx.file,
+                    array_expr_range.1 as u32,
+                );
                 let right_bracket_token_range =
-                    tsrs_scanner::get_range_of_token_at_position(ctx.file, argument_range.1);
+                    tsrs_scanner::get_range_of_token_at_position(ctx.file, argument_range.1 as u32);
                 vec![RuleSuggestion {
                     message: build_use_splice_message(),
                     fixes: vec![
-                        ctx.fix_remove_range(delete_token_range.pos(), delete_token_range.end()),
+                        ctx.fix_remove_range(
+                            pos_i32(delete_token_range.pos()),
+                            pos_i32(delete_token_range.end()),
+                        ),
                         ctx.fix_replace_range(
-                            left_bracket_token_range.pos(),
-                            left_bracket_token_range.end(),
+                            pos_i32(left_bracket_token_range.pos()),
+                            pos_i32(left_bracket_token_range.end()),
                             ".splice(",
                         ),
                         ctx.fix_replace_range(
-                            right_bracket_token_range.pos(),
-                            right_bracket_token_range.end(),
+                            pos_i32(right_bracket_token_range.pos()),
+                            pos_i32(right_bracket_token_range.end()),
                             ", 1)",
                         ),
                     ],

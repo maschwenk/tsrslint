@@ -5,7 +5,7 @@ use tsrs_checker::{Checker, Type, TypeFlags};
 use tsrs_core::P;
 
 use crate::rule::{Ctx, LabeledRange, Listener, Rule, RuleDiagnostic, RuleMessage, RuleVisitor};
-use crate::utils::{self, DiscriminatedAnyType};
+use crate::utils::{self, pos_i32, pos_u32, DiscriminatedAnyType};
 
 type Range = (i32, i32);
 
@@ -284,8 +284,8 @@ impl RuleVisitor for Visitor {
                 let Some(argument) = node.expression() else {
                     return;
                 };
-                let r = tsrs_scanner::get_range_of_token_at_position(ctx.file, node.pos());
-                self.check_return(ctx, argument, (r.pos(), r.end()));
+                let r = tsrs_scanner::get_range_of_token_at_position(ctx.file, pos_u32(node.pos()));
+                self.check_return(ctx, argument, (pos_i32(r.pos()), pos_i32(r.end())));
             }
             _ => {}
         }

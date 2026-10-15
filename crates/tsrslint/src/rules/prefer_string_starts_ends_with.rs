@@ -6,7 +6,7 @@ use tsrs_ast::{self as ast, Kind, Node};
 use tsrs_core::P;
 
 use crate::rule::{options_object, Ctx, Listener, Rule, RuleFix, RuleMessage, RuleVisitor};
-use crate::utils;
+use crate::utils::{self, pos_i32, pos_u32};
 
 fn build_prefer_starts_with_message() -> RuleMessage {
     RuleMessage::new(
@@ -311,9 +311,9 @@ impl Visitor {
         let Some(obj) = member_object(node) else {
             return ctx.trim(node);
         };
-        let start = tsrs_scanner::get_range_of_token_at_position(ctx.file, obj.end());
+        let start = tsrs_scanner::get_range_of_token_at_position(ctx.file, pos_u32(obj.end()));
         let (_, member_end) = ctx.trim(node);
-        (start.pos(), member_end)
+        (pos_i32(start.pos()), member_end)
     }
 
     fn is_string_type(&self, ctx: &mut Ctx, node: P<Node>) -> bool {

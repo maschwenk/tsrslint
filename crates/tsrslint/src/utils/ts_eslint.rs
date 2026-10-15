@@ -7,14 +7,14 @@ use rustc_hash::{FxHashMap, FxHashSet};
 pub fn get_function_head_loc(source_file: P<SourceFile>, node: P<Node>) -> (i32, i32) {
     if ast::is_arrow_function(node) {
         if let Some(arrow) = node.as_arrow_function().equals_greater_than_token {
-            return (arrow.pos(), arrow.end());
+            return (pos_i32(arrow.pos()), pos_i32(arrow.end()));
         }
     }
     let Some(params) = node.parameter_list() else {
         return trim_node_text_range(source_file, node);
     };
     // The parameter list's range starts right after `(`, so `pos() - 1` is the `(`.
-    let end = params.pos() - 1;
+    let end = pos_i32(params.pos()) - 1;
     // Skip leading decorators; keep modifiers such as `export`, `public`, `async`.
     let mut start = tsrs_scanner::get_token_pos_of_node(node, source_file, false);
     for &m in node.modifier_nodes() {
@@ -23,6 +23,7 @@ pub fn get_function_head_loc(source_file: P<SourceFile>, node: P<Node>) -> (i32,
             break;
         }
     }
+    let start = start as i32;
     if end < start {
         return trim_node_text_range(source_file, node);
     }
@@ -46,7 +47,7 @@ pub fn is_array_method_call_with_predicate(c: &mut Checker, node: P<Node>) -> bo
         return false;
     }
     let (property_name, ok) = c.get_accessed_property_name(callee);
-    if !ok || !ARRAY_PREDICATE_FUNCTIONS.contains(&property_name.as_str()) {
+    if !ok || !ARRAY_PREDICATE_FUNCTIONS.contains(&&*property_name) {
         return false;
     }
     let t = get_constrained_type_at_location(c, callee.expression().unwrap());
@@ -70,7 +71,7 @@ pub fn get_for_statement_head_loc(source_file: P<SourceFile>, node: P<Node>) -> 
         node.as_for_in_or_of_statement().statement
     };
     let (pos, _) = trim_node_text_range(source_file, node);
-    (pos, statement.pos())
+    (pos, pos_i32(statement.pos()))
 }
 
 /// ts_eslint.go GetDeclaration.

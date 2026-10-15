@@ -324,11 +324,9 @@ fn find_truthiness_asserted_argument_in_predicate(
     if tp.kind.get() != TypePredicateKind::AssertsIdentifier || tp.t.get().is_some() {
         return None;
     }
-    let parameter_index = tp.parameter_index.get();
-    if parameter_index < 0 || parameter_index as usize >= checkable_arguments.len() {
-        return None;
-    }
-    Some(checkable_arguments[parameter_index as usize])
+    tp.parameter_index
+        .get()
+        .and_then(|i| checkable_arguments.get(i).copied())
 }
 
 fn check_node(ctx: &mut Ctx, node: P<Node>, opts: &StrictBooleanExpressions) {

@@ -9,7 +9,7 @@ use crate::rule::{
     opt_bool, options_object, Ctx, LabeledRange, Listener, Rule, RuleDiagnostic, RuleFix,
     RuleMessage, RuleVisitor,
 };
-use crate::utils;
+use crate::utils::{self, pos_i32, pos_u32};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum UnionOrIntersection {
@@ -84,8 +84,8 @@ fn unwinded_parent_type(mut node: P<Node>, kind: Kind) -> Option<P<Node>> {
 fn remove_range(r: tsrs_core::TextRange) -> RuleFix {
     RuleFix {
         text: String::new(),
-        pos: r.pos(),
-        end: r.end(),
+        pos: pos_i32(r.pos()),
+        end: pos_i32(r.end()),
     }
 }
 
@@ -100,17 +100,17 @@ fn compute_fixes(
         Kind::UnionType
     };
     let parent = unwinded_parent_type(constituent_node, kind).unwrap();
-    let mut s = tsrs_scanner::get_scanner_for_source_file(ctx.file, parent.pos());
+    let mut s = tsrs_scanner::get_scanner_for_source_file(ctx.file, pos_u32(parent.pos()));
     let mut found_before = false;
     let mut prev_start = 0;
     let mut bracket_before_tokens: Vec<tsrs_core::TextRange> = Vec::new();
     loop {
-        if s.token_start() >= constituent_node.pos() {
+        if s.token_start() >= pos_u32(constituent_node.pos()) {
             break;
         }
         if s.token() == Kind::AmpersandToken || s.token() == Kind::BarToken {
             found_before = true;
-            prev_start = s.token_start();
+            prev_start = s.token_start() as i32;
             bracket_before_tokens.clear();
         } else if s.token() == Kind::OpenParenToken {
             bracket_before_tokens.push(s.token_range());
@@ -124,7 +124,7 @@ fn compute_fixes(
         for &before in &bracket_before_tokens {
             fixes.push(remove_range(before));
         }
-        s.reset_pos(constituent_node.end());
+        s.reset_pos(pos_u32(constituent_node.end()));
         for _ in &bracket_before_tokens {
             s.scan();
             if s.token() != Kind::CloseParenToken {
@@ -136,11 +136,11 @@ fn compute_fixes(
             fixes.push(remove_range(s.token_range()));
         }
     } else {
-        s.reset_pos(constituent_node.end());
+        s.reset_pos(pos_u32(constituent_node.end()));
         let mut closing_parens_count = 0;
         loop {
             s.scan();
-            if s.token_start() >= parent.end() {
+            if s.token_start() >= pos_u32(parent.end()) {
                 panic!("couldn't find '&' or '|' token");
             }
             if s.token() == Kind::AmpersandToken || s.token() == Kind::BarToken {
@@ -159,7 +159,7 @@ fn compute_fixes(
 
         let mut opening_parens: Vec<tsrs_core::TextRange> =
             Vec::with_capacity(closing_parens_count);
-        s.reset_pos(parent.pos());
+        s.reset_pos(pos_u32(parent.pos()));
         for _ in 0..closing_parens_count {
             s.scan();
             if s.token() == Kind::OpenParenToken {
@@ -169,7 +169,7 @@ fn compute_fixes(
             } else {
                 opening_parens.clear();
             }
-            if s.token_start() == constituent_node.pos() {
+            if s.token_start() == pos_u32(constituent_node.pos()) {
                 if opening_parens.len() != closing_parens_count {
                     panic!(
                         "expected to find {} opening parens, found only {}",
@@ -264,7 +264,8 @@ fn check_duplicate_recursively(
     }
 
     if let Some(&previous) = cached_type_map.get(&t) {
-        let previous_text = &ctx.text()[previous.pos() as usize..previous.end() as usize];
+        let previous_text =
+            &ctx.text()[pos_u32(previous.pos()) as usize..pos_u32(previous.end()) as usize];
         report(
             ctx,
             with_fix,

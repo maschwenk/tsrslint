@@ -8,7 +8,7 @@ use tsrs_core::P;
 use crate::rule::{
     options_object, Ctx, Listener, Rule, RuleFix, RuleMessage, RuleSuggestion, RuleVisitor,
 };
-use crate::utils::{self, TypeOrValueSpecifier};
+use crate::utils::{self, pos_i32, pos_u32, TypeOrValueSpecifier};
 
 fn build_add_await_message() -> RuleMessage {
     RuleMessage::new("addAwait", "Add await operator.")
@@ -197,15 +197,20 @@ fn get_map_spread_suggestions(
     if ast::is_object_literal_expression(parent) {
         let properties = parent.as_object_literal_expression().properties;
         if properties.nodes().len() == 1 {
-            let open = tsrs_scanner::get_range_of_token_at_position(ctx.file, parent.pos());
-            let dots = tsrs_scanner::get_range_of_token_at_position(ctx.file, node.pos());
+            let open =
+                tsrs_scanner::get_range_of_token_at_position(ctx.file, pos_u32(parent.pos()));
+            let dots = tsrs_scanner::get_range_of_token_at_position(ctx.file, pos_u32(node.pos()));
             return vec![RuleSuggestion {
                 message: build_replace_map_spread_in_object_message(),
                 fixes: vec![
-                    ctx.fix_remove_range(open.pos(), open.end()), // {
-                    ctx.fix_replace_range(dots.pos(), dots.end(), "Object.fromEntries("), // ...
-                    ctx.fix_replace_range(argument.end(), properties.end(), ")"),
-                    ctx.fix_remove_range(parent.end() - 1, parent.end()), // }
+                    ctx.fix_remove_range(pos_i32(open.pos()), pos_i32(open.end())), // {
+                    ctx.fix_replace_range(
+                        pos_i32(dots.pos()),
+                        pos_i32(dots.end()),
+                        "Object.fromEntries(",
+                    ), // ...
+                    ctx.fix_replace_range(pos_i32(argument.end()), pos_i32(properties.end()), ")"),
+                    ctx.fix_remove_range(pos_i32(parent.end()) - 1, pos_i32(parent.end())), // }
                 ],
             }];
         }

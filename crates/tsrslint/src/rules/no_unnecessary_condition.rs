@@ -13,7 +13,7 @@ use tsrs_core::P;
 use crate::rule::{
     options_object, Ctx, LabeledRange, Listener, Rule, RuleDiagnostic, RuleMessage, RuleVisitor,
 };
-use crate::utils;
+use crate::utils::{self, pos_i32};
 
 fn build_always_truthy_message() -> RuleMessage {
     RuleMessage::new(
@@ -1645,9 +1645,9 @@ impl Visitor {
             ctx.report_diagnostic(build_no_overlap_diagnostic(
                 primary,
                 &left_name,
-                (left.pos(), left.end()),
+                (pos_i32(left.pos()), pos_i32(left.end())),
                 &right_name,
-                (right.pos(), right.end()),
+                (pos_i32(right.pos()), pos_i32(right.end())),
             ));
         }
     }
@@ -1713,11 +1713,13 @@ impl Visitor {
         else {
             return;
         };
-        let param_index = type_predicate.parameter_index.get();
-        if param_index < 0 || param_index as usize >= checkable_arguments.len() {
+        let Some(&arg) = type_predicate
+            .parameter_index
+            .get()
+            .and_then(|i| checkable_arguments.get(i))
+        else {
             return;
-        }
-        let arg = checkable_arguments[param_index as usize];
+        };
         let predicate_type = type_predicate.t.get();
         match type_predicate.kind.get() {
             TypePredicateKind::AssertsIdentifier | TypePredicateKind::Identifier => {
@@ -1766,9 +1768,11 @@ fn check_predicate_function(ctx: &mut Ctx, func_node: P<Node>, check_type_guards
         if let (true, Some(type_predicate)) = (check_type_guards, type_predicate) {
             let params = signature.parameters.get();
             if !params.is_empty() {
-                let param_index = type_predicate.parameter_index.get();
-                if param_index >= 0 && (param_index as usize) < params.len() {
-                    let param = params[param_index as usize];
+                if let Some(&param) = type_predicate
+                    .parameter_index
+                    .get()
+                    .and_then(|i| params.get(i))
+                {
                     let param_type = ctx.checker.get_type_of_symbol_exported(param);
                     let predicate_kind = type_predicate.kind.get();
                     if predicate_kind == TypePredicateKind::Identifier

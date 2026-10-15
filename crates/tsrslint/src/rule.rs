@@ -10,7 +10,7 @@ use tsrs_compiler::Program;
 use tsrs_core::P;
 
 use crate::protocol;
-use crate::utils::trim_node_text_range;
+use crate::utils::{pos_i32, trim_node_text_range};
 
 /// Listener keys. Go encodes these as `kind + 1000 * n` (rule.ListenerOnExit & co.).
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
@@ -319,8 +319,8 @@ impl<'a> Ctx<'a> {
     pub fn fix_insert_after(&self, node: P<Node>, text: impl Into<String>) -> RuleFix {
         RuleFix {
             text: text.into(),
-            pos: node.end(),
-            end: node.end(),
+            pos: pos_i32(node.end()),
+            end: pos_i32(node.end()),
         }
     }
     pub fn fix_replace(&self, node: P<Node>, text: impl Into<String>) -> RuleFix {

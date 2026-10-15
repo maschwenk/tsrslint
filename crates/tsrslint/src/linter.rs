@@ -344,6 +344,7 @@ fn lint(
                 &bundled::lib_path(),
                 Some(Arc::new(ProgramExtCache(ext_cache))),
                 None,
+                None,
             ),
             declarations,
         );
@@ -397,6 +398,7 @@ fn lint(
                 Arc::clone(&fs),
                 &bundled::lib_path(),
                 Some(Arc::new(ProgramExtCache(ext_cache))),
+                None,
                 None,
             ),
             declarations,
@@ -524,6 +526,16 @@ impl CompilerHost for SharedDeclarationsHost {
         let file = self.inner.get_source_file(opts.clone())?;
         Some(*self.cache.lock().unwrap().entry(opts).or_insert(file))
     }
+    fn get_content_mapped_source_files(
+        &self,
+        opts: SourceFileParseOptions,
+        mapper: &tsrs_contentmapper::Mapper,
+    ) -> Result<tsrs_contentmapper::SourceFiles, tsrs_contentmapper::Error> {
+        self.inner.get_content_mapped_source_files(opts, mapper)
+    }
+    fn content_mapper_project(&self) -> Option<Arc<dyn tsrs_contentmapper::Project>> {
+        self.inner.content_mapper_project()
+    }
     fn get_resolved_project_reference(
         &self,
         file_name: &str,
@@ -581,7 +593,6 @@ fn send_internal_tsconfig_diag(
         .map(|f| f.file_name().to_string())
         .filter(|f| !f.is_empty())
         .unwrap_or_else(|| config_file_name.to_string());
-    let loc = d.loc();
     let mut help = diagnostic_text(d);
     if help.contains("Please remove it from your configuration.") {
         help.push_str(
@@ -590,10 +601,7 @@ fn send_internal_tsconfig_diag(
     }
     let _ = tx.send(protocol::Diagnostic {
         kind: 1,
-        range: Some(protocol::Range {
-            pos: loc.pos(),
-            end: loc.end(),
-        }),
+        range: d.loc().map(protocol::Range::from),
         message: protocol::Message {
             id: "tsconfig-error".to_string(),
             description: "Invalid tsconfig".to_string(),
@@ -639,13 +647,9 @@ fn report_typescript_diagnostics(
             if d.file().map(|f| f.file_name() == file.file_name()) != Some(true) {
                 continue;
             }
-            let loc = d.loc();
             let _ = tx.send(protocol::Diagnostic {
                 kind: 1,
-                range: Some(protocol::Range {
-                    pos: loc.pos(),
-                    end: loc.end(),
-                }),
+                range: d.loc().map(protocol::Range::from),
                 message: protocol::Message {
                     id: format!("TS{}", d.code()),
                     description: diagnostic_text(d),

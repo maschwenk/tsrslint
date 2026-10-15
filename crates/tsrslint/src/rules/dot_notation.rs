@@ -8,6 +8,7 @@ use tsrs_core::P;
 use crate::rule::{
     opt_bool, options_object, Ctx, Listener, Rule, RuleFix, RuleMessage, RuleVisitor,
 };
+use crate::utils::{pos_i32, pos_u32};
 
 const ES3_KEYWORDS: &[&str] = &[
     "abstract",
@@ -175,14 +176,14 @@ fn is_decimal_integer(node: P<Node>) -> bool {
     true
 }
 
-fn needs_space_after_identifier(source_text: &str, member_expr_end: i32) -> bool {
+fn needs_space_after_identifier(source_text: &str, member_expr_end: u32) -> bool {
     let next_pos = tsrs_scanner::skip_trivia(source_text, member_expr_end);
     if next_pos != member_expr_end || next_pos as usize >= source_text.len() {
         return false;
     }
     // utf8.DecodeRuneInString yields U+FFFD for invalid input; source text is valid UTF-8.
     let next_rune = source_text[next_pos as usize..].chars().next().unwrap();
-    tsrs_scanner::is_identifier_part(next_rune as i32)
+    tsrs_scanner::is_identifier_part(next_rune as u32)
 }
 
 /// The property declaration whose visibility modifiers should be consulted for the given
@@ -307,9 +308,9 @@ impl Visitor {
             let object_end = ctx.trim(expression).1;
             let property_end = ctx.trim(property).1;
             let left_bracket_range =
-                tsrs_scanner::get_range_of_token_at_position(ctx.file, object_end);
+                tsrs_scanner::get_range_of_token_at_position(ctx.file, object_end as u32);
             let right_bracket_range =
-                tsrs_scanner::get_range_of_token_at_position(ctx.file, property_end);
+                tsrs_scanner::get_range_of_token_at_position(ctx.file, property_end as u32);
 
             let mut replace_start = left_bracket_range.pos();
             let mut fixes: Vec<RuleFix> = Vec::with_capacity(3);
@@ -321,15 +322,19 @@ impl Visitor {
                         "."
                     };
                     fixes.push(ctx.fix_replace_range(
-                        left_bracket_range.pos(),
-                        left_bracket_range.pos(),
+                        pos_i32(left_bracket_range.pos()),
+                        pos_i32(left_bracket_range.pos()),
                         dot_text,
                     ));
                 }
                 Some(question_dot) => replace_start = question_dot.end(),
             }
-            fixes.push(ctx.fix_replace_range(replace_start, right_bracket_range.end(), value));
-            if needs_space_after_identifier(ctx.text(), node.end()) {
+            fixes.push(ctx.fix_replace_range(
+                pos_i32(replace_start),
+                pos_i32(right_bracket_range.end()),
+                value,
+            ));
+            if needs_space_after_identifier(ctx.text(), pos_u32(node.end())) {
                 fixes.push(ctx.fix_insert_after(node, " "));
             }
             fixes
@@ -358,10 +363,12 @@ impl Visitor {
                 return Vec::new();
             }
             let object_end = ctx.trim(expression).1;
-            let dot_range = tsrs_scanner::get_range_of_token_at_position(ctx.file, object_end);
+            let dot_range =
+                tsrs_scanner::get_range_of_token_at_position(ctx.file, object_end as u32);
             let mut fixes = Vec::with_capacity(2);
             if property_access.question_dot_token().is_none() {
-                fixes.push(ctx.fix_remove_range(dot_range.pos(), dot_range.end()));
+                fixes
+                    .push(ctx.fix_remove_range(pos_i32(dot_range.pos()), pos_i32(dot_range.end())));
             }
             fixes.push(ctx.fix_replace(property, format!("[\"{property_name}\"]")));
             fixes

@@ -147,7 +147,7 @@ impl RuleVisitor for Visitor {
         if !found {
             return;
         }
-        let (method, arg_index_to_check) = match property_name.as_str() {
+        let (method, arg_index_to_check) = match &*property_name {
             "catch" => ("`catch`", 0usize),
             "then" => ("`then` rejection", 1usize),
             _ => return,

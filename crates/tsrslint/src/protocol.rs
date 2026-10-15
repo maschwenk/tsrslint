@@ -108,6 +108,15 @@ pub struct Range {
     pub end: i32,
 }
 
+impl From<tsrs_core::TextRange> for Range {
+    fn from(r: tsrs_core::TextRange) -> Range {
+        Range {
+            pos: crate::utils::pos_i32(r.pos()),
+            end: crate::utils::pos_i32(r.end()),
+        }
+    }
+}
+
 #[derive(Serialize, Clone, Debug)]
 pub struct Message {
     pub id: String,

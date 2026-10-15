@@ -8,7 +8,7 @@ use tsrs_checker::Type;
 use tsrs_core::P;
 
 use crate::rule::{Ctx, Listener, Rule, RuleFix, RuleMessage, RuleSuggestion, RuleVisitor};
-use crate::utils;
+use crate::utils::{self, pos_i32, pos_u32};
 
 fn build_prefer_find_message() -> RuleMessage {
     RuleMessage::new(
@@ -533,7 +533,7 @@ fn find_array_element_access_start(
 ) -> Option<i32> {
     let (_, array_end) = ctx.trim(ast::skip_parentheses(array_node));
     let search_start = array_end as usize;
-    let search_end = whole_expression.end() as usize;
+    let search_end = pos_u32(whole_expression.end()) as usize;
     let text = ctx.text();
     let bytes = text.as_bytes();
     let mut i = search_start;
@@ -580,7 +580,7 @@ fn report_prefer_find(
     let Some(start) = find_array_element_access_start(ctx, array_node, node) else {
         return;
     };
-    let remove_fix = ctx.fix_remove_range(start, node.end());
+    let remove_fix = ctx.fix_remove_range(start, pos_i32(node.end()));
     ctx.report_node_with_suggestions(node, build_prefer_find_message(), |ctx| {
         let mut fixes: Vec<RuleFix> = Vec::with_capacity(filter_expressions.len() + 1);
         for filter_expression in filter_expressions {

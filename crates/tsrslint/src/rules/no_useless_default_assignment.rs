@@ -8,7 +8,7 @@ use crate::rule::{
     Ctx, LabeledRange, Listener, Rule, RuleDiagnostic, RuleFix, RuleMessage, RuleSuggestion,
     RuleVisitor,
 };
-use crate::utils;
+use crate::utils::{self, pos_i32};
 
 fn build_no_strict_null_check_message() -> RuleMessage {
     RuleMessage::new(
@@ -104,18 +104,18 @@ fn find_node_index(nodes: &[P<Node>], target: P<Node>) -> i32 {
 fn get_default_assignment_start(node: P<Node>) -> i32 {
     if ast::is_parameter_declaration(node) {
         if let Some(t) = node.type_node() {
-            return t.end();
+            return pos_i32(t.end());
         }
         if let Some(name) = node.name() {
-            return name.end();
+            return pos_i32(name.end());
         }
     }
     if ast::is_binding_element(node) {
         if let Some(name) = node.as_binding_element().name() {
-            return name.end();
+            return pos_i32(name.end());
         }
     }
-    node.pos()
+    pos_i32(node.pos())
 }
 
 fn is_simple_type_for_message(t: Option<P<Type>>) -> bool {
@@ -295,7 +295,7 @@ fn get_source_type_for_pattern(ctx: &mut Ctx, pattern: P<Node>) -> Option<P<Type
 }
 
 fn build_remove_default_fix(ctx: &Ctx, node: P<Node>) -> RuleFix {
-    ctx.fix_remove_range(get_default_assignment_start(node), node.end())
+    ctx.fix_remove_range(get_default_assignment_start(node), pos_i32(node.end()))
 }
 
 fn report_useless_default_assignment(

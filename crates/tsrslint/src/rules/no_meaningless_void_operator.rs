@@ -7,7 +7,7 @@ use tsrs_core::P;
 use crate::rule::{
     opt_bool, options_object, Ctx, Listener, Rule, RuleMessage, RuleSuggestion, RuleVisitor,
 };
-use crate::utils;
+use crate::utils::{self, pos_i32};
 
 fn meaningless_void_operator(t: &str) -> RuleMessage {
     RuleMessage::new(
@@ -61,7 +61,7 @@ impl RuleVisitor for Visitor {
             .all(|&t| utils::is_type_flag_set(t, TypeFlags::VoidLike | TypeFlags::Never));
         let fix_remove_void_keyword = |ctx: &Ctx| {
             let (pos, _) = ctx.trim(node);
-            ctx.fix_remove_range(pos, arg.pos())
+            ctx.fix_remove_range(pos, pos_i32(arg.pos()))
         };
         if is_always_void_like {
             let msg = meaningless_void_operator(&utils::type_to_string(ctx.checker, arg_type));

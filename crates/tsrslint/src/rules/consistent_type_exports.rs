@@ -9,7 +9,7 @@ use crate::rule::{
     opt_bool, options_object, Ctx, LabeledRange, Listener, Rule, RuleDiagnostic, RuleMessage,
     RuleVisitor,
 };
-use crate::utils;
+use crate::utils::{self, pos_i32, pos_u32};
 
 fn build_type_over_value_message() -> RuleMessage {
     RuleMessage::with_help(
@@ -119,11 +119,11 @@ fn get_export_specifier_text(source_file: P<SourceFile>, specifier_node: P<Node>
 }
 
 fn get_export_keyword_range(source_file: P<SourceFile>, node: P<Node>) -> (i32, i32) {
-    let mut s = tsrs_scanner::get_scanner_for_source_file(source_file, node.pos());
+    let mut s = tsrs_scanner::get_scanner_for_source_file(source_file, pos_u32(node.pos()));
     loop {
         if s.token() == Kind::ExportKeyword {
             let r = s.token_range();
-            return (r.pos(), r.end());
+            return (pos_i32(r.pos()), pos_i32(r.end()));
         }
         if s.token() == Kind::EndOfFile || s.token_range().pos() >= node.end() {
             break;
@@ -227,11 +227,16 @@ impl Visitor {
                 labeled_ranges: Vec::new(),
             },
             |ctx| {
-                let mut s = tsrs_scanner::get_scanner_for_source_file(ctx.file, node.pos());
+                let mut s =
+                    tsrs_scanner::get_scanner_for_source_file(ctx.file, pos_u32(node.pos()));
                 loop {
                     if s.token() == Kind::AsteriskToken {
                         let r = s.token_range();
-                        return vec![ctx.fix_replace_range(r.pos(), r.pos(), "type ")];
+                        return vec![ctx.fix_replace_range(
+                            pos_i32(r.pos()),
+                            pos_i32(r.pos()),
+                            "type ",
+                        )];
                     }
                     if s.token() == Kind::EndOfFile || s.token_range().pos() >= node.end() {
                         break;

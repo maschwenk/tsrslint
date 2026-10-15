@@ -7,7 +7,7 @@ use tsrs_core::P;
 use crate::rule::{
     opt_bool, options_object, Ctx, Listener, Rule, RuleMessage, RuleSuggestion, RuleVisitor,
 };
-use crate::utils;
+use crate::utils::{self, pos_i32, pos_u32};
 
 fn invalid_void_expr() -> RuleMessage {
     RuleMessage::with_help(
@@ -222,8 +222,16 @@ impl Visitor {
                 if !ast::is_block(body) && can_fix(ctx, body) {
                     let without_parens = ast::skip_parentheses(body);
                     fixes = vec![
-                        ctx.fix_replace_range(body.pos(), without_parens.pos(), "{ "),
-                        ctx.fix_replace_range(without_parens.end(), body.end(), "; }"),
+                        ctx.fix_replace_range(
+                            pos_i32(body.pos()),
+                            pos_i32(without_parens.pos()),
+                            "{ ",
+                        ),
+                        ctx.fix_replace_range(
+                            pos_i32(without_parens.end()),
+                            pos_i32(body.end()),
+                            "; }",
+                        ),
                     ];
                 }
                 fixes
@@ -250,7 +258,8 @@ impl Visitor {
                 ctx.report_node_with_fixes(node, invalid_void_expr_return_last(), |ctx| {
                     let mut fixes = Vec::new();
                     if can_fix(ctx, expr) {
-                        let next_token = tsrs_scanner::scan_token_at_position(ctx.file, expr.pos());
+                        let next_token =
+                            tsrs_scanner::scan_token_at_position(ctx.file, pos_u32(expr.pos()));
                         let replace_text = if is_semicolon_needed_token(next_token) {
                             ";"
                         } else {
@@ -258,25 +267,32 @@ impl Visitor {
                         };
                         let r = tsrs_scanner::get_range_of_token_at_position(
                             ctx.file,
-                            invalid_ancestor.pos(),
+                            pos_u32(invalid_ancestor.pos()),
                         );
-                        fixes.push(ctx.fix_replace_range(r.pos(), r.end(), replace_text));
+                        fixes.push(ctx.fix_replace_range(
+                            pos_i32(r.pos()),
+                            pos_i32(r.end()),
+                            replace_text,
+                        ));
                     }
                     fixes
                 });
                 return;
             }
             ctx.report_node_with_fixes(node, invalid_void_expr_return(), |ctx| {
-                let next_token = tsrs_scanner::scan_token_at_position(ctx.file, expr.pos());
+                let next_token =
+                    tsrs_scanner::scan_token_at_position(ctx.file, pos_u32(expr.pos()));
                 let replace_text = if is_semicolon_needed_token(next_token) {
                     ";"
                 } else {
                     ""
                 };
-                let r =
-                    tsrs_scanner::get_range_of_token_at_position(ctx.file, invalid_ancestor.pos());
+                let r = tsrs_scanner::get_range_of_token_at_position(
+                    ctx.file,
+                    pos_u32(invalid_ancestor.pos()),
+                );
                 let mut fixes = vec![
-                    ctx.fix_replace_range(r.pos(), r.end(), replace_text),
+                    ctx.fix_replace_range(pos_i32(r.pos()), pos_i32(r.end()), replace_text),
                     ctx.fix_insert_after(invalid_ancestor, "; return;"),
                 ];
                 if !invalid_ancestor.parent().is_some_and(ast::is_block) {

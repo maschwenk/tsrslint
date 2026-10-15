@@ -7,7 +7,7 @@ use tsrs_core::P;
 use crate::rule::{
     opt_bool, options_object, Ctx, Listener, Rule, RuleFix, RuleMessage, RuleVisitor,
 };
-use crate::utils;
+use crate::utils::{self, pos_u32};
 
 fn comparing_nullable_to_false() -> RuleMessage {
     RuleMessage::new("comparingNullableToFalse", "This expression unnecessarily compares a nullable boolean value to false instead of using the ?? operator to provide a default.")
@@ -195,7 +195,8 @@ impl RuleVisitor for Visitor {
             let should_negate = cmp.negated != cmp.literal_boolean_in_comparison;
             let mutated = if is_unary_negation { parent } else { node };
             let text = ctx.text();
-            let expr_text = &text[cmp.expression.pos() as usize..cmp.expression.end() as usize];
+            let expr_text = &text
+                [pos_u32(cmp.expression.pos()) as usize..pos_u32(cmp.expression.end()) as usize];
             if cmp.expression_is_nullable_boolean
                 && cmp.literal_boolean_in_comparison
                 && should_negate != is_unary_negation

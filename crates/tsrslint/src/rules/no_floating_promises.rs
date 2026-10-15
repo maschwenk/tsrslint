@@ -8,7 +8,7 @@ use crate::rule::{
     opt_bool, options_object, Ctx, LabeledRange, Listener, Rule, RuleDiagnostic, RuleFix,
     RuleMessage, RuleSuggestion, RuleVisitor,
 };
-use crate::utils;
+use crate::utils::{self, pos_i32, pos_u32};
 
 const MESSAGE_BASE: &str = "Promises must be awaited, add await operator.";
 const MESSAGE_BASE_HELP: &str = "The promise must end with a call to .catch, or end with a call to .then with a rejection handler.";
@@ -116,8 +116,9 @@ fn is_higher_precedence_than_unary(node: P<Node>) -> bool {
 impl Visitor {
     fn add_await(&self, ctx: &Ctx, expression: P<Node>, statement: P<Node>) -> Vec<RuleFix> {
         if ast::is_void_expression(expression) {
-            let r = tsrs_scanner::get_range_of_token_at_position(ctx.file, expression.pos());
-            return vec![ctx.fix_replace_range(r.pos(), r.end(), "await")];
+            let r =
+                tsrs_scanner::get_range_of_token_at_position(ctx.file, pos_u32(expression.pos()));
+            return vec![ctx.fix_replace_range(pos_i32(r.pos()), pos_i32(r.end()), "await")];
         }
         if is_higher_precedence_than_unary(statement.expression().unwrap()) {
             return vec![ctx.fix_insert_before(statement, "await ")];

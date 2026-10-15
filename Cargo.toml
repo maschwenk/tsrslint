@@ -3,7 +3,7 @@ resolver = "2"
 members = ["crates/tsrslint"]
 
 [workspace.package]
-version = "0.1.3"
+version = "0.1.4"
 edition = "2021"
 license = "MIT"
 
@@ -17,6 +17,7 @@ tsrs_compiler = { git = "https://github.com/maschwenk/tsrs", branch = "main" }
 tsrs_tsoptions = { git = "https://github.com/maschwenk/tsrs", branch = "main" }
 tsrs_vfs = { git = "https://github.com/maschwenk/tsrs", branch = "main" }
 tsrs_diagnostics = { git = "https://github.com/maschwenk/tsrs", branch = "main" }
+tsrs_contentmapper = { git = "https://github.com/maschwenk/tsrs", branch = "main" }
 
 [profile.release]
 opt-level = 3

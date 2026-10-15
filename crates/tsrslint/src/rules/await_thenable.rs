@@ -7,7 +7,7 @@ use tsrs_core::P;
 use crate::rule::{
     Ctx, LabeledRange, Listener, Rule, RuleDiagnostic, RuleMessage, RuleSuggestion, RuleVisitor,
 };
-use crate::utils::{self, TypeAwaitable};
+use crate::utils::{self, pos_i32, pos_u32, TypeAwaitable};
 
 fn await_message() -> RuleMessage {
     RuleMessage::with_help(
@@ -107,7 +107,7 @@ fn is_promise_aggregator_method(ctx: &mut Ctx, call_expression: P<Node>) -> bool
         return false;
     }
     let (method_name, ok) = ctx.checker.get_accessed_property_name(callee);
-    if !ok || !PROMISE_AGGREGATOR_METHODS.contains(&method_name.as_str()) {
+    if !ok || !PROMISE_AGGREGATOR_METHODS.contains(&&*method_name) {
         return false;
     }
     let t = utils::get_constrained_type_at_location(ctx.checker, callee.expression().unwrap());
@@ -166,8 +166,8 @@ impl Visitor {
         let t = ctx.checker.get_type_at_location(await_argument);
         let certainty = utils::needs_to_be_awaited(ctx.checker, await_argument, t);
         if certainty == TypeAwaitable::Never {
-            let r = tsrs_scanner::get_range_of_token_at_position(ctx.file, node.pos());
-            let range = (r.pos(), r.end());
+            let r = tsrs_scanner::get_range_of_token_at_position(ctx.file, pos_u32(node.pos()));
+            let range = (pos_i32(r.pos()), pos_i32(r.end()));
             let d = build_await_thenable_diagnostic(
                 range,
                 await_message(),
@@ -286,10 +286,10 @@ impl Visitor {
             // await using a = b, c = d, e = f;
             // it's rare and not worth the complexity to handle.
             if declarations.len() == 1 {
-                let r = tsrs_scanner::get_range_of_token_at_position(ctx.file, node.pos());
+                let r = tsrs_scanner::get_range_of_token_at_position(ctx.file, pos_u32(node.pos()));
                 suggestions.push(RuleSuggestion {
                     message: remove_await(),
-                    fixes: vec![ctx.fix_remove_range(r.pos(), r.end())],
+                    fixes: vec![ctx.fix_remove_range(pos_i32(r.pos()), pos_i32(r.end()))],
                 });
             }
             let init_range = ctx.trim(init);

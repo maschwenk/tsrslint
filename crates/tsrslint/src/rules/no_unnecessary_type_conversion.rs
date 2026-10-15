@@ -8,7 +8,7 @@ use crate::rule::{
     Ctx, LabeledRange, Listener, Rule, RuleDiagnostic, RuleFix, RuleMessage, RuleSuggestion,
     RuleVisitor,
 };
-use crate::utils;
+use crate::utils::{self, pos_i32};
 
 const BIG_INT_CONVERSION_BUILTINS: &[&str] = &["BigInt", "BigIntConstructor"];
 const BOOLEAN_CONVERSION_BUILTINS: &[&str] = &["Boolean", "BooleanConstructor"];
@@ -214,7 +214,7 @@ fn report_binary_plus(ctx: &mut Ctx, node: P<Node>) {
         if does_underlying_type_match_flag(left_type, TypeFlags::StringLike) {
             let type_string = utils::type_to_string(ctx.checker, left_type);
             let d = build_unnecessary_type_conversion_diagnostic(
-                (left.end(), node.end()),
+                (pos_i32(left.end()), pos_i32(node.end())),
                 ctx.trim(left),
                 &type_string,
             );
@@ -333,7 +333,7 @@ fn report_string_to_string_call(ctx: &mut Ctx, node: P<Node>) {
     }
     let type_string = utils::type_to_string(ctx.checker, object_type);
     let d = build_unnecessary_type_conversion_diagnostic(
-        (name.pos(), node.end()),
+        (pos_i32(name.pos()), pos_i32(node.end())),
         ctx.trim(object),
         &type_string,
     );

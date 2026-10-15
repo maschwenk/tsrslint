@@ -118,6 +118,16 @@ impl CompilerHost for CachedCompilerHost {
         SOURCE_FILE_CACHE.with(|c| c.borrow_mut().insert(key, sf));
         Some(sf)
     }
+    fn get_content_mapped_source_files(
+        &self,
+        opts: SourceFileParseOptions,
+        mapper: &tsrs_contentmapper::Mapper,
+    ) -> Result<tsrs_contentmapper::SourceFiles, tsrs_contentmapper::Error> {
+        self.inner.get_content_mapped_source_files(opts, mapper)
+    }
+    fn content_mapper_project(&self) -> Option<Arc<dyn tsrs_contentmapper::Project>> {
+        self.inner.content_mapper_project()
+    }
     fn get_resolved_project_reference(
         &self,
         file_name: &str,
@@ -177,7 +187,7 @@ fn run_linter(
         return Err(format!("tsconfig errors: {}", errors.len()));
     }
     let config = P::new(parsed.ok_or("no config")?);
-    let inner = new_compiler_host(root, fs, &bundled::lib_path(), None, None);
+    let inner = new_compiler_host(root, fs, &bundled::lib_path(), None, None, None);
     let compiler_host: Arc<dyn CompilerHost> = Arc::new(CachedCompilerHost { inner });
     let mut popts = ProgramOptions::new(config, compiler_host);
     popts.use_source_of_project_reference = true;
@@ -200,8 +210,9 @@ fn run_linter(
 }
 
 fn line_col(file: P<SourceFile>, pos: i32) -> (i32, i32) {
-    let (line, col) = tsrs_scanner::get_ecma_line_and_utf16_character_of_position(&*file, pos);
-    (line + 1, col as i32 + 1)
+    let (line, col) =
+        tsrs_scanner::get_ecma_line_and_utf16_character_of_position(&*file, pos as u32);
+    (line as i32 + 1, col as i32 + 1)
 }
 
 /// Runs every converted case of `rule`; returns (passed, failed descriptions, skipped).

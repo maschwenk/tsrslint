@@ -5,7 +5,7 @@ use tsrs_checker::{Checker, ObjectFlags, Type};
 use tsrs_core::P;
 
 use crate::rule::{Ctx, LabeledRange, Listener, Rule, RuleDiagnostic, RuleMessage, RuleVisitor};
-use crate::utils;
+use crate::utils::{self, pos_i32, pos_u32};
 
 fn build_unsafe_of_any_type_assertion_message(t: &str) -> RuleMessage {
     RuleMessage::with_help(
@@ -59,15 +59,22 @@ fn get_assertion_range(
 ) -> (i32, i32) {
     if ast::is_as_expression(node) {
         let as_keyword_range =
-            tsrs_scanner::get_scanner_for_source_file(ctx.file, expression.end()).token_range();
-        return (as_keyword_range.pos(), type_annotation.end());
+            tsrs_scanner::get_scanner_for_source_file(ctx.file, pos_u32(expression.end()))
+                .token_range();
+        return (
+            pos_i32(as_keyword_range.pos()),
+            pos_i32(type_annotation.end()),
+        );
     }
-    let mut s = tsrs_scanner::get_scanner_for_source_file(ctx.file, node.pos());
+    let mut s = tsrs_scanner::get_scanner_for_source_file(ctx.file, pos_u32(node.pos()));
     let opening_angle_bracket = s.token_range();
-    s.reset_pos(type_annotation.end());
+    s.reset_pos(pos_u32(type_annotation.end()));
     s.scan();
     let closing_angle_bracket = s.token_range();
-    (opening_angle_bracket.pos(), closing_angle_bracket.end())
+    (
+        pos_i32(opening_angle_bracket.pos()),
+        pos_i32(closing_angle_bracket.end()),
+    )
 }
 
 fn type_label(c: &mut Checker, t: P<Type>) -> String {
