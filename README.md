@@ -19,24 +19,24 @@ same 181,827 diagnostics as stock (same rules, files and positions); only some p
 tsgolint, parity and timing on a 28.5k-file codebase, full-port estimate).
 
 <!-- bench:start -->
-## Benchmark: tsrslint vs tsgolint 7.0.2002
+## Benchmark: tsrslint vs tsgolint 7.0.2003
 
-Each row lints one open-source project with all 60 rules (default options) through tsgolint's headless protocol, the way `oxlint --type-aware` runs its backend, with stock tsgolint 7.0.2002 (npm `@oxlint-tsgolint/linux-x64@7.0.2002`) and with tsrslint at commit `3ef78d2a16f9` (the PGO `dist` build, built like the npm release binaries). Both get the same payload; median of 3 interleaved runs, on GitHub Actions `ubuntu-24.04` (4 vCPU, 16 GB RAM, Linux x86_64, AMD EPYC 7763 64-Core Processor).
+Each row lints one open-source project with all 60 rules (default options) through tsgolint's headless protocol, the way `oxlint --type-aware` runs its backend, with stock tsgolint 7.0.2003 (npm `@oxlint-tsgolint/linux-x64@7.0.2003`) and with tsrslint at commit `e9e2a70fa372` (the PGO `dist` build, built like the npm release binaries). Both get the same payload; median of 3 interleaved runs, on GitHub Actions `ubuntu-24.04` (4 vCPU, 16 GB RAM, Linux x86_64, AMD EPYC 7763 64-Core Processor).
 
 | project | in PGO training | files | diagnostics, stock / tsrslint | same diagnostics | text differs | stock wall (s) | tsrslint wall (s) | speedup | stock peak RSS | tsrslint peak RSS | memory, tsrslint / stock |
 | --- | --- | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| vscode | no | 9,401 | **FAILED: stock** | | | | | | | | |
-| mui-docs | no | 1,004 | **FAILED: stock** | | | | | | | | |
-| xstate | yes | 253 | **FAILED: stock** | | | | | | | | |
-| webpack | yes | 777 | **FAILED: stock** | | | | | | | | |
-| cal-diy | no | 984 | **FAILED: stock** | | | | | | | | |
-| formbricks-web | no | 3,408 | **FAILED: stock** | | | | | | | | |
-| supabase-studio | no | 4,824 | **FAILED: stock** | | | | | | | | |
-| t3code-server | no | 1,326 | **FAILED: stock** | | | | | | | | |
+| vscode | no | 9,401 | 282,710 / 282,728 | **no: 22 differ** | 261 | 49.32 | 12.50 | 3.94x | 10.08 GiB | 2.43 GiB | 0.24x |
+| mui-docs | no | 1,004 | 3,607 / 3,607 | yes | 10 | 32.86 | 4.06 | 8.10x | 8.78 GiB | 1.56 GiB | 0.18x |
+| xstate | yes | 253 | 6,511 / 6,513 | **no: 2 differ** | 13 | 2.81 | 0.89 | 3.16x | 1.00 GiB | 488 MiB | 0.48x |
+| webpack | yes | 777 | 34,797 / 34,802 | **no: 5 differ** | 27 | 3.51 | 0.95 | 3.68x | 1.07 GiB | 451 MiB | 0.41x |
+| cal-diy | no | 984 | 11,735 / 11,742 | **no: 9 differ** | 35 | 11.23 | 2.53 | 4.44x | 4.27 GiB | 1.25 GiB | 0.29x |
+| formbricks-web | no | 3,408 | 34,556–34,557 / 34,557 | **no: 1 differ**; stock's runs differ by 1 | 837 | 21.51 | 5.29 | 4.07x | 6.93 GiB | 2.17 GiB | 0.31x |
+| supabase-studio | no | 4,824 | 44,916 / 44,922 | **no: 6 differ** | 8 | 22.14 | 5.12 | 4.32x | 6.29 GiB | 1.81 GiB | 0.29x |
+| t3code-server | no | 1,326 | 19,850 / 19,849 | **no: 1 differ** | 131 | 26.06 | 5.92 | 4.40x | 6.53 GiB | 1.37 GiB | 0.21x |
 
-in PGO training: the release binaries' profile is trained on these files (`.github/scripts/pgo-train.sh`), which flatters tsrslint there; the other projects are held out. diagnostics: rule diagnostics each binary reports. same diagnostics: both report the same multiset of (file, range, rule, message id); a bold cell is a disagreement. When one binary's runs report different sets (multi-threaded nondeterminism), the closest pair is compared and the cell says by how many diagnostics that binary's runs differ. text differs: diagnostics both report whose message text differs; expected in small numbers, since tsrs ports TypeScript 7.1-dev and tsgolint 7.0.2002 is built on TypeScript 7.0, which print some types differently. wall: process wall-clock time. speedup: stock wall / tsrslint wall. peak RSS: maximum resident set size; memory below 1x = tsrslint uses less.
+in PGO training: the release binaries' profile is trained on these files (`.github/scripts/pgo-train.sh`), which flatters tsrslint there; the other projects are held out. diagnostics: rule diagnostics each binary reports. same diagnostics: both report the same multiset of (file, range, rule, message id); a bold cell is a disagreement, and a few are expected: tsrslint ports tsgolint 7.0.2002's rule code and has not ported some fixes stock got since. When one binary's runs report different sets (multi-threaded nondeterminism), the closest pair is compared and the cell says by how many diagnostics that binary's runs differ. text differs: diagnostics both report whose message text differs; expected in small numbers, since tsrs ports TypeScript 7.1-dev and tsgolint 7.0.2003 is built on TypeScript 7.0, which print some types differently, and some messages changed upstream after 7.0.2002. wall: process wall-clock time. speedup: stock wall / tsrslint wall. peak RSS: maximum resident set size; memory below 1x = tsrslint uses less.
 
-Runner: GitHub Actions `ubuntu-24.04` (4 vCPU, 16 GB RAM, Linux x86_64, AMD EPYC 7763 64-Core Processor). Date: 2026-10-15 19:06 UTC. tsrslint commit: `3ef78d2a16f9`. Numbers from shared CI machines are noisy; compare trends, not single runs. How it is measured: [`bench/README.md`](bench/README.md).
+Runner: GitHub Actions `ubuntu-24.04` (4 vCPU, 16 GB RAM, Linux x86_64, AMD EPYC 7763 64-Core Processor). Date: 2026-10-15 19:20 UTC. tsrslint commit: `e9e2a70fa372`. Numbers from shared CI machines are noisy; compare trends, not single runs. How it is measured: [`bench/README.md`](bench/README.md).
 <!-- bench:end -->
 
 ### An internal monolith (private, measured by hand)
@@ -126,68 +126,68 @@ Generated by `python3 tools/rule_coverage.py --write README.md`; CI fails when i
 
 | rule | ported | test cases | passed | skipped | bench diagnostics |
 | --- | --- | ---: | ---: | ---: | ---: |
-| `await-thenable` | yes | 126 | 126 | 0 | 361 (5/8), stock 0 |
-| `consistent-return` | yes | 31 | 31 | 0 | 2,247 (7/8), stock 0 |
-| `consistent-type-exports` | yes | 49 | 49 | 0 | 22 (2/8), stock 0 |
-| `dot-notation` | yes | 75 | 75 | 0 | 3,524 (6/8), stock 0 |
-| `no-array-delete` | yes | 31 | 31 | 0 | 7 (1/8), stock 0 |
-| `no-base-to-string` | yes | 381 | 380 | 1 | 364 (8/8), stock 0 |
-| `no-confusing-void-expression` | yes | 110 | 109 | 1 | 16,414 (8/8), stock 0 |
-| `no-deprecated` | yes | 235 | 223 | 12 | 3,547 (8/8), stock 0 |
-| `no-duplicate-type-constituents` | yes | 82 | 80 | 2 | 221 (8/8), stock 0 |
-| `no-floating-promises` | yes | 179 | 178 | 1 | 8,058 (7/8), stock 0 |
-| `no-for-in-array` | yes | 24 | 24 | 0 | 7 (2/8), stock 0 |
-| `no-generated-empty-object-type` | yes | 29 | 29 | 0 | 20 (4/8), stock 0 |
-| `no-implied-eval` | yes | 70 | 70 | 0 | 7 (4/8), stock 0 |
-| `no-meaningless-void-operator` | yes | 6 | 6 | 0 | 15 (3/8), stock 0 |
-| `no-misused-promises` | yes | 222 | 221 | 1 | 3,149 (8/8), stock 0 |
-| `no-misused-spread` | yes | 131 | 130 | 1 | 106 (7/8), stock 0 |
-| `no-mixed-enums` | yes | 51 | 51 | 0 | 3 (1/8), stock 0 |
-| `no-redundant-type-constituents` | yes | 104 | 104 | 0 | 641 (7/8), stock 0 |
-| `no-unnecessary-boolean-literal-compare` | yes | 50 | 50 | 0 | 641 (7/8), stock 0 |
-| `no-unnecessary-condition` | yes | 350 | 350 | 0 | 18,210 (8/8), stock 0 |
-| `no-unnecessary-qualifier` | yes | 18 | 18 | 0 | 65 (2/8), stock 0 |
-| `no-unnecessary-template-expression` | yes | 183 | 183 | 0 | 299 (6/8), stock 0 |
-| `no-unnecessary-type-arguments` | yes | 111 | 110 | 1 | 510 (8/8), stock 0 |
-| `no-unnecessary-type-assertion` | yes | 366 | 366 | 0 | 5,494 (8/8), stock 0 |
-| `no-unnecessary-type-conversion` | yes | 77 | 77 | 0 | 748 (8/8), stock 0 |
-| `no-unnecessary-type-parameters` | yes | 165 | 165 | 0 | 434 (7/8), stock 0 |
-| `no-unsafe-argument` | yes | 43 | 43 | 0 | 5,968 (8/8), stock 0 |
-| `no-unsafe-assignment` | yes | 95 | 94 | 1 | 11,761 (8/8), stock 0 |
-| `no-unsafe-call` | yes | 36 | 36 | 0 | 3,773 (8/8), stock 0 |
-| `no-unsafe-enum-comparison` | yes | 93 | 93 | 0 | 2,037 (6/8), stock 0 |
-| `no-unsafe-member-access` | yes | 36 | 36 | 0 | 13,965 (8/8), stock 0 |
-| `no-unsafe-return` | yes | 62 | 62 | 0 | 2,243 (8/8), stock 0 |
-| `no-unsafe-type-assertion` | yes | 101 | 101 | 0 | 27,197 (8/8), stock 0 |
+| `await-thenable` | yes | 126 | 126 | 0 | 361 (5/8) |
+| `consistent-return` | yes | 31 | 31 | 0 | 2,247 (7/8) |
+| `consistent-type-exports` | yes | 49 | 49 | 0 | 22 (2/8) |
+| `dot-notation` | yes | 75 | 75 | 0 | 3,524 (6/8) |
+| `no-array-delete` | yes | 31 | 31 | 0 | 7 (1/8) |
+| `no-base-to-string` | yes | 381 | 380 | 1 | 364 (8/8) |
+| `no-confusing-void-expression` | yes | 110 | 109 | 1 | 16,414 (8/8) |
+| `no-deprecated` | yes | 235 | 223 | 12 | 3,547 (8/8), stock 3,550 |
+| `no-duplicate-type-constituents` | yes | 82 | 80 | 2 | 221 (8/8), stock 218 |
+| `no-floating-promises` | yes | 179 | 178 | 1 | 8,058 (7/8) |
+| `no-for-in-array` | yes | 24 | 24 | 0 | 7 (2/8) |
+| `no-generated-empty-object-type` | yes | 29 | 29 | 0 | 20 (4/8) |
+| `no-implied-eval` | yes | 70 | 70 | 0 | 7 (4/8) |
+| `no-meaningless-void-operator` | yes | 6 | 6 | 0 | 15 (3/8) |
+| `no-misused-promises` | yes | 222 | 221 | 1 | 3,149 (8/8) |
+| `no-misused-spread` | yes | 131 | 130 | 1 | 106 (7/8) |
+| `no-mixed-enums` | yes | 51 | 51 | 0 | 3 (1/8) |
+| `no-redundant-type-constituents` | yes | 104 | 104 | 0 | 641 (7/8) |
+| `no-unnecessary-boolean-literal-compare` | yes | 50 | 50 | 0 | 641 (7/8) |
+| `no-unnecessary-condition` | yes | 350 | 350 | 0 | 18,210 (8/8), stock 18,177 |
+| `no-unnecessary-qualifier` | yes | 18 | 18 | 0 | 65 (2/8) |
+| `no-unnecessary-template-expression` | yes | 183 | 183 | 0 | 299 (6/8) |
+| `no-unnecessary-type-arguments` | yes | 111 | 110 | 1 | 510 (8/8) |
+| `no-unnecessary-type-assertion` | yes | 366 | 366 | 0 | 5,494 (8/8) |
+| `no-unnecessary-type-conversion` | yes | 77 | 77 | 0 | 748 (8/8) |
+| `no-unnecessary-type-parameters` | yes | 165 | 165 | 0 | 434 (7/8) |
+| `no-unsafe-argument` | yes | 43 | 43 | 0 | 5,968 (8/8) |
+| `no-unsafe-assignment` | yes | 95 | 94 | 1 | 11,761 (8/8) |
+| `no-unsafe-call` | yes | 36 | 36 | 0 | 3,773 (8/8) |
+| `no-unsafe-enum-comparison` | yes | 93 | 93 | 0 | 2,037 (6/8) |
+| `no-unsafe-member-access` | yes | 36 | 36 | 0 | 13,965 (8/8) |
+| `no-unsafe-return` | yes | 62 | 62 | 0 | 2,243 (8/8) |
+| `no-unsafe-type-assertion` | yes | 101 | 101 | 0 | 27,197 (8/8), stock 27,195 |
 | `no-unsafe-unary-minus` | yes | 23 | 23 | 0 | 0 |
-| `no-useless-default-assignment` | yes | 83 | 83 | 0 | 338 (8/8), stock 0 |
-| `non-nullable-type-assertion-style` | yes | 26 | 26 | 0 | 2,053 (8/8), stock 0 |
-| `only-throw-error` | yes | 91 | 91 | 0 | 117 (6/8), stock 0 |
-| `prefer-find` | yes | 47 | 47 | 0 | 73 (4/8), stock 0 |
-| `prefer-includes` | yes | 65 | 65 | 0 | 453 (6/8), stock 0 |
-| `prefer-nullish-coalescing` | yes | 186 | 184 | 2 | 7,270 (8/8), stock 0 |
-| `prefer-optional-chain` | yes | 1,170 | 1,170 | 0 | 1,917 (8/8), stock 0 |
-| `prefer-promise-reject-errors` | yes | 162 | 161 | 1 | 208 (8/8), stock 0 |
-| `prefer-readonly` | yes | 162 | 162 | 0 | 3,382 (5/8), stock 0 |
-| `prefer-readonly-parameter-types` | yes | 135 | 135 | 0 | 205,938 (8/8), stock 0 |
-| `prefer-reduce-type-parameter` | yes | 31 | 31 | 0 | 66 (5/8), stock 0 |
-| `prefer-regexp-exec` | yes | 36 | 36 | 0 | 412 (8/8), stock 0 |
-| `prefer-return-this-type` | yes | 22 | 22 | 0 | 63 (2/8), stock 0 |
-| `prefer-string-starts-ends-with` | yes | 132 | 132 | 0 | 269 (6/8), stock 0 |
-| `promise-function-async` | yes | 53 | 53 | 0 | 13,963 (8/8), stock 0 |
-| `related-getter-setter-pairs` | yes | 23 | 23 | 0 | 12 (2/8), stock 0 |
-| `require-array-sort-compare` | yes | 43 | 43 | 0 | 73 (7/8), stock 0 |
-| `require-await` | yes | 90 | 90 | 0 | 11,058 (8/8), stock 0 |
-| `restrict-plus-operands` | yes | 122 | 122 | 0 | 61 (4/8), stock 0 |
-| `restrict-template-expressions` | yes | 72 | 72 | 0 | 836 (8/8), stock 0 |
-| `return-await` | yes | 100 | 100 | 0 | 641 (5/8), stock 0 |
-| `strict-boolean-expressions` | yes | 218 | 218 | 0 | 44,784 (8/8), stock 0 |
-| `strict-void-return` | yes | 215 | 214 | 1 | 6,767 (8/8), stock 0 |
-| `switch-exhaustiveness-check` | yes | 107 | 107 | 0 | 1,031 (8/8), stock 0 |
-| `unbound-method` | yes | 205 | 203 | 2 | 4,077 (7/8), stock 0 |
-| `use-unknown-in-catch-callback-variable` | yes | 57 | 56 | 1 | 800 (8/8), stock 0 |
+| `no-useless-default-assignment` | yes | 83 | 83 | 0 | 338 (8/8) |
+| `non-nullable-type-assertion-style` | yes | 26 | 26 | 0 | 2,053 (8/8), stock 2,050 |
+| `only-throw-error` | yes | 91 | 91 | 0 | 117 (6/8) |
+| `prefer-find` | yes | 47 | 47 | 0 | 73 (4/8) |
+| `prefer-includes` | yes | 65 | 65 | 0 | 453 (6/8) |
+| `prefer-nullish-coalescing` | yes | 186 | 184 | 2 | 7,270 (8/8) |
+| `prefer-optional-chain` | yes | 1,170 | 1,170 | 0 | 1,917 (8/8) |
+| `prefer-promise-reject-errors` | yes | 162 | 161 | 1 | 208 (8/8) |
+| `prefer-readonly` | yes | 162 | 162 | 0 | 3,382 (5/8) |
+| `prefer-readonly-parameter-types` | yes | 135 | 135 | 0 | 205,938 (8/8), stock 205,940 |
+| `prefer-reduce-type-parameter` | yes | 31 | 31 | 0 | 66 (5/8) |
+| `prefer-regexp-exec` | yes | 36 | 36 | 0 | 412 (8/8) |
+| `prefer-return-this-type` | yes | 22 | 22 | 0 | 63 (2/8) |
+| `prefer-string-starts-ends-with` | yes | 132 | 132 | 0 | 269 (6/8) |
+| `promise-function-async` | yes | 53 | 53 | 0 | 13,963 (8/8) |
+| `related-getter-setter-pairs` | yes | 23 | 23 | 0 | 12 (2/8) |
+| `require-array-sort-compare` | yes | 43 | 43 | 0 | 73 (7/8) |
+| `require-await` | yes | 90 | 90 | 0 | 11,058 (8/8) |
+| `restrict-plus-operands` | yes | 122 | 122 | 0 | 61 (4/8) |
+| `restrict-template-expressions` | yes | 72 | 72 | 0 | 836 (8/8) |
+| `return-await` | yes | 100 | 100 | 0 | 641 (5/8) |
+| `strict-boolean-expressions` | yes | 218 | 218 | 0 | 44,784 (8/8) |
+| `strict-void-return` | yes | 215 | 214 | 1 | 6,767 (8/8) |
+| `switch-exhaustiveness-check` | yes | 107 | 107 | 0 | 1,031 (8/8) |
+| `unbound-method` | yes | 205 | 203 | 2 | 4,077 (7/8), stock 4,076 |
+| `use-unknown-in-catch-callback-variable` | yes | 57 | 56 | 1 | 800 (8/8) |
 
-bench diagnostics: what tsrslint reports for the rule (default options) in the newest CI benchmark run (2026-10-15 19:06 UTC, commit `3ef78d2a16f9`), summed over its projects (vscode, mui-docs, xstate, webpack, cal-diy, formbricks-web, supabase-studio, t3code-server), and in how many of them it fires; ", stock N" where stock tsgolint v7.0.2002 reports a different number. 0: those projects never trigger the rule (its test cases still run).
+bench diagnostics: what tsrslint reports for the rule (default options) in the newest CI benchmark run (2026-10-15 19:20 UTC, commit `e9e2a70fa372`), summed over its projects (vscode, mui-docs, xstate, webpack, cal-diy, formbricks-web, supabase-studio, t3code-server), and in how many of them it fires; ", stock N" where stock tsgolint v7.0.2003 reports a different number. 0: those projects never trigger the rule (its test cases still run).
 
 Upstream: oxc-project/tsgolint at `f69fe736c071` (2026-10-02, v7.0.2003-5-gf69fe73) has 60 rules. All of them are ported. Commits after v7.0.2002 also change 16 existing rules (tsrslint ports their v7.0.2002 code; commits per rule): `await-thenable` 1, `no-deprecated` 1, `no-duplicate-type-constituents` 1, `no-meaningless-void-operator` 1, `no-misused-promises` 2, `no-misused-spread` 1, `no-unnecessary-condition` 3, `no-unnecessary-type-assertion` 3, `no-unnecessary-type-parameters` 1, `no-unsafe-return` 1, `no-useless-default-assignment` 2, `only-throw-error` 1, `require-array-sort-compare` 1, `return-await` 1, `strict-void-return` 1, `unbound-method` 1.
 <!-- rules:end -->
