@@ -106,11 +106,12 @@ cargo test --release --test rule_tests -- --nocapture
 All 59 rules run every case extracted from tsgolint's Go tests; per-rule counts are in
 [Rule coverage](#rule-coverage).
 
-CI runs on Depot ([.depot/workflows/ci.yml](.depot/workflows/ci.yml): fmt, release build, rule tests, headless and npm
-packaging smoke tests, a check that the rule coverage table below is current, and the lint ratchet of
-[docs/rust-practices.md](docs/rust-practices.md)). The benchmark at the top runs in
-its own Depot workflow ([.depot/workflows/bench.yml](.depot/workflows/bench.yml), [bench/README.md](bench/README.md)). Releases: [.github/workflows/release.yml](.github/workflows/release.yml), see
-[npm/README.md](npm/README.md#releasing).
+CI runs on GitHub Actions for every push to `main` and every pull request
+([.github/workflows/ci.yml](.github/workflows/ci.yml): fmt, release build, rule tests, headless and npm packaging smoke
+tests, a check that the rule coverage table below is current, and the lint ratchet of
+[docs/rust-practices.md](docs/rust-practices.md)). The benchmark at the top runs in its own workflow
+([.github/workflows/bench.yml](.github/workflows/bench.yml), [bench/README.md](bench/README.md)). Releases:
+[.github/workflows/release.yml](.github/workflows/release.yml), see [npm/README.md](npm/README.md#releasing).
 
 The release binaries are PGO builds: profile `dist` (fat LTO) trained on the rule tests and two open-source projects
 with all 59 rules. That is ~15% fewer instructions and less CPU time than the same build without PGO, with the same

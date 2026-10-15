@@ -1,14 +1,15 @@
-# Linux CI on Depot (modeled on maschwenk/tsrs's .depot/workflows/ci.yml). Releases: .github/workflows/release.yml.
-# Local actions for Depot CI live under .depot/actions/.
+# Linux CI on GitHub-hosted runners (modeled on maschwenk/tsrs's CI). Benchmark: bench.yml. Releases: release.yml.
 
 name: CI
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
+# Pull requests: a new push cancels the PR's running CI. main and dispatches: one run per commit, never cancelled.
 concurrency:
-  group: ci-${{ github.sha }}
-  cancel-in-progress: false
+  group: ci-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 permissions:
   contents: read
 env:
@@ -16,10 +17,10 @@ env:
   CARGO_INCREMENTAL: "0"
 jobs:
   check-and-test:
-    runs-on: depot-ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       # README's rule table must match the rule test cases, the pinned upstream rule list and the newest bench result.
@@ -57,10 +58,10 @@ jobs:
 
   # docs/rust-practices.md: clippy findings per (lint, file) may not grow past tools/lint/baseline.tsv.
   lint-ratchet:
-    runs-on: depot-ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Read the pinned Rust toolchain (rust-toolchain.toml)

@@ -1,5 +1,5 @@
 # Builds the tsrslint binaries and publishes the npm packages (npm/README.md). Modeled on maschwenk/tsrs's release
-# workflow. Lint CI (fmt, rule tests, packaging smoke test) runs on Depot: .depot/workflows/ci.yml.
+# workflow. Lint CI (fmt, rule tests, packaging smoke test): .github/workflows/ci.yml.
 #
 # Setup before the first release:
 #   - repository secret NPM_TOKEN: a granular npm token scoped to publishing @maschwenk/tsrslint and its

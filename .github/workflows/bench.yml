@@ -1,11 +1,10 @@
-# Depot CI workflow (https://depot.dev/docs/ci/overview), adapted from maschwenk/tsrs's .depot/workflows/bench.yml.
-# Benchmarks tsrslint against stock tsgolint 7.0.2002 on open-source projects (bench/README.md), then rewrites the
-# table between the bench markers of README.md and the rule table between the rules markers (its diagnostics column
-# reads the newest result), and commits both with the results.
+# Benchmarks tsrslint against stock tsgolint 7.0.2002 on open-source projects (bench/README.md; adapted from
+# maschwenk/tsrs's bench workflow), then rewrites the table between the bench markers of README.md and the rule table
+# between the rules markers (its diagnostics column reads the newest result), and commits both with the results.
 #
-# Loop guards: the results commit only touches README.md and bench/results/** (excluded by `paths`), and carries
-# [skip ci], which the job's `if` also checks (the commit is pushed by Depot's GitHub app, which may trigger Depot CI).
-# A workflow_dispatch run (`depot ci dispatch --workflow bench.yml --ref <branch>`) commits to its own branch.
+# Loop guards: the results commit is pushed with GITHUB_TOKEN, whose pushes start no workflow; it also only touches
+# README.md and bench/results/** (excluded by `paths`) and carries [skip ci], which the job's `if` checks too.
+# A workflow_dispatch run (`gh workflow run bench.yml --ref <branch>`) commits to its own branch.
 
 name: Bench
 
@@ -27,8 +26,9 @@ concurrency:
 permissions:
   contents: read
 
-# Fixed machine spec so runs are comparable: Depot depot-ubuntu-24.04-8 = 8 vCPU / 32 GB / x86_64 (bench/README.md
-# "CI"). The first step fails the job on any other machine; there is no fallback runner.
+# Fixed machine spec so runs are comparable: GitHub's standard ubuntu-24.04 runner for public repositories = 4 vCPU /
+# 16 GB / x86_64 (bench/README.md "CI"). The first step fails the job on any other machine; there is no fallback
+# runner. The largest peak RSS on record (stock tsgolint on vscode, 9.7 GiB on 8 vCPU) fits in 16 GB.
 
 env:
   CARGO_TERM_COLOR: always
@@ -38,15 +38,16 @@ jobs:
   bench:
     # Second loop guard: the results commit says [skip ci] (null on workflow_dispatch, which then runs).
     if: github.repository == 'maschwenk/tsrslint' && !contains(github.event.head_commit.message, '[skip ci]')
-    runs-on: depot-ubuntu-24.04-8
+    runs-on: ubuntu-24.04
     permissions:
       contents: write # pushes the results commit
       pull-requests: write # comments on pull requests that regress instruction counts (bench/regressions.py)
-    timeout-minutes: 60
+    # A run with cold caches clones and installs all nine projects and builds on 4 vCPU.
+    timeout-minutes: 120
     env:
-      BENCH_RUNNER: Depot CI `depot-ubuntu-24.04-8`
+      BENCH_RUNNER: GitHub Actions `ubuntu-24.04`
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0 # full history so the results commit can be re-created on a newer branch head
 
@@ -55,9 +56,18 @@ jobs:
           nproc; free -g; df -h / | tail -1
           lscpu | grep -E 'Model name|^CPU\(s\)' || true
           mem_gb=$(awk '/MemTotal/ {printf "%d", $2 / 1048576}' /proc/meminfo)
-          if [ "$(nproc)" != 8 ] || [ "$mem_gb" -lt 28 ] || [ "$(uname -m)" != x86_64 ]; then
-            echo "::error::expected 8 vCPU / 32 GB / x86_64, got $(nproc) vCPU / ${mem_gb} GB / $(uname -m)"; exit 1
+          if [ "$(nproc)" != 4 ] || [ "$mem_gb" -lt 14 ] || [ "$(uname -m)" != x86_64 ]; then
+            echo "::error::expected 4 vCPU / 16 GB / x86_64, got $(nproc) vCPU / ${mem_gb} GB / $(uname -m)"; exit 1
           fi
+
+      # bench/count.py reads a hardware instruction counter with perf_event_open, which Ubuntu's default
+      # kernel.perf_event_paranoid (4) refuses to unprivileged processes; 2 allows counting one's own user space. The
+      # VMs behind GitHub's runners have exposed no such counter so far (perf_event_open: ENOENT); the bench then
+      # records no instruction counts and the regression flag compares nothing (bench/README.md "Regression flag").
+      - name: Allow user-space perf counters
+        run: |
+          echo "kernel.perf_event_paranoid was $(cat /proc/sys/kernel/perf_event_paranoid)"
+          sudo sysctl -w kernel.perf_event_paranoid=2
 
       # pnpm version from package.json "packageManager"; Node from .node-version (as in ci.yml).
       - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
@@ -86,71 +96,72 @@ jobs:
         with:
           key: bench-pgo
 
-      # On Depot runners every cache action below is served by Depot Cache. One cache for stock tsgolint, one per
-      # cloned project (checkout + node_modules) keyed on its pinned commit and install command.
+      # One cache for stock tsgolint, one per cloned project (checkout + node_modules) keyed on its pinned commit and
+      # install command. GitHub evicts a repository's least recently used caches past 10 GB, and a branch's caches
+      # are not visible to main, so a run may set up some projects again.
       - name: Cache keys
         id: keys
         run: python3 bench/run.py --print-cache-keys | tee -a "$GITHUB_OUTPUT"
 
       - name: Restore stock tsgolint
         id: cache-stock
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: bench/.work/stock
           key: bench-stock-${{ runner.os }}-${{ steps.keys.outputs.stock }}
 
       - name: Restore vscode
         id: cache-vscode
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: bench/.work/solutions/vscode
           key: bench-vscode-${{ runner.os }}-${{ steps.keys.outputs.vscode }}
 
       - name: Restore mui-docs
         id: cache-mui
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: bench/.work/solutions/mui-docs
           key: bench-mui-docs-${{ runner.os }}-${{ steps.keys.outputs['mui-docs'] }}
 
       - name: Restore xstate
         id: cache-xstate
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: bench/.work/solutions/xstate
           key: bench-xstate-${{ runner.os }}-${{ steps.keys.outputs.xstate }}
 
       - name: Restore webpack
         id: cache-webpack
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: bench/.work/solutions/webpack
           key: bench-webpack-${{ runner.os }}-${{ steps.keys.outputs.webpack }}
 
       - name: Restore cal-diy
         id: cache-cal
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: bench/.work/solutions/cal-diy
           key: bench-cal-diy-${{ runner.os }}-${{ steps.keys.outputs['cal-diy'] }}
 
       - name: Restore formbricks-web
         id: cache-formbricks
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: bench/.work/solutions/formbricks-web
           key: bench-formbricks-web-${{ runner.os }}-${{ steps.keys.outputs['formbricks-web'] }}
 
       - name: Restore supabase-studio
         id: cache-supabase
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: bench/.work/solutions/supabase-studio
           key: bench-supabase-studio-${{ runner.os }}-${{ steps.keys.outputs['supabase-studio'] }}
 
       - name: Restore t3code-server
         id: cache-t3code
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: bench/.work/solutions/t3code-server
           key: bench-t3code-server-${{ runner.os }}-${{ steps.keys.outputs['t3code-server'] }}
@@ -161,63 +172,63 @@ jobs:
 
       - name: Save stock tsgolint
         if: steps.cache-stock.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: bench/.work/stock
           key: ${{ steps.cache-stock.outputs.cache-primary-key }}
 
       - name: Save vscode
         if: steps.cache-vscode.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: bench/.work/solutions/vscode
           key: ${{ steps.cache-vscode.outputs.cache-primary-key }}
 
       - name: Save mui-docs
         if: steps.cache-mui.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: bench/.work/solutions/mui-docs
           key: ${{ steps.cache-mui.outputs.cache-primary-key }}
 
       - name: Save xstate
         if: steps.cache-xstate.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: bench/.work/solutions/xstate
           key: ${{ steps.cache-xstate.outputs.cache-primary-key }}
 
       - name: Save webpack
         if: steps.cache-webpack.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: bench/.work/solutions/webpack
           key: ${{ steps.cache-webpack.outputs.cache-primary-key }}
 
       - name: Save cal-diy
         if: steps.cache-cal.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: bench/.work/solutions/cal-diy
           key: ${{ steps.cache-cal.outputs.cache-primary-key }}
 
       - name: Save formbricks-web
         if: steps.cache-formbricks.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: bench/.work/solutions/formbricks-web
           key: ${{ steps.cache-formbricks.outputs.cache-primary-key }}
 
       - name: Save supabase-studio
         if: steps.cache-supabase.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: bench/.work/solutions/supabase-studio
           key: ${{ steps.cache-supabase.outputs.cache-primary-key }}
 
       - name: Save t3code-server
         if: steps.cache-t3code.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
         with:
           path: bench/.work/solutions/t3code-server
           key: ${{ steps.cache-t3code.outputs.cache-primary-key }}
@@ -266,7 +277,7 @@ jobs:
 
       - name: Upload results and logs
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: bench-results
           path: |
