@@ -3,8 +3,18 @@
 `bench/run.py` lints open-source projects with all 60 rules through the headless protocol, once with stock tsgolint
 7.0.2003 and once with tsrslint, and reports wall time, peak memory, the diagnostic count of each and whether they
 report the same diagnostics. The GitHub Actions workflow `.github/workflows/bench.yml` runs it on every push to `main`
-and rewrites the table at the top of `README.md`. Adapted from maschwenk/tsrs's `bench/` (same project pins, checkout
-markers and cache layout).
+and publishes the result: the table in `README.md` and the charts below. Adapted from maschwenk/tsrs's `bench/` (same
+project pins, checkout markers and cache layout).
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/maschwenk/tsrslint/main/bench/per-project-time-dark.svg">
+  <img alt="Lint time by project" src="https://raw.githubusercontent.com/maschwenk/tsrslint/main/bench/per-project-time.svg">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/maschwenk/tsrslint/main/bench/per-project-memory-dark.svg">
+  <img alt="Peak memory by project" src="https://raw.githubusercontent.com/maschwenk/tsrslint/main/bench/per-project-memory.svg">
+</picture>
 
 (`benchmarks/` is upstream tsgolint's ESLint-vs-tsgolint benchmark, kept from tsgolint's history; it is not run.)
 
@@ -13,7 +23,7 @@ cargo build --release
 python3 bench/run.py --local                                   # all projects, 3 reps
 python3 bench/run.py --local --projects xstate,webpack --reps 1
 python3 bench/run.py --local --work-dir ~/bench-cache          # reuse clones across worktrees
-python3 bench/run.py --local --readme README.md                # also rewrite the README block
+python3 bench/run.py --local --readme README.md                # also publish it: README table and charts
 python3 bench/run.py --local --tsrslint path/to/tsgolint --tsrslint-build pgo-dist   # another binary
 ```
 
@@ -22,6 +32,31 @@ The first run clones and installs the projects into `<work-dir>/solutions` (defa
 tsgolint into `<work-dir>/stock`; later runs reuse them as long as `bench/projects.json` is unchanged. The checkouts
 use the same marker file as maschwenk/tsrs's bench, so a work dir shared with it reuses vscode, mui-docs and webpack
 (tsrs names the xstate checkout `xstate-main`; a copy named `xstate` works).
+
+## Charts and the README table
+
+`bench/publish.py` publishes a result: it rewrites the table between the bench markers of `README.md` and draws the
+charts with `bench/chart.py` (Python standard library only; layout, fonts and palette from maschwenk/tsrs's chart), each
+in a light and a dark theme that GitHub picks from the reader's color scheme:
+
+- `summary.svg`, the README's chart: lint time and peak memory summed over every project, one bar per binary and
+  tsrslint's multiple of stock's. A sum weights the large projects most: they are where the wait is.
+- `per-project-time.svg` and `per-project-memory.svg`, above: one row per project, sorted by stock's lint time, a dot
+  per binary and tsrslint's multiple. Time is on a linear axis, memory on a log axis so the small projects stay
+  apart. † marks the projects in the PGO training set.
+
+Each has a `-dark` twin, and each SVG's description lists every project's numbers. The bench workflow's results commit
+step runs `python3 bench/publish.py`, which publishes the newest complete CI result in `bench/results/` (every project
+measured with both binaries; a run with a failed project leaves the published table and charts as they are). CI's
+`python3 bench/publish.py --check` fails when the README table or a chart is not that result's, so a change to the
+generator comes with regenerated charts. The table has a subset of the columns; the full table of each run is
+`bench/results/<date>-<commit>.md`.
+
+```sh
+python3 bench/publish.py                                       # newest complete CI result -> README.md + bench/*.svg
+python3 bench/publish.py bench/results/<date>-<commit>.json    # a given result
+python3 bench/chart.py bench/results/<date>-<commit>.json --output /tmp/summary.svg [--theme dark] [--per-project wall_s|peak_rss_bytes]
+```
 
 ## Projects
 
@@ -90,7 +125,7 @@ from `pgo-train.sh` and refuses to run if the two pin different commits or insta
   between 7.0 and 7.1 can also change what a rule reports; a "no" cell is a signal to investigate, not proof of a
   tsrslint bug.
 - Per-rule diagnostic counts of each binary are in the JSON; `tools/rule_coverage.py` puts the newest CI run's into
-  the README's rule table.
+  the rule table in `docs/rules.md`.
 
 ## Regression flag
 
@@ -119,10 +154,10 @@ on xstate. Peak memory is therefore flagged when it rises by more than 4% and mo
 ## CI
 
 `.github/workflows/bench.yml` on GitHub Actions, like `ci.yml`. It runs on every push to `main` except pushes that
-touch only `README.md` / `bench/results/**`, and on `workflow_dispatch` (`gh workflow run bench.yml --ref <branch>`;
+touch only `README.md`, `docs/rules.md`, `bench/*.svg` or `bench/results/**`, and on `workflow_dispatch` (`gh workflow run bench.yml --ref <branch>`;
 such a run commits its results to that branch). One bench at a time, never cancelled (a push during a run queues the
 newest commit), network steps retried, and the results commit re-created on the branch's latest head before pushing,
-with the bench table and the rule table regenerated there. The results commit is pushed with the workflow's
+with the README table, the charts and the rule table regenerated there. The results commit is pushed with the workflow's
 `GITHUB_TOKEN`, so it starts no other workflow.
 
 **Fixed machine spec**: GitHub's standard `ubuntu-24.04` runner for public repositories, 4 vCPU, 16 GB RAM, Linux
