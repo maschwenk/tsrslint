@@ -5,6 +5,8 @@
 > pairs through oxlint) the normal config gives 0 diagnostics with both backends; the tsgolint segment takes 8.4 s vs
 > 25.9 s (median) at 8.1 GB vs 26.7 GB peak RSS. With all 59 rules enabled both report the same 181,827 diagnostics
 > (identical per-rule counts and positions); the sections below describe the original five-rule slice.
+> Hand-measured monolith numbers for tsrslint 0.1.1 and main on 2026-10-04 are in the
+> [addendum](#addendum-the-monolith-on-tsrslint-011-and-main-2026-10-04).
 
 Question: is a Rust port of tsgolint on tsrs worth it, and what would a full port cost? Everything below was
 measured on an internal monolith (origin/main `(redacted)`, 28,573 linted files, 39,145 program files) on an
@@ -202,3 +204,29 @@ goes away.
 * The language-server path (`source_overrides` from oxlint's LSP) is implemented but untested.
 * Windows.
 * Rule behavior on TypeScript 7.0-vs-7.1 checker differences beyond the corpora above.
+
+## Addendum: the monolith on tsrslint 0.1.1 and main (2026-10-04)
+
+Moved here from the README, which now shows only the public CI benchmark ([bench/README.md](../bench/README.md)).
+The monolith is private, so it is not in CI; these numbers were measured by hand on 2026-10-04 and have not been
+refreshed since. 28,611 linted files, Linux x86_64 (18 vCPU Xeon 8375C, 47 GiB, otherwise idle), PGO release builds,
+medians of interleaved runs; every run reports the same diagnostics:
+
+| | stock tsgolint 7.0.2002 | tsrslint 0.1.1 | tsrslint main (2026-10-04) |
+| --- | ---: | ---: | ---: |
+| payload oxlint sends for the monolith's config (11 rules), wall | 61.7 s | 16.8 s | 10.4 s |
+| same, peak RSS | 26.0 GiB | 7.99 GiB | 6.15 GiB |
+| all 59 rules, wall | 89.2 s | 25.0 s | 15.1 s |
+| all 59 rules, peak RSS | 29.8 GiB | 9.48 GiB | 7.14 GiB |
+| `oxlint --type-aware --deny-warnings` end to end, wall | 92.3 s | | 36.2 s |
+
+On an 18-core M5 Max (the monolith's config): 0.1.1 6.6 s / 7.7 GiB, main 4.2 s / 5.9 GiB.
+
+Where the time goes: almost all of it is the type checking the rules ask for, shared between rules (each of the
+expensive rules alone costs about 60% of the full run); rule code, the AST walk and the protocol are about 2% with the
+monolith's config and 6.5% with all 59 rules ([perf-lint-cpu.md](perf-lint-cpu.md)). What makes main faster than
+0.1.1: tsrs main instead of an old branch, linting each file with the checker tsrs's import-graph assignment picks
+plus tail work stealing (`crates/tsrslint/src/sched.rs`), 6 checkers instead of 4 on machines with 8 or more hardware
+threads, and less file-system work before linting (each tsconfig parsed once; on macOS at most 4 threads read files).
+Knobs and diagnostics: `TSRSLINT_CHECKERS=<n>` (4 checkers: about 1 GiB less peak memory on the monolith, about 20%
+slower), `TSRSLINT_SCHEDULE=locality`, `TSRSLINT_CHECKER_STATS=1`, `TSRSLINT_MEM_STATS=1`.

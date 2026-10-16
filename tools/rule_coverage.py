@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Writes or checks the rule coverage table in README.md (between the rules markers).
+"""Writes or checks the rule coverage table in docs/rules.md (between the rules markers).
 
-    python3 tools/rule_coverage.py --write README.md     # regenerate the table
-    python3 tools/rule_coverage.py --check README.md     # exit 1 if the table is stale (CI)
+    python3 tools/rule_coverage.py --write docs/rules.md     # regenerate the table
+    python3 tools/rule_coverage.py --check docs/rules.md     # exit 1 if the table is stale (CI)
     python3 tools/rule_coverage.py --update-upstream <tsgolint checkout> <ref>   # re-pin tools/upstream-rules.json
 
 Inputs, all in this repository (no network): the rules tsgolint v7.0.2002 has (internal/rules/<rule>/, kept from
@@ -141,7 +141,7 @@ def table() -> str:
 
 def splice(text: str, block: str) -> str:
     if START not in text or END not in text:
-        sys.exit(f"README has no {START} ... {END} markers")
+        sys.exit(f"no {START} ... {END} markers")
     pre, rest = text.split(START, 1)
     _, post = rest.split(END, 1)
     return f"{pre}{START}\n{block}{END}{post}"
@@ -184,8 +184,8 @@ def update_upstream(checkout: Path, ref: str) -> None:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     g = ap.add_mutually_exclusive_group(required=True)
-    g.add_argument("--write", type=Path, metavar="README")
-    g.add_argument("--check", type=Path, metavar="README")
+    g.add_argument("--write", type=Path, metavar="FILE")
+    g.add_argument("--check", type=Path, metavar="FILE")
     g.add_argument("--print", action="store_true")
     g.add_argument("--update-upstream", nargs=2, metavar=("CHECKOUT", "REF"))
     args = ap.parse_args()

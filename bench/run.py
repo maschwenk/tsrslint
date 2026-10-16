@@ -445,18 +445,6 @@ def markdown(result: dict) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
-def update_readme(readme: Path, table: str) -> None:
-    text = readme.read_text()
-    block = f"{START}\n{table}{END}"
-    if START in text and END in text:
-        pre, rest = text.split(START, 1)
-        _, post = rest.split(END, 1)
-        text = pre + block + post
-    else:
-        text = f"{block}\n\n{text}"
-    readme.write_text(text)
-
-
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--local", action="store_true", help="label results as measured on this machine")
@@ -476,15 +464,9 @@ def main() -> None:
     ap.add_argument("--print-cache-keys", action="store_true",
                     help="print `<name>=<key>` lines (GITHUB_OUTPUT format) for the CI caches of the work dir")
     ap.add_argument("--out-dir", type=Path, default=BENCH / "results")
-    ap.add_argument("--readme", type=Path, help="rewrite the bench block of this README")
-    ap.add_argument("--apply-table", type=Path,
-                    help="only rewrite --readme's bench block from this results .md (no benchmarking)")
+    ap.add_argument("--readme", type=Path,
+                    help="also publish the result to this README's bench block and the charts (bench/publish.py)")
     args = ap.parse_args()
-    if args.apply_table:
-        if not args.readme:
-            ap.error("--apply-table needs --readme")
-        update_readme(args.readme, args.apply_table.read_text())
-        return
 
     cfg = json.loads((BENCH / "projects.json").read_text())
     projects = cfg["projects"]
@@ -592,9 +574,10 @@ def main() -> None:
     stem = f"{now.strftime('%Y-%m-%d')}-{commit[:12]}" + ("-local" if args.local else "")
     (args.out_dir / f"{stem}.json").write_text(json.dumps(result, indent=1) + "\n")
     (args.out_dir / f"{stem}.md").write_text(table)
-    if args.readme:
-        update_readme(args.readme, table)
     print(table)
+    if args.readme:
+        import publish  # publish.py imports this module, hence the deferred import
+        publish.publish(args.out_dir / f"{stem}.json", args.readme)
     log(f"wrote {args.out_dir / stem}.json/.md in {result['duration_s']} s; logs in {logs}")
     bad = [n for n, pr in result["projects"].items()
            if not pr["stock"]["ok_runs"] or not pr["tsrslint"]["ok_runs"] or not pr.get("parity", {}).get("same_keys")]

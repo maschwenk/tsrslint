@@ -1,9 +1,11 @@
 # Benchmarks tsrslint against stock tsgolint 7.0.2003 on open-source projects (bench/README.md; adapted from
-# maschwenk/tsrs's bench workflow), then rewrites the table between the bench markers of README.md and the rule table
-# between the rules markers (its diagnostics column reads the newest result), and commits both with the results.
+# maschwenk/tsrs's bench workflow), then publishes the result (bench/publish.py: the table between the bench markers of
+# README.md and the charts bench/*.svg), rewrites the rule table of docs/rules.md (its diagnostics column reads the
+# newest result), and commits them with the results.
 #
 # Loop guards: the results commit is pushed with GITHUB_TOKEN, whose pushes start no workflow; it also only touches
-# README.md and bench/results/** (excluded by `paths`) and carries [skip ci], which the job's `if` checks too.
+# README.md, docs/rules.md, bench/*.svg and bench/results/** (excluded by `paths`) and carries [skip ci], which the
+# job's `if` checks too.
 # A workflow_dispatch run (`gh workflow run bench.yml --ref <branch>`) commits to its own branch.
 
 name: Bench
@@ -14,6 +16,8 @@ on:
     paths:
       - "**"
       - "!README.md"
+      - "!docs/rules.md"
+      - "!bench/*.svg"
       - "!bench/results/**"
   workflow_dispatch:
 
@@ -272,7 +276,7 @@ jobs:
 
       - name: Benchmark
         run: >-
-          python3 bench/run.py --readme README.md --tsrslint-build pgo-dist
+          python3 bench/run.py --tsrslint-build pgo-dist
           --tsrslint /tmp/tsrslint-pgo/target/x86_64-unknown-linux-gnu/dist/tsgolint
 
       - name: Upload results and logs
@@ -301,16 +305,15 @@ jobs:
           branch=$GITHUB_REF_NAME
           # The results commit is re-created on top of the branch's latest head instead of rebased: README.md may be
           # edited while a bench runs, and rebasing the table commit over such edits conflicts.
-          table=$(ls -t bench/results/*.md | head -1)
           cp -R bench/results /tmp/bench-results
-          cp "$table" /tmp/bench-table.md
           for attempt in 1 2 3 4 5; do
             git fetch -q origin "$branch"
-            git checkout -q -f -B "$branch" "origin/$branch" # drops the run's README.md edit; re-applied below
+            git checkout -q -f -B "$branch" "origin/$branch"
             cp /tmp/bench-results/* bench/results/
-            python3 bench/run.py --apply-table /tmp/bench-table.md --readme README.md
-            python3 tools/rule_coverage.py --write README.md
-            git add README.md bench/results
+            # The newest complete CI result, this run's unless a project failed (then the published one stays).
+            python3 bench/publish.py
+            python3 tools/rule_coverage.py --write docs/rules.md
+            git add README.md docs/rules.md bench/*.svg bench/results
             git commit -q -m "bench: results for ${GITHUB_SHA::12} [skip ci]"
             git push -q origin "HEAD:$branch" && exit 0
             sleep $((attempt * 5))
