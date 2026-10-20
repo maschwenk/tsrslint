@@ -205,7 +205,7 @@ impl Visitor {
             callee,
             &self.o.allow_for_known_safe_calls,
             ctx.program,
-            Some(t),
+            ctx.checker,
         ) {
             return true;
         }

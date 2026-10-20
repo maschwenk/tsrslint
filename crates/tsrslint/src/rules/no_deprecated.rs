@@ -398,7 +398,7 @@ impl Visitor {
         if !allow.is_empty() {
             let ty = ctx.checker.get_type_at_location(node);
             if utils::type_matches_some_specifier(ty, allow, ctx.program)
-                || utils::value_matches_some_specifier(node, allow, ctx.program, Some(ty))
+                || utils::value_matches_some_specifier(node, allow, ctx.program, ctx.checker)
             {
                 return;
             }
