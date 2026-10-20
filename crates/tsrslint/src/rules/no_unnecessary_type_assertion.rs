@@ -1365,13 +1365,15 @@ fn create_assertion_fixer(ctx: &mut Ctx, node: P<Node>) -> Vec<RuleFix> {
         {
             statement_start_token = Kind::FunctionKeyword;
         }
-        let needs_parens =
-            is_start_of_expression_statement_needing_parentheses(ctx, node, statement_start_token)
-                || is_start_of_arrow_function_body_needing_parentheses(
-                    ctx,
-                    node,
-                    first_operand_token,
-                );
+        let needs_parens = utils::is_start_of_expression_statement_needing_parentheses(
+            ctx.file,
+            node,
+            statement_start_token,
+        ) || utils::is_start_of_arrow_function_body_needing_parentheses(
+            ctx.file,
+            node,
+            first_operand_token,
+        );
 
         let mut fixes = Vec::new();
         if needs_parens {
@@ -1398,57 +1400,6 @@ fn create_assertion_fixer(ctx: &mut Ctx, node: P<Node>) -> Vec<RuleFix> {
         token_before_as_end = token_before_as_end.max(comment.end());
     }
     vec![ctx.fix_remove_range(token_before_as_end as i32, pos_i32(node.end()))]
-}
-
-/// Matching start positions limits traversal to the beginning of a statement and stops at existing
-/// parentheses.
-fn is_start_of_expression_statement_needing_parentheses(
-    ctx: &Ctx,
-    node: P<Node>,
-    first_token: Kind,
-) -> bool {
-    if first_token != Kind::OpenBraceToken
-        && first_token != Kind::ClassKeyword
-        && first_token != Kind::FunctionKeyword
-    {
-        return false;
-    }
-    let start = ctx.trim(node).0;
-    let mut ancestor = node.parent();
-    while let Some(a) = ancestor {
-        if ctx.trim(a).0 != start {
-            break;
-        }
-        if ast::is_expression_statement(a) {
-            return true;
-        }
-        ancestor = a.parent();
-    }
-    false
-}
-
-fn is_start_of_arrow_function_body_needing_parentheses(
-    ctx: &Ctx,
-    node: P<Node>,
-    first_token: Kind,
-) -> bool {
-    if first_token != Kind::OpenBraceToken {
-        return false;
-    }
-    let mut current = node;
-    while let Some(parent) = current.parent() {
-        if ast::is_parenthesized_expression(parent) {
-            return false;
-        }
-        if ast::is_arrow_function(parent) && parent.body() == Some(current) {
-            return true;
-        }
-        if ctx.trim(parent).0 != ctx.trim(current).0 {
-            return false;
-        }
-        current = parent;
-    }
-    false
 }
 
 // ---- narrowing_assignment.go ----

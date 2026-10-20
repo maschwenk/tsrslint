@@ -1,6 +1,6 @@
 // Port of internal/rules/await_thenable/await_thenable.go.
 
-use tsrs_ast::{self as ast, Kind, Node};
+use tsrs_ast::{self as ast, Kind, Node, SourceFile};
 use tsrs_checker::{Checker, Type};
 use tsrs_core::P;
 
@@ -160,6 +160,39 @@ fn is_iterable(c: &mut Checker, t: P<Type>) -> bool {
         .all(|part| utils::get_well_known_symbol_property_of_type(part, "iterator", c).is_some())
 }
 
+/// await_fixes.go needsPrecedingSemicolon. A leading parenthesis can continue the previous statement
+/// across a newline. Only insert a separator between sibling statements; inserting one inside an
+/// unbraced if/loop body would turn that body into an empty statement.
+fn needs_preceding_semicolon(source_file: P<SourceFile>, node: P<Node>) -> bool {
+    let start = utils::trim_node_text_range(source_file, node).0;
+    let mut statement = Some(node);
+    while let Some(stmt) = statement {
+        if utils::trim_node_text_range(source_file, stmt).0 != start {
+            break;
+        }
+        statement = stmt.parent();
+        if !ast::is_expression_statement(stmt) {
+            continue;
+        }
+        let Some(parent) = stmt.parent().filter(|p| p.can_have_statements()) else {
+            return false;
+        };
+        let statements = parent.statements();
+        let stmt_pos = pos_i32(stmt.pos());
+        let Ok(index) = statements.binary_search_by(|s| pos_i32(s.pos()).cmp(&stmt_pos)) else {
+            return false;
+        };
+        if index == 0 {
+            return false;
+        }
+        let previous = statements[index - 1];
+        let (previous_pos, previous_end) = (pos_i32(previous.pos()), pos_i32(previous.end()));
+        return previous_end > previous_pos
+            && source_file.text().as_bytes()[(previous_end - 1) as usize] != b';';
+    }
+    false
+}
+
 impl Visitor {
     fn await_expression(&self, ctx: &mut Ctx, node: P<Node>) {
         let await_argument = node.expression().unwrap();
@@ -175,9 +208,40 @@ impl Visitor {
                 Vec::new(),
             );
             ctx.report_diagnostic_with_suggestions(d, |ctx| {
+                let (pos, end) = utils::get_await_token_removal_range(ctx.file, node.pos());
+                let mut fixes = vec![ctx.fix_remove_range(pos, end)];
+                let mut s = tsrs_scanner::get_scanner_for_source_file(
+                    ctx.file,
+                    pos_u32(await_argument.pos()),
+                );
+                let first_token = s.token();
+                let mut statement_start_token = first_token;
+                if first_token == Kind::AsyncKeyword
+                    && s.scan() == Kind::FunctionKeyword
+                    && !s.has_preceding_line_break()
+                {
+                    statement_start_token = Kind::FunctionKeyword;
+                }
+                let mut starts_with_parenthesis = first_token == Kind::OpenParenToken;
+                if utils::is_start_of_arrow_function_body_needing_parentheses(
+                    ctx.file,
+                    node,
+                    first_token,
+                ) || utils::is_start_of_expression_statement_needing_parentheses(
+                    ctx.file,
+                    node,
+                    statement_start_token,
+                ) {
+                    fixes.push(ctx.fix_insert_before(await_argument, "("));
+                    fixes.push(ctx.fix_insert_after(await_argument, ")"));
+                    starts_with_parenthesis = true;
+                }
+                if starts_with_parenthesis && needs_preceding_semicolon(ctx.file, node) {
+                    fixes[0].text = ";".to_string();
+                }
                 vec![RuleSuggestion {
                     message: remove_await(),
-                    fixes: vec![ctx.fix_remove_range(range.0, range.1)],
+                    fixes,
                 }]
             });
         }
@@ -256,7 +320,11 @@ impl Visitor {
             // the loop variable is not awaited.
             vec![RuleSuggestion {
                 message: convert_to_ordinary_for(),
-                fixes: vec![ctx.fix_replace(await_modifier, "")],
+                fixes: vec![{
+                    let (pos, end) =
+                        utils::get_await_token_removal_range(ctx.file, await_modifier.pos());
+                    ctx.fix_remove_range(pos, end)
+                }],
             }]
         });
     }
@@ -286,10 +354,10 @@ impl Visitor {
             // await using a = b, c = d, e = f;
             // it's rare and not worth the complexity to handle.
             if declarations.len() == 1 {
-                let r = tsrs_scanner::get_range_of_token_at_position(ctx.file, pos_u32(node.pos()));
+                let (pos, end) = utils::get_await_token_removal_range(ctx.file, node.pos());
                 suggestions.push(RuleSuggestion {
                     message: remove_await(),
-                    fixes: vec![ctx.fix_remove_range(pos_i32(r.pos()), pos_i32(r.end()))],
+                    fixes: vec![ctx.fix_remove_range(pos, end)],
                 });
             }
             let init_range = ctx.trim(init);

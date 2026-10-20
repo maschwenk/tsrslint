@@ -4,7 +4,7 @@ use tsrs_ast::{self as ast, Kind, ModifierFlags, Node, NodeFlags};
 use tsrs_core::P;
 
 use crate::rule::{Ctx, Listener, Rule, RuleFix, RuleMessage, RuleVisitor};
-use crate::utils::{self, pos_i32, pos_u32, TypeAwaitable};
+use crate::utils::{self, pos_u32, TypeAwaitable};
 
 fn disallowed_promise_await() -> RuleMessage {
     RuleMessage::new(
@@ -240,9 +240,16 @@ impl Visitor {
         ]
     }
 
-    fn remove_await_fix(ctx: &Ctx, node: P<Node>) -> RuleFix {
-        let r = tsrs_scanner::get_range_of_token_at_position(ctx.file, pos_u32(node.pos()));
-        ctx.fix_remove_range(pos_i32(r.pos()), pos_i32(r.end()))
+    fn remove_await_fix(ctx: &Ctx, node: P<Node>) -> Vec<RuleFix> {
+        let (pos, end) = utils::get_await_token_removal_range(ctx.file, node.pos());
+        let mut fixes = vec![ctx.fix_remove_range(pos, end)];
+        let operand = node.expression().unwrap();
+        let first_token = tsrs_scanner::scan_token_at_position(ctx.file, pos_u32(operand.pos()));
+        if utils::is_start_of_arrow_function_body_needing_parentheses(ctx.file, node, first_token) {
+            fixes.push(ctx.fix_insert_before(operand, "("));
+            fixes.push(ctx.fix_insert_after(operand, ")"));
+        }
+        fixes
     }
 
     fn test(&self, ctx: &mut Ctx, node: P<Node>) {
@@ -260,7 +267,7 @@ impl Visitor {
                     return;
                 }
                 ctx.report_node_with_fixes(node, non_promise_await(), |ctx| {
-                    vec![Self::remove_await_fix(ctx, node)]
+                    Self::remove_await_fix(ctx, node)
                 });
             }
             return;
@@ -288,13 +295,13 @@ impl Visitor {
             WhetherToAwait::DontCare => {}
             WhetherToAwait::NoAwait => {
                 if is_await {
-                    let fix = Self::remove_await_fix(ctx, node);
+                    let fixes = Self::remove_await_fix(ctx, node);
                     ctx.report_node_with_fixes_or_suggestions(
                         node,
                         use_auto_fix,
                         disallowed_promise_await(),
                         disallowed_promise_await_suggestion(),
-                        vec![fix],
+                        fixes,
                     );
                 }
             }
