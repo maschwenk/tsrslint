@@ -1,6 +1,6 @@
 // Port of internal/rules/no_meaningless_void_operator/no_meaningless_void_operator.go.
 
-use tsrs_ast::{Kind, Node};
+use tsrs_ast::{self as ast, Kind, Node, OEK};
 use tsrs_checker::TypeFlags;
 use tsrs_core::P;
 
@@ -51,6 +51,12 @@ impl RuleVisitor for Visitor {
     }
     fn visit(&mut self, ctx: &mut Ctx, _l: Listener, node: P<Node>) {
         let arg = node.expression().unwrap();
+        let inner =
+            ast::skip_outer_expressions(arg, OEK::Parentheses | OEK::Assertions | OEK::Comma);
+        // `void (x = value)` explicitly discards the assignment result.
+        if ast::is_assignment_expression(inner, false) {
+            return;
+        }
         let arg_type = ctx.checker.get_type_at_location(arg);
         let union_parts = utils::union_type_parts(arg_type);
         let is_always_void_like = union_parts
