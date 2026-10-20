@@ -44,22 +44,33 @@ fn find_type_parameter_index(type_parameters: &[P<Node>], target: P<Node>) -> Op
     type_parameters.iter().position(|&t| t == target)
 }
 
-fn is_complex_constraint(node: Option<P<Node>>) -> bool {
+fn is_weak_precedence_constraint(node: Option<P<Node>>) -> bool {
     node.is_some_and(|node| {
         matches!(
             node.kind(),
-            Kind::UnionType | Kind::IntersectionType | Kind::ConditionalType
+            Kind::UnionType
+                | Kind::IntersectionType
+                | Kind::ConditionalType
+                | Kind::TypeOperator
+                | Kind::FunctionType
+                | Kind::ConstructorType
         )
     })
 }
 
-fn has_matching_ancestor_type(reference: P<Node>) -> bool {
+fn is_weak_precedence_type_parent(reference: P<Node>) -> bool {
     let Some(grandparent) = reference.parent().and_then(|p| p.parent()) else {
         return false;
     };
     matches!(
         grandparent.kind(),
-        Kind::ArrayType | Kind::IndexedAccessType | Kind::IntersectionType | Kind::UnionType
+        Kind::ArrayType
+            | Kind::IndexedAccessType
+            | Kind::IntersectionType
+            | Kind::UnionType
+            | Kind::ConditionalType
+            | Kind::TypeOperator
+            | Kind::OptionalType
     )
 }
 
@@ -656,10 +667,12 @@ fn check_no_unnecessary_type_parameters_node(ctx: &mut Ctx, node: P<Node>, descr
                     continue;
                 }
                 let mut replacement = constraint_text.clone();
-                if is_complex_constraint(constraint_node) && has_matching_ancestor_type(reference) {
+                if is_weak_precedence_constraint(constraint_node)
+                    && is_weak_precedence_type_parent(reference)
+                {
                     replacement = format!("({replacement})");
                 }
-                fixes.push(ctx.fix_replace(reference, replacement));
+                fixes.push(ctx.fix_replace(reference.parent().unwrap(), replacement));
             }
             fixes.push(
                 ctx.fix_remove_range(pos_i32(removal_range.pos()), pos_i32(removal_range.end())),

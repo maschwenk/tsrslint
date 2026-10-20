@@ -208,7 +208,6 @@ pub fn is_strong_precedence_node(inner: P<Node>) -> bool {
             inner.kind(),
             Kind::Identifier
                 | Kind::TypeReference
-                | Kind::TypeOperator
                 | Kind::ArrayLiteralExpression
                 | Kind::ObjectLiteralExpression
                 | Kind::PropertyAccessExpression
