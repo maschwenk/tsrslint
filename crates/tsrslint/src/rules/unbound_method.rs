@@ -1,6 +1,7 @@
 // Port of internal/rules/unbound_method/unbound_method.go (and natively_bound_members.go).
 
 use tsrs_ast::{self as ast, Kind, Node, SourceFile, Symbol};
+use tsrs_checker::Type;
 use tsrs_core::P;
 
 use crate::rule::{
@@ -399,6 +400,33 @@ struct Visitor {
     o: &'static UnboundMethod,
 }
 
+fn is_spec_bound_builtin_method(ctx: &mut Ctx, object_type: P<Type>, property: P<Node>) -> bool {
+    // Intl.Collator.prototype.compare is a bound getter in ECMA-402,
+    // but TypeScript declares it as an ordinary method. Only exempt the
+    // method declared on the default-library Collator, including when
+    // inherited by a subclass, but not a user-defined override.
+    if !ast::is_identifier(property) || property.text() != "compare" {
+        return false;
+    }
+    let Some(symbol) = ctx
+        .checker
+        .get_property_of_type(object_type, property.text())
+    else {
+        return false;
+    };
+    if symbol.declarations().is_empty() {
+        return false;
+    }
+    symbol.declarations().iter().all(|&declaration| {
+        declaration.parent().is_some_and(|owner| {
+            ast::is_interface_declaration(owner)
+                && owner.name().is_some_and(|name| name.text() == "Collator")
+                && ast::get_source_file_of_node(declaration)
+                    .is_some_and(|file| utils::is_source_file_default_library(ctx.program, file))
+        })
+    })
+}
+
 impl Visitor {
     fn is_natively_bound(&self, ctx: &mut Ctx, object: P<Node>, property: P<Node>) -> bool {
         // We can't rely entirely on the type-level checks made at the end of this
@@ -418,9 +446,13 @@ impl Visitor {
             }
         }
 
+        let object_type = ctx.checker.get_type_at_location(object);
+        if is_spec_bound_builtin_method(ctx, object_type, property) {
+            return true;
+        }
+
         // if `${object.name}.${property.name}` doesn't match any of
         // the nativelyBoundMembers, then we fallback to type-level checks
-        let object_type = ctx.checker.get_type_at_location(object);
         if !utils::is_builtin_symbol_like(
             ctx.program,
             ctx.checker,
@@ -486,6 +518,9 @@ impl Visitor {
         }
         let pattern_type = ctx.checker.get_type_at_location(pattern_node);
         utils::type_recurser(pattern_type, &mut |t| {
+            if is_spec_bound_builtin_method(ctx, t, property_name) {
+                return false;
+            }
             let symbol = ctx.checker.get_property_of_type(t, property_name.text());
             self.check_if_method_and_report(ctx, property_name, property_name, symbol)
         });
