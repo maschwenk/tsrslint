@@ -239,6 +239,14 @@ fn contains_node_modules_segment(path: &str) -> bool {
     normalized.contains("/node_modules/")
 }
 
+/// type_matches_specifier.go pathIsInPackage: matches whole path components, so the scope `@angular`
+/// covers `@angular/core` but not `@angularlol`.
+fn path_is_in_package(package_path: &str, package_name: &str) -> bool {
+    package_path
+        .strip_prefix(package_name)
+        .is_some_and(|rest| rest.is_empty() || rest.starts_with('/'))
+}
+
 fn type_declared_in_declaration_file(
     package_name: &str,
     declaration_files: &[Option<P<SourceFile>>],
@@ -258,10 +266,13 @@ fn type_declared_in_declaration_file(
         if package_id_name.is_empty() {
             return false;
         }
-        (package_id_name == package_name
-            || package_id_name == types_package_name
-            || package_id_name == format!("@types/{package_name}")
-            || package_id_name == format!("@types/{types_package_name}"))
+        (path_is_in_package(&package_id_name, package_name)
+            || path_is_in_package(
+                package_id_name
+                    .strip_prefix("@types/")
+                    .unwrap_or(&package_id_name),
+                &types_package_name,
+            ))
             && program.is_source_file_from_external_library(declaration)
     })
 }
