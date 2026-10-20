@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Benchmarks tsrslint against stock tsgolint 7.0.2003 on open-source projects, all 60 rules, headless protocol.
+"""Benchmarks tsrslint against stock tsgolint 7.0.2004 on open-source projects, all 60 rules, headless protocol.
 
 See bench/README.md. Typical use:
 

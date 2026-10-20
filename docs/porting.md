@@ -1,6 +1,6 @@
 # Porting tsgolint rules to tsrslint
 
-tsrslint ports tsgolint **v7.0.2002** (this repository's Go sources under `internal/`, `cmd/`) to Rust on top of
+tsrslint ports tsgolint **v7.0.2004** (this repository's Go sources under `internal/`, `cmd/`) to Rust on top of
 tsrs (`maschwenk/tsrs`, the Rust port of the TypeScript 7 checker). The Go code is the spec: port behavior,
 messages, ranges, fixes and suggestions exactly, so tsrslint output is byte-for-byte what stock tsgolint reports.
 

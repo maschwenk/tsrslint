@@ -22,15 +22,14 @@ ship for macOS arm64 and Linux x64 and arm64 (glibc). From source, `cargo build 
 
 ## Conformance
 
-tsrslint ports all 60 tsgolint rules, from tsgolint 7.0.2002's code plus `no-generated-empty-object-type` from
-7.0.2003, and everything around them: payload V1 and V2, file-to-tsconfig assignment, the inferred program for
+tsrslint ports all 60 tsgolint rules from tsgolint 7.0.2004's code, and everything around them: payload V1 and V2, file-to-tsconfig assignment, the inferred program for
 unmatched files, tsconfig and `--type-check` diagnostics, source overrides, and `-fix` / `-fix-suggestions`.
 Each rule runs tsgolint's own Go test cases, extracted to JSON, on every commit ([rule coverage](docs/rules.md)).
 
 Our goal is output identical to stock tsgolint. The benchmark below compares every diagnostic of both binaries by
-file, range, rule and message id. The few that differ come from fixes stock tsgolint got after 7.0.2002 that
-tsrslint has not ported yet, and from TypeScript itself: tsrs ports TypeScript 7.1-dev while tsgolint 7.0.2003 is
-built on TypeScript 7.0, so some printed types (union member order, `typeof import("…")`) also read differently.
+file, range, rule and message id. The few that differ come from TypeScript itself: tsrs ports TypeScript 7.1-dev
+while tsgolint 7.0.2004 is built on TypeScript 7.0, so some printed types (union member order, elided members,
+`typeof import("…")`) read differently, and a type that 7.0 and 7.1 check differently can change what a rule reports.
 
 ## Performance
 
@@ -80,7 +79,7 @@ cargo test --release --test rule_tests   # every rule against tsgolint's extract
 python3 tools/lint/ratchet.py && python3 tools/lint/source.py
 ```
 
-The Rust port lives in `crates/tsrslint/`; the rest of the repository is tsgolint at v7.0.2002, kept as the porting
+The Rust port lives in `crates/tsrslint/`; the rest of the repository is tsgolint at v7.0.2004, kept as the porting
 reference ([docs/porting.md](docs/porting.md)). [CI](.github/workflows/ci.yml) runs the commands above on every pull
 request, along with `cargo fmt`, headless and npm smoke tests, and checks that the rule table, the benchmark table and
 the charts are current. See the [security policy](.github/SECURITY.md) for reporting vulnerabilities.
