@@ -1,6 +1,6 @@
 // Port of internal/rules/no_deprecated/no_deprecated.go.
 
-use tsrs_ast::{self as ast, Kind, Node, Symbol, SymbolFlags};
+use tsrs_ast::{self as ast, Kind, Node, NodeFlags, Symbol, SymbolFlags};
 use tsrs_checker::{CheckMode, Checker, ContextFlags, LiteralValue, Type, TypeFlags};
 use tsrs_core::P;
 
@@ -122,7 +122,17 @@ fn has_deprecated_tag(jsdocs: &[P<Node>]) -> bool {
 }
 
 /// Extracts the deprecation reason from a JSDoc deprecated tag.
-fn get_js_doc_deprecation_from_node(node: Option<P<Node>>) -> String {
+fn get_js_doc_deprecation_from_node(mut node: Option<P<Node>>) -> String {
+    // Match IsDeprecatedDeclaration's lookup: variable declarations can
+    // inherit their @deprecated tag from the containing statement.
+    while let Some(n) = node {
+        if n.flags()
+            .intersects(NodeFlags::PossiblyContainsDeprecatedTag)
+        {
+            break;
+        }
+        node = n.parent();
+    }
     let Some(node) = node else {
         return String::new();
     };
@@ -544,7 +554,8 @@ fn check_property_symbols(
         let value_symbol = ctx
             .checker
             .get_shorthand_assignment_value_symbol(Some(value_declaration));
-        let (is_deprecated, reason) = get_js_doc_deprecation(ctx, value_symbol);
+        let (is_deprecated, reason) =
+            search_for_deprecation_in_aliases_chain(ctx, value_symbol, true);
         if is_deprecated {
             return Some((true, reason));
         }
