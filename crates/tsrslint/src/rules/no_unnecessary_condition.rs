@@ -11,9 +11,9 @@ use tsrs_checker::{
 use tsrs_core::P;
 
 use crate::rule::{
-    options_object, Ctx, LabeledRange, Listener, Rule, RuleDiagnostic, RuleMessage, RuleVisitor,
+    options_object, Ctx, Listener, Rule, RuleDiagnostic, RuleMessage, RuleSuggestion, RuleVisitor,
 };
-use crate::utils::{self, pos_i32};
+use crate::utils;
 
 fn build_always_truthy_message() -> RuleMessage {
     RuleMessage::new(
@@ -46,9 +46,17 @@ fn build_never_nullish_message() -> RuleMessage {
     RuleMessage::new("neverNullish", "Unnecessary conditional, expected left-hand side of `??` operator to be possibly null or undefined.")
 }
 fn build_never_optional_chain_message() -> RuleMessage {
-    RuleMessage::new(
+    RuleMessage::with_help(
         "neverOptionalChain",
         "Unnecessary optional chain on a non-nullish value.",
+        "Remove the optional chain; the value cannot be `null` or `undefined`.",
+    )
+}
+
+fn build_suggest_remove_optional_chain_message() -> RuleMessage {
+    RuleMessage::new(
+        "suggestRemoveOptionalChain",
+        "Remove unnecessary optional chain",
     )
 }
 fn build_no_strict_null_check_message() -> RuleMessage {
@@ -75,104 +83,79 @@ fn build_type_guard_already_is_type_message() -> RuleMessage {
 
 type Range = (i32, i32);
 
-fn diagnostic(
-    message: RuleMessage,
-    primary: Range,
-    labeled_ranges: Vec<LabeledRange>,
-) -> RuleDiagnostic {
+fn diagnostic(message: RuleMessage, report_range: Range) -> RuleDiagnostic {
     RuleDiagnostic {
-        pos: primary.0,
-        end: primary.1,
+        pos: report_range.0,
+        end: report_range.1,
         message,
-        labeled_ranges,
-    }
-}
-
-fn labeled(label: String, range: Range) -> LabeledRange {
-    LabeledRange {
-        label,
-        pos: range.0,
-        end: range.1,
+        labeled_ranges: vec![],
     }
 }
 
 fn build_typed_value_diagnostic(
-    message: RuleMessage,
-    primary_range: Range,
-    type_range: Range,
+    mut message: RuleMessage,
+    report_range: Range,
     type_name: &str,
 ) -> RuleDiagnostic {
-    let mut labels = Vec::new();
     if !type_name.is_empty() {
-        labels.push(labeled(format!("Type: {type_name}"), type_range));
+        let mut help = format!("The checked value has type `{type_name}`.");
+        if let Some(message_help) = message.help.as_deref().filter(|h| !h.is_empty()) {
+            help.push(' ');
+            help.push_str(message_help);
+        }
+        message.help = Some(help);
     }
-    diagnostic(message, primary_range, labels)
+    diagnostic(message, report_range)
 }
 
 fn build_typed_return_diagnostic(
-    message: RuleMessage,
-    primary_range: Range,
-    type_range: Range,
+    mut message: RuleMessage,
+    report_range: Range,
     type_name: &str,
 ) -> RuleDiagnostic {
-    let mut labels = Vec::new();
     if !type_name.is_empty() {
-        labels.push(labeled(format!("Return type: {type_name}"), type_range));
+        message.help = Some(format!("The callback returns type `{type_name}`."));
     }
-    diagnostic(message, primary_range, labels)
+    diagnostic(message, report_range)
 }
 
 fn build_type_guard_diagnostic(
-    primary_range: Range,
-    type_range: Range,
+    report_range: Range,
     value_type: &str,
     predicate_type: &str,
 ) -> RuleDiagnostic {
-    diagnostic(
-        build_type_guard_already_is_type_message(),
-        primary_range,
-        vec![labeled(
-            format!("Type {value_type} already satisfies predicate type {predicate_type}"),
-            type_range,
-        )],
-    )
+    let mut message = build_type_guard_already_is_type_message();
+    message.help = Some(format!(
+        "Type `{value_type}` already satisfies predicate type `{predicate_type}`. Remove the redundant type check."
+    ));
+    diagnostic(message, report_range)
 }
 
 fn build_comparison_diagnostic(
-    message: RuleMessage,
-    primary_range: Range,
+    mut message: RuleMessage,
+    report_range: Range,
     left_type: &str,
-    left_range: Range,
     right_type: &str,
-    right_range: Range,
 ) -> RuleDiagnostic {
-    diagnostic(
-        message,
-        primary_range,
-        vec![
-            labeled(format!("Type: {left_type}"), left_range),
-            labeled(format!("Type: {right_type}"), right_range),
-        ],
-    )
+    message.help = Some(format!(
+        "The left side has type `{left_type}`, and the right side has type `{right_type}`."
+    ));
+    diagnostic(message, report_range)
 }
 
 fn build_no_overlap_diagnostic(
-    primary_range: Range,
+    report_range: Range,
     left_type: &str,
-    left_range: Range,
     right_type: &str,
-    right_range: Range,
 ) -> RuleDiagnostic {
     build_comparison_diagnostic(
         RuleMessage::new(
             "noOverlapBooleanExpression",
             "This condition will always return the same value since the types have no overlap.",
         ),
-        primary_range,
+        report_range,
         left_type,
-        left_range,
         right_type,
-        right_range,
     )
 }
 
@@ -1290,14 +1273,23 @@ impl Visitor {
             if type_name.is_empty() {
                 type_name = type_name_for_node_diagnostic(ctx, expr_type, expression);
             }
-            let primary = ctx.trim(question_dot_token);
-            let type_range = ctx.trim(expression);
-            ctx.report_diagnostic(build_typed_value_diagnostic(
+            let report_range = ctx.trim(node);
+            let d = build_typed_value_diagnostic(
                 build_never_optional_chain_message(),
-                primary,
-                type_range,
+                report_range,
                 &type_name,
-            ));
+            );
+            ctx.report_diagnostic_with_suggestions(d, |ctx| {
+                let replacement = if node.kind() == Kind::PropertyAccessExpression {
+                    "."
+                } else {
+                    ""
+                };
+                vec![RuleSuggestion {
+                    message: build_suggest_remove_optional_chain_message(),
+                    fixes: vec![ctx.fix_replace(question_dot_token, replacement)],
+                }]
+            });
         }
     }
 
@@ -1385,7 +1377,9 @@ impl Visitor {
             if op != Kind::QuestionQuestionToken
                 && (op == Kind::AmpersandAmpersandToken || op == Kind::BarBarToken)
             {
-                self.check_node(ctx, Some(b.right.get()), false, None);
+                if self.is_only_used_for_truthiness(ctx, expression) {
+                    self.check_node(ctx, Some(b.right.get()), false, None);
+                }
                 return;
             }
         }
@@ -1410,12 +1404,10 @@ impl Visitor {
         let flags = node_type.flags();
         if flags.intersects(TypeFlags::Never) {
             let name = type_name_for_node_diagnostic(ctx, node_type, expression);
-            let primary = ctx.trim(report_node);
-            let type_range = ctx.trim(expression);
+            let report_range = ctx.trim(report_node);
             ctx.report_diagnostic(build_typed_value_diagnostic(
                 build_never_message(),
-                primary,
-                type_range,
+                report_range,
                 &name,
             ));
             return;
@@ -1429,18 +1421,24 @@ impl Visitor {
                 build_always_truthy_message()
             };
             let name = type_name_for_node_diagnostic(ctx, node_type, expression);
-            let primary = ctx.trim(report_node);
-            let type_range = ctx.trim(expression);
-            ctx.report_diagnostic(build_typed_value_diagnostic(
-                message, primary, type_range, &name,
-            ));
+            let report_range = ctx.trim(report_node);
+            ctx.report_diagnostic(build_typed_value_diagnostic(message, report_range, &name));
         }
     }
 
     fn get_nullish_coalescing_type(&self, ctx: &mut Ctx, node: P<Node>) -> (Option<P<Type>>, bool) {
         let node_type = self.get_resolved_type(ctx, node);
         let node = ast::skip_parentheses(node);
-        if !self.no_unchecked_indexed_access || !ast::is_assignment_target(node) {
+        if !ast::is_assignment_target(node) {
+            return (node_type, false);
+        }
+        if !self.no_unchecked_indexed_access {
+            // Assignment-target types omit control-flow narrowing in TypeScript Go.
+            if let Some(t) = node_type {
+                if node.kind() == Kind::ElementAccessExpression {
+                    return (Some(ctx.checker.get_flow_type_of_reference(node, t)), false);
+                }
+            }
             return (node_type, false);
         }
         let read_type = match node.kind() {
@@ -1488,6 +1486,117 @@ impl Visitor {
         )
     }
 
+    fn has_possibly_non_nullish_indexed_read(&self, ctx: &mut Ctx, node: P<Node>) -> bool {
+        let node = ast::skip_parentheses(node);
+        if node.kind() != Kind::ElementAccessExpression || !ast::is_assignment_target(node) {
+            return false;
+        }
+        let access = node.as_element_access_expression();
+        let object_type = self.get_resolved_type(ctx, access.expression);
+        let key_type = self.get_resolved_type(ctx, access.argument_expression);
+        let (Some(object_type), Some(key_type)) = (object_type, key_type) else {
+            return false;
+        };
+        if !utils::is_union_type(key_type) {
+            return false;
+        }
+
+        // Union-key writes intersect property types. Read lookup handles both
+        // declared properties and index signatures, then flow analysis preserves
+        // narrowing of the indexed value even when the key remains a union.
+        let Some(read_type) = ctx.checker.get_indexed_access_type_or_undefined(
+            object_type,
+            key_type,
+            AccessFlags::ExpressionPosition,
+            None,
+            AliasArg::None,
+        ) else {
+            return false;
+        };
+        let flow_type = ctx.checker.get_flow_type_of_reference(node, read_type);
+        utils::union_type_parts(flow_type)
+            .into_iter()
+            .any(|part| !is_always_nullish_type(part))
+    }
+
+    /// Whether the consuming context of an expression checks it for truthiness, including assertion calls
+    /// when `checkTypePredicates` is on. Parenthesized expressions are explicit in the AST and are skipped.
+    fn is_only_used_for_truthiness(&self, ctx: &mut Ctx, mut node: P<Node>) -> bool {
+        let mut parent = node.parent();
+        while let Some(p) = parent.filter(|p| ast::is_parenthesized_expression(*p)) {
+            node = p;
+            parent = p.parent();
+        }
+        let Some(parent) = parent else {
+            return false;
+        };
+
+        match parent.kind() {
+            Kind::ConditionalExpression => {
+                return parent.as_conditional_expression().condition == node
+            }
+            Kind::DoStatement => return parent.as_do_statement().expression == node,
+            Kind::ForStatement => return parent.as_for_statement().condition == Some(node),
+            Kind::IfStatement => return parent.as_if_statement().expression == node,
+            Kind::WhileStatement => return parent.as_while_statement().expression == node,
+            Kind::PrefixUnaryExpression => {
+                return parent.as_prefix_unary_expression().operator == Kind::ExclamationToken
+            }
+            Kind::CallExpression => return self.is_assertion_argument(ctx, node),
+            _ => {}
+        }
+
+        if ast::is_logical_expression(parent) {
+            let parent_expression = parent.as_binary_expression();
+            return (parent_expression.operator_token.kind() == Kind::AmpersandAmpersandToken
+                && parent_expression.left == node)
+                || self.is_only_used_for_truthiness(ctx, parent);
+        }
+
+        false
+    }
+
+    fn is_assertion_argument(&self, ctx: &mut Ctx, argument: P<Node>) -> bool {
+        if !self.opts.check_type_predicates {
+            return false;
+        }
+        let Some(call_node) = argument
+            .parent()
+            .filter(|p| p.kind() == Kind::CallExpression)
+        else {
+            return false;
+        };
+
+        let mut argument_index = 0;
+        let mut found = false;
+        for &arg in call_node.as_call_expression().arguments.nodes() {
+            if arg.kind() == Kind::SpreadElement {
+                break;
+            }
+            if arg == argument {
+                found = true;
+                break;
+            }
+            argument_index += 1;
+        }
+        if !found {
+            return false;
+        }
+
+        let signature =
+            ctx.checker
+                .get_resolved_signature(call_node, None, tsrs_checker::CheckMode::Normal);
+        let Some(predicate) = ctx
+            .checker
+            .get_type_predicate_of_signature_exported(signature)
+        else {
+            return false;
+        };
+        predicate.kind.get() == TypePredicateKind::AssertsIdentifier
+            && predicate.t.get().is_none()
+            && predicate.parameter_index.get() == Some(argument_index)
+    }
+
     fn check_node_for_nullish(&self, ctx: &mut Ctx, node: P<Node>) {
         let (node_type, recovered_read_type) = self.get_nullish_coalescing_type(ctx, node);
         let Some(mut node_type) = node_type else {
@@ -1511,17 +1620,17 @@ impl Visitor {
             ctx.report_diagnostic(build_typed_value_diagnostic(
                 build_never_message(),
                 r,
-                r,
                 &name,
             ));
             return;
         }
-        if is_always_nullish_type(node_type) {
+        if is_always_nullish_type(node_type)
+            && !self.has_possibly_non_nullish_indexed_read(ctx, node)
+        {
             let name = type_name_for_node_diagnostic(ctx, node_type, node);
             let r = ctx.trim(node);
             ctx.report_diagnostic(build_typed_value_diagnostic(
                 build_always_nullish_message(),
-                r,
                 r,
                 &name,
             ));
@@ -1543,7 +1652,6 @@ impl Visitor {
                 ctx.report_diagnostic(build_typed_value_diagnostic(
                     build_never_nullish_message(),
                     r,
-                    r,
                     &name,
                 ));
             }
@@ -1564,27 +1672,15 @@ impl Visitor {
             return;
         };
 
-        let primary_range = |ctx: &Ctx| {
-            if ast::is_binary_expression(node) {
-                ctx.trim(node.as_binary_expression().operator_token)
-            } else {
-                ctx.trim(node)
-            }
-        };
-
         if is_static_value(Some(left_type)) && is_static_value(Some(right_type)) {
-            let primary = primary_range(ctx);
+            let primary = ctx.trim(node);
             let left_name = type_name_for_diagnostic(ctx, left_type);
-            let left_range = ctx.trim(left);
             let right_name = type_name_for_diagnostic(ctx, right_type);
-            let right_range = ctx.trim(right);
             ctx.report_diagnostic(build_comparison_diagnostic(
                 build_literal_binary_expression_message(),
                 primary,
                 &left_name,
-                left_range,
                 &right_name,
-                right_range,
             ));
             return;
         }
@@ -1639,15 +1735,13 @@ impl Visitor {
             || (right_flags == TypeFlags::Null
                 && !is_comparable(left_type, TypeFlags::Null, op_kind))
         {
-            let primary = primary_range(ctx);
+            let primary = ctx.trim(node);
             let left_name = type_name_for_diagnostic(ctx, left_type);
             let right_name = type_name_for_diagnostic(ctx, right_type);
             ctx.report_diagnostic(build_no_overlap_diagnostic(
                 primary,
                 &left_name,
-                (pos_i32(left.pos()), pos_i32(left.end())),
                 &right_name,
-                (pos_i32(right.pos()), pos_i32(right.end())),
             ));
         }
     }
@@ -1736,7 +1830,6 @@ impl Visitor {
                     let predicate_name = type_name_for_diagnostic(ctx, predicate_type.unwrap());
                     ctx.report_diagnostic(build_type_guard_diagnostic(
                         arg_range,
-                        arg_range,
                         &value_name,
                         &predicate_name,
                     ));
@@ -1784,18 +1877,15 @@ fn check_predicate_function(ctx: &mut Ctx, func_node: P<Node>, check_type_guards
                                 .is_type_assignable_to(param_type, predicate_type)
                             {
                                 let mut primary_range = ctx.trim(func_node);
-                                let mut type_range = primary_range;
                                 if let Some(declaration) = param.value_declaration() {
                                     if ast::get_source_file_of_node(declaration) == Some(ctx.file) {
-                                        type_range = ctx.trim(declaration);
-                                        primary_range = type_range;
+                                        primary_range = ctx.trim(declaration);
                                     }
                                 }
                                 let value_name = type_name_for_diagnostic(ctx, param_type);
                                 let predicate_name = type_name_for_diagnostic(ctx, predicate_type);
                                 ctx.report_diagnostic(build_type_guard_diagnostic(
                                     primary_range,
-                                    type_range,
                                     &value_name,
                                     &predicate_name,
                                 ));
@@ -1840,12 +1930,7 @@ fn check_predicate_function(ctx: &mut Ctx, func_node: P<Node>, check_type_guards
                 build_always_falsy_func_message()
             };
             let name = type_name_for_node_diagnostic(ctx, return_type, report_node);
-            ctx.report_diagnostic(build_typed_return_diagnostic(
-                message,
-                report_range,
-                report_range,
-                &name,
-            ));
+            ctx.report_diagnostic(build_typed_return_diagnostic(message, report_range, &name));
         }
     }
 }
