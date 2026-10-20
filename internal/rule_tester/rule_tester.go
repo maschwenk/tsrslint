@@ -1,6 +1,7 @@
 package rule_tester
 
 import (
+	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -63,6 +64,10 @@ type InvalidTestCase struct {
 }
 
 func RunRuleTester(rootDir string, tsconfigPath string, t *testing.T, r *rule.Rule, validTestCases []ValidTestCase, invalidTestCases []InvalidTestCase) {
+	if dir := os.Getenv("TSRSLINT_DUMP_CASES"); dir != "" {
+		dumpCases(dir, t, tsconfigPath, r.Name, validTestCases, invalidTestCases)
+		return
+	}
 	onlyMode := slices.ContainsFunc(validTestCases, func(c ValidTestCase) bool { return c.Only }) ||
 		slices.ContainsFunc(invalidTestCases, func(c InvalidTestCase) bool { return c.Only })
 
