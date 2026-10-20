@@ -721,12 +721,7 @@
               "line": 3,
               "column": 21,
               "endColumn": 27,
-              "suggestions": [
-                {
-                  "messageId": "replaceMapSpreadInObject",
-                  "output": "\n        declare const map: WeakMap\u003c{ a: number }, string\u003e;\n        const o =  Object.fromEntries(map) ;\n      "
-                }
-              ]
+              "suggestions": []
             }
           ]
         },
@@ -1437,6 +1432,43 @@
                   "output": "\n        const promise = new Promise(() =\u003e {});\n\n        const o = \u003cdiv {...await promise} /\u003e;\n      "
                 }
               ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const map: Map\u003cobject, string\u003e | WeakMap\u003cobject, string\u003e;\nconst o = { other: 1, ...map };",
+          "errors": [
+            {
+              "messageId": "noMapSpreadInObject",
+              "line": 3,
+              "column": 23,
+              "endColumn": 29,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\nclass CustomWeakMap extends WeakMap\u003cobject, string\u003e {}\ndeclare const map: CustomWeakMap;\nconst o = { ...map };",
+          "errors": [
+            {
+              "messageId": "noMapSpreadInObject",
+              "line": 4,
+              "column": 13,
+              "endColumn": 19,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const map: WeakMap\u003cobject, string\u003e;\nconst element = \u003cComponent {...map} /\u003e;",
+          "tsx": true,
+          "errors": [
+            {
+              "messageId": "noMapSpreadInObject",
+              "line": 3,
+              "column": 28,
+              "endColumn": 36,
+              "suggestions": []
             }
           ]
         }

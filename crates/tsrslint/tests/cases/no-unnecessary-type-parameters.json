@@ -1347,6 +1347,186 @@
               ]
             }
           ]
+        },
+        {
+          "code": "declare function foo\u003cT extends () =\u003e number\u003e(arg: T[]): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "line": 1,
+              "column": 22,
+              "endLine": 1,
+              "endColumn": 44,
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function foo(arg: (() =\u003e number)[]): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "interface Foo { a: string; b: number; }\ndeclare function foo\u003cT extends keyof Foo\u003e(arg: T[]): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "line": 2,
+              "column": 22,
+              "endLine": 2,
+              "endColumn": 41,
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "interface Foo { a: string; b: number; }\ndeclare function foo(arg: (keyof Foo)[]): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare function foo\u003cT extends () =\u003e void\u003e(arg: T | string): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "line": 1,
+              "column": 22,
+              "endLine": 1,
+              "endColumn": 42,
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function foo(arg: (() =\u003e void) | string): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "interface A { x: string; shared: string; }\ninterface B { y: string; shared: string; }\ndeclare function foo\u003cT extends A | B\u003e(k: keyof T): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "line": 3,
+              "column": 22,
+              "endLine": 3,
+              "endColumn": 37,
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "interface A { x: string; shared: string; }\ninterface B { y: string; shared: string; }\ndeclare function foo(k: keyof (A | B)): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "class Foo {}\ndeclare function bar\u003cT extends new () =\u003e Foo\u003e(arg: T[]): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "line": 2,
+              "column": 22,
+              "endLine": 2,
+              "endColumn": 45,
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "class Foo {}\ndeclare function bar(arg: (new () =\u003e Foo)[]): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare function foo\u003cT extends () =\u003e Promise\u003cstring\u003e\u003e(arg: T extends () =\u003e Promise\u003cinfer R\u003e ? R : never): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "line": 1,
+              "column": 22,
+              "endLine": 1,
+              "endColumn": 53,
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function foo(arg: (() =\u003e Promise\u003cstring\u003e) extends () =\u003e Promise\u003cinfer R\u003e ? R : never): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare function foo\u003cT extends readonly string[]\u003e(x: T[]): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "line": 1,
+              "column": 22,
+              "endLine": 1,
+              "endColumn": 49,
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function foo(x: (readonly string[])[]): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare function foo\u003cT extends string | number\u003e(arg: [T?]): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "line": 1,
+              "column": 22,
+              "endLine": 1,
+              "endColumn": 47,
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function foo(arg: [(string | number)?]): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare function foo\u003cT extends () =\u003e void\u003e(arg: [T?]): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "line": 1,
+              "column": 22,
+              "endLine": 1,
+              "endColumn": 42,
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function foo(arg: [(() =\u003e void)?]): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare function foo\u003cT extends string\u003e(arg: [T?]): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "line": 1,
+              "column": 22,
+              "endLine": 1,
+              "endColumn": 38,
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function foo(arg: [string?]): void;"
+                }
+              ]
+            }
+          ]
         }
       ]
     }

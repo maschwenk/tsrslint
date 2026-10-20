@@ -47,6 +47,9 @@
           "code": "\ntype PossibleTuple = { 0: 'hello'; 5: 'hello' };\nconst foo = { 0: 'hello', 5: 'hello' } as PossibleTuple;\n    "
         },
         {
+          "code": "\nconst a = {};\na as Record\u003cstring, string\u003e;\ntype Dict = Record\u003cstring, string\u003e;\na as Dict;\na as { [key: string]: string };\n    "
+        },
+        {
           "code": "\nlet bar: number | undefined = x;\nlet foo: number = bar!;\n    "
         },
         {
@@ -594,6 +597,33 @@
         },
         {
           "code": "\nfunction narrow(value: string | undefined, a: string | undefined, b: string | undefined) {\n  ({ value: a = '', ['value']: b } = { value: value as string });\n  return b.length;\n}\n"
+        },
+        {
+          "code": "\nfunction f\u003cT extends () =\u003e any\u003e(value: T) {\n  const result = value as NonNullable\u003cT\u003e;\n}\n    "
+        },
+        {
+          "code": "\ninterface Empty\u003cX\u003e {}\ntype Alias\u003cT\u003e = T \u0026 Empty\u003cany\u003e;\n\nfunction f\u003cT extends object\u003e(value: T) {\n  const result = value as Alias\u003cT\u003e;\n}\n    "
+        },
+        {
+          "code": "\ninterface Empty\u003cX\u003e {}\ntype Alias\u003cT\u003e = T \u0026 Empty\u003cPromise\u003cany\u003e\u003e;\n\nfunction f\u003cT extends object\u003e(value: T) {\n  const result = value as Alias\u003cT\u003e;\n}\n    "
+        },
+        {
+          "code": "\ninterface Empty\u003cX\u003e {}\ntype Alias\u003cT\u003e = T \u0026 Empty\u003c() =\u003e any\u003e;\n\nfunction f\u003cT extends object\u003e(value: T) {\n  const result = value as Alias\u003cT\u003e;\n}\n    "
+        },
+        {
+          "code": "\nfunction f\u003cT extends { (...args: any[]): unknown }\u003e(value: T) {\n  const result = value as NonNullable\u003cT\u003e;\n}\n    "
+        },
+        {
+          "code": "\ntype RecursiveCallable\u003cT\u003e = (value: T) =\u003e RecursiveCallable\u003c{ value: T }\u003e;\n\nfunction f\u003cT extends RecursiveCallable\u003cstring\u003e\u003e(value: T) {\n  const result = value as NonNullable\u003cT\u003e;\n}\n    "
+        },
+        {
+          "code": "\ninterface Empty\u003cX\u003e {}\ntype Alias\u003cT, U\u003e = T \u0026 Empty\u003cU\u003e;\n\nfunction f\u003cT extends object, U\u003e(value: T) {\n  const result = value as Alias\u003cT, U\u003e;\n}\n    "
+        },
+        {
+          "code": "\ninterface Source\u003cT\u003e {\n  value: T;\n}\ninterface Target\u003cT\u003e {\n  value: T;\n}\n\ndeclare const source: Source\u003cany\u003e;\nconst result = source as Target\u003cany\u003e;\n    "
+        },
+        {
+          "code": "\ntype Layer0\u003cT\u003e = T;\ntype Layer1\u003cT\u003e = (value: Layer0\u003cT\u003e) =\u003e Layer0\u003cT\u003e;\ntype Layer2\u003cT\u003e = (value: Layer1\u003cT\u003e) =\u003e Layer1\u003cT\u003e;\ntype Layer3\u003cT\u003e = (value: Layer2\u003cT\u003e) =\u003e Layer2\u003cT\u003e;\ntype Layer4\u003cT\u003e = (value: Layer3\u003cT\u003e) =\u003e Layer3\u003cT\u003e;\n\ntype Watcher\u003cT\u003e = ((handler: Layer4\u003cT\u003e) =\u003e void) \u0026 { readonly kind: 'watcher' };\ntype Subscription\u003cT\u003e = ((handler: T) =\u003e void) \u0026 { readonly kind: 'subscription' };\n\ndeclare const watcher: Watcher\u003cstring\u003e;\nconst subscription = watcher as Subscription\u003cstring\u003e;\n    "
         }
       ],
       "invalid": [

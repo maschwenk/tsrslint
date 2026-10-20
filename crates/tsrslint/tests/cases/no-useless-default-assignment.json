@@ -190,6 +190,27 @@
         },
         {
           "code": "\n      function f(this: void, { bar = 42 }: { bar?: number }) {\n        return bar;\n      }\n    "
+        },
+        {
+          "code": "declare const commands: [string, ...string[]];\nconst [cmd, arg = 'run'] = commands;"
+        },
+        {
+          "code": "declare const commands: readonly [string, ...string[]];\nconst [cmd, arg = 'run'] = commands;"
+        },
+        {
+          "code": "function run([cmd, arg = 'run']: [string, ...string[]]) {}"
+        },
+        {
+          "code": "declare const mixed: [boolean, ...number[], string];\nconst [a, b, c = 0] = mixed;"
+        },
+        {
+          "code": "declare const items: [...string[], string | undefined];\nconst [first = 'fallback'] = items;"
+        },
+        {
+          "code": "declare const x: [...string[], number, boolean | undefined];\nconst [first, second = 'fallback'] = x;"
+        },
+        {
+          "code": "declare const x: [...string[], number | undefined, boolean];\nconst [first = 'fallback'] = x;"
         }
       ],
       "invalid": [
@@ -348,91 +369,103 @@
         },
         {
           "code": "\n        function foo(a = undefined) {}\n      ",
-          "output": [
-            "\n        function foo(a) {}\n      "
-          ],
           "errors": [
             {
               "messageId": "uselessUndefined",
               "line": 2,
               "column": 26,
               "endColumn": 35,
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "removeDefaultAssignment",
+                  "output": "\n        function foo(a) {}\n      "
+                }
+              ]
             }
           ]
         },
         {
           "code": "\n        const { a = undefined } = {};\n      ",
-          "output": [
-            "\n        const { a } = {};\n      "
-          ],
           "errors": [
             {
               "messageId": "uselessUndefined",
               "line": 2,
               "column": 21,
               "endColumn": 30,
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "removeDefaultAssignment",
+                  "output": "\n        const { a } = {};\n      "
+                }
+              ]
             }
           ]
         },
         {
           "code": "\n        const [a = undefined] = [];\n      ",
-          "output": [
-            "\n        const [a] = [];\n      "
-          ],
           "errors": [
             {
               "messageId": "uselessUndefined",
               "line": 2,
               "column": 20,
               "endColumn": 29,
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "removeDefaultAssignment",
+                  "output": "\n        const [a] = [];\n      "
+                }
+              ]
             }
           ]
         },
         {
           "code": "\n        function foo({ a = undefined }) {}\n      ",
-          "output": [
-            "\n        function foo({ a }) {}\n      "
-          ],
           "errors": [
             {
               "messageId": "uselessUndefined",
               "line": 2,
               "column": 28,
               "endColumn": 37,
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "removeDefaultAssignment",
+                  "output": "\n        function foo({ a }) {}\n      "
+                }
+              ]
             }
           ]
         },
         {
           "code": "\n        function myFunction(p1: string, p2: number | undefined = undefined) {\n          console.log(p1, p2);\n        }\n      ",
-          "output": [
-            "\n        function myFunction(p1: string, p2?: number | undefined) {\n          console.log(p1, p2);\n        }\n      "
-          ],
           "errors": [
             {
               "messageId": "preferOptionalSyntax",
               "line": 2,
               "column": 66,
               "endColumn": 75,
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "useOptionalSyntax",
+                  "output": "\n        function myFunction(p1: string, p2?: number | undefined) {\n          console.log(p1, p2);\n        }\n      "
+                }
+              ]
             }
           ]
         },
         {
           "code": "\n        type SomeType = number | undefined;\n        function f(\n          /* comment */ x /* comment 2 */ : /* comment 3 */ SomeType /* comment 4 */ = /* comment 5 */ undefined,\n        ) {}\n      ",
-          "output": [
-            "\n        type SomeType = number | undefined;\n        function f(\n          /* comment */ x? /* comment 2 */ : /* comment 3 */ SomeType,\n        ) {}\n      "
-          ],
           "errors": [
             {
               "messageId": "preferOptionalSyntax",
               "line": 4,
               "column": 104,
               "endColumn": 113,
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "useOptionalSyntax",
+                  "output": "\n        type SomeType = number | undefined;\n        function f(\n          /* comment */ x? /* comment 2 */ : /* comment 3 */ SomeType,\n        ) {}\n      "
+                }
+              ]
             }
           ]
         },
@@ -462,9 +495,6 @@
         {
           "code": "\n        function foo(a = undefined) {}\n      ",
           "tsconfig": "tsconfig.unstrict.json",
-          "output": [
-            "\n        function foo(a) {}\n      "
-          ],
           "errors": [
             {
               "messageId": "noStrictNullCheck",
@@ -476,7 +506,12 @@
               "line": 2,
               "column": 26,
               "endColumn": 35,
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "removeDefaultAssignment",
+                  "output": "\n        function foo(a) {}\n      "
+                }
+              ]
             }
           ]
         },
@@ -560,6 +595,57 @@
                 {
                   "messageId": "removeDefaultAssignment",
                   "output": "\n        const { a } = Math.random() \u003c 0.5 ? { [`a`]: 'a' } : { a: 'b' };\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare const mixed: [boolean, ...number[], string];\nconst [a, b = 0] = mixed;",
+          "errors": [
+            {
+              "messageId": "uselessDefaultAssignment",
+              "line": 2,
+              "column": 15,
+              "endColumn": 16,
+              "suggestions": [
+                {
+                  "messageId": "removeDefaultAssignment",
+                  "output": "declare const mixed: [boolean, ...number[], string];\nconst [a, b] = mixed;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare const x: [...string[], number, boolean | undefined];\nconst [first = 'fallback'] = x;",
+          "errors": [
+            {
+              "messageId": "uselessDefaultAssignment",
+              "line": 2,
+              "column": 16,
+              "endColumn": 26,
+              "suggestions": [
+                {
+                  "messageId": "removeDefaultAssignment",
+                  "output": "declare const x: [...string[], number, boolean | undefined];\nconst [first] = x;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare const x: [boolean, ...string[], number, boolean | undefined];\nconst [head, first = 'fallback'] = x;",
+          "errors": [
+            {
+              "messageId": "uselessDefaultAssignment",
+              "line": 2,
+              "column": 22,
+              "endColumn": 32,
+              "suggestions": [
+                {
+                  "messageId": "removeDefaultAssignment",
+                  "output": "declare const x: [boolean, ...string[], number, boolean | undefined];\nconst [head, first] = x;"
                 }
               ]
             }

@@ -3050,6 +3050,410 @@
           ]
         }
       ]
+    },
+    {
+      "tsconfig": "tsconfig.minimal.json",
+      "valid": [],
+      "invalid": [
+        {
+          "code": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nframeworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\ntrusted();\nPromise.resolve();",
+          "options": {
+            "checkThenables": false,
+            "ignoreIIFE": false,
+            "ignoreVoid": false
+          },
+          "files": {
+            "trusted.d.ts": "export declare function trusted(): Promise\u003cvoid\u003e;"
+          },
+          "errors": [
+            {
+              "messageId": "floating",
+              "line": 2,
+              "suggestions": [
+                {
+                  "messageId": "floatingFixAwait",
+                  "output": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nawait frameworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\ntrusted();\nPromise.resolve();"
+                }
+              ]
+            },
+            {
+              "messageId": "floating",
+              "line": 4,
+              "suggestions": [
+                {
+                  "messageId": "floatingFixAwait",
+                  "output": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nframeworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\nawait trusted();\nPromise.resolve();"
+                }
+              ]
+            },
+            {
+              "messageId": "floating",
+              "line": 5,
+              "suggestions": [
+                {
+                  "messageId": "floatingFixAwait",
+                  "output": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nframeworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\ntrusted();\nawait Promise.resolve();"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nframeworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\ntrusted();\nPromise.resolve();",
+          "options": {
+            "allowForKnownSafeCalls": [
+              {
+                "from": "file",
+                "name": [
+                  "trusted"
+                ],
+                "path": "./trusted.d.ts"
+              }
+            ],
+            "checkThenables": false,
+            "ignoreIIFE": false,
+            "ignoreVoid": false
+          },
+          "files": {
+            "trusted.d.ts": "export declare function trusted(): Promise\u003cvoid\u003e;"
+          },
+          "errors": [
+            {
+              "messageId": "floating",
+              "line": 4,
+              "suggestions": [
+                {
+                  "messageId": "floatingFixAwait",
+                  "output": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nframeworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\nawait trusted();\nPromise.resolve();"
+                }
+              ]
+            },
+            {
+              "messageId": "floating",
+              "line": 5,
+              "suggestions": [
+                {
+                  "messageId": "floatingFixAwait",
+                  "output": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nframeworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\ntrusted();\nawait Promise.resolve();"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nframeworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\ntrusted();\nPromise.resolve();",
+          "options": {
+            "allowForKnownSafeCalls": [
+              {
+                "from": "file",
+                "name": [
+                  "trusted"
+                ]
+              }
+            ],
+            "checkThenables": false,
+            "ignoreIIFE": false,
+            "ignoreVoid": false
+          },
+          "files": {
+            "trusted.d.ts": "export declare function trusted(): Promise\u003cvoid\u003e;"
+          },
+          "errors": [
+            {
+              "messageId": "floating",
+              "line": 5,
+              "suggestions": [
+                {
+                  "messageId": "floatingFixAwait",
+                  "output": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nframeworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\ntrusted();\nawait Promise.resolve();"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nframeworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\ntrusted();\nPromise.resolve();",
+          "options": {
+            "allowForKnownSafeCalls": [
+              {
+                "from": "file",
+                "name": [
+                  "frameworkTrusted"
+                ],
+                "path": "./trusted.d.ts"
+              }
+            ],
+            "checkThenables": false,
+            "ignoreIIFE": false,
+            "ignoreVoid": false
+          },
+          "files": {
+            "trusted.d.ts": "export declare function trusted(): Promise\u003cvoid\u003e;"
+          },
+          "errors": [
+            {
+              "messageId": "floating",
+              "line": 4,
+              "suggestions": [
+                {
+                  "messageId": "floatingFixAwait",
+                  "output": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nframeworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\nawait trusted();\nPromise.resolve();"
+                }
+              ]
+            },
+            {
+              "messageId": "floating",
+              "line": 5,
+              "suggestions": [
+                {
+                  "messageId": "floatingFixAwait",
+                  "output": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nframeworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\ntrusted();\nawait Promise.resolve();"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nframeworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\ntrusted();\nPromise.resolve();",
+          "options": {
+            "allowForKnownSafeCalls": [
+              {
+                "from": "file",
+                "name": [
+                  "frameworkTrusted"
+                ],
+                "path": "./missing.d.ts"
+              }
+            ],
+            "checkThenables": false,
+            "ignoreIIFE": false,
+            "ignoreVoid": false
+          },
+          "files": {
+            "trusted.d.ts": "export declare function trusted(): Promise\u003cvoid\u003e;"
+          },
+          "errors": [
+            {
+              "messageId": "floating",
+              "line": 2,
+              "suggestions": [
+                {
+                  "messageId": "floatingFixAwait",
+                  "output": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nawait frameworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\ntrusted();\nPromise.resolve();"
+                }
+              ]
+            },
+            {
+              "messageId": "floating",
+              "line": 4,
+              "suggestions": [
+                {
+                  "messageId": "floatingFixAwait",
+                  "output": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nframeworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\nawait trusted();\nPromise.resolve();"
+                }
+              ]
+            },
+            {
+              "messageId": "floating",
+              "line": 5,
+              "suggestions": [
+                {
+                  "messageId": "floatingFixAwait",
+                  "output": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nframeworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\ntrusted();\nawait Promise.resolve();"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nframeworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\ntrusted();\nPromise.resolve();",
+          "options": {
+            "allowForKnownSafeCalls": [
+              {
+                "from": "lib",
+                "name": [
+                  "trusted"
+                ]
+              }
+            ],
+            "checkThenables": false,
+            "ignoreIIFE": false,
+            "ignoreVoid": false
+          },
+          "files": {
+            "trusted.d.ts": "export declare function trusted(): Promise\u003cvoid\u003e;"
+          },
+          "errors": [
+            {
+              "messageId": "floating",
+              "line": 2,
+              "suggestions": [
+                {
+                  "messageId": "floatingFixAwait",
+                  "output": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nawait frameworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\ntrusted();\nPromise.resolve();"
+                }
+              ]
+            },
+            {
+              "messageId": "floating",
+              "line": 4,
+              "suggestions": [
+                {
+                  "messageId": "floatingFixAwait",
+                  "output": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nframeworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\nawait trusted();\nPromise.resolve();"
+                }
+              ]
+            },
+            {
+              "messageId": "floating",
+              "line": 5,
+              "suggestions": [
+                {
+                  "messageId": "floatingFixAwait",
+                  "output": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nframeworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\ntrusted();\nawait Promise.resolve();"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nframeworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\ntrusted();\nPromise.resolve();",
+          "options": {
+            "allowForKnownSafeCalls": [
+              {
+                "from": "file",
+                "name": [
+                  "trusted"
+                ],
+                "path": "./missing.d.ts"
+              }
+            ],
+            "checkThenables": false,
+            "ignoreIIFE": false,
+            "ignoreVoid": false
+          },
+          "files": {
+            "trusted.d.ts": "export declare function trusted(): Promise\u003cvoid\u003e;"
+          },
+          "errors": [
+            {
+              "messageId": "floating",
+              "line": 2,
+              "suggestions": [
+                {
+                  "messageId": "floatingFixAwait",
+                  "output": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nawait frameworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\ntrusted();\nPromise.resolve();"
+                }
+              ]
+            },
+            {
+              "messageId": "floating",
+              "line": 4,
+              "suggestions": [
+                {
+                  "messageId": "floatingFixAwait",
+                  "output": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nframeworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\nawait trusted();\nPromise.resolve();"
+                }
+              ]
+            },
+            {
+              "messageId": "floating",
+              "line": 5,
+              "suggestions": [
+                {
+                  "messageId": "floatingFixAwait",
+                  "output": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nframeworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\ntrusted();\nawait Promise.resolve();"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nframeworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\ntrusted();\nPromise.resolve();",
+          "options": {
+            "allowForKnownSafeCalls": [
+              "trusted"
+            ],
+            "checkThenables": false,
+            "ignoreIIFE": false,
+            "ignoreVoid": false
+          },
+          "files": {
+            "trusted.d.ts": "export declare function trusted(): Promise\u003cvoid\u003e;"
+          },
+          "errors": [
+            {
+              "messageId": "floating",
+              "line": 5,
+              "suggestions": [
+                {
+                  "messageId": "floatingFixAwait",
+                  "output": "import { trusted as frameworkTrusted } from \"./trusted.js\";\nframeworkTrusted();\nfunction trusted(): Promise\u003cvoid\u003e { return Promise.resolve(); }\ntrusted();\nawait Promise.resolve();"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tsconfig": "tsconfig.minimal.json",
+      "valid": [
+        {
+          "code": "async function probe() {\n  const { trusted } = await import('./destructured-safe-call');\n  trusted();\n}",
+          "options": {
+            "allowForKnownSafeCalls": [
+              {
+                "from": "file",
+                "name": [
+                  "trusted"
+                ],
+                "path": "./destructured-safe-call.ts"
+              }
+            ],
+            "checkThenables": false,
+            "ignoreIIFE": false,
+            "ignoreVoid": false
+          },
+          "files": {
+            "destructured-safe-call.ts": "export const trusted: () =\u003e Promise\u003cvoid\u003e = () =\u003e Promise.resolve();"
+          }
+        }
+      ],
+      "invalid": [
+        {
+          "code": "async function probe() {\n  const { trusted } = await import('./destructured-safe-call');\n  trusted();\n}",
+          "options": {
+            "allowForKnownSafeCalls": [
+              {
+                "from": "file",
+                "name": [
+                  "trusted"
+                ],
+                "path": "./file.ts"
+              }
+            ],
+            "checkThenables": false,
+            "ignoreIIFE": false,
+            "ignoreVoid": false
+          },
+          "files": {
+            "destructured-safe-call.ts": "export const trusted: () =\u003e Promise\u003cvoid\u003e = () =\u003e Promise.resolve();"
+          },
+          "errors": [
+            {
+              "messageId": "floating",
+              "line": 3,
+              "suggestions": [
+                {
+                  "messageId": "floatingFixAwait",
+                  "output": "async function probe() {\n  const { trusted } = await import('./destructured-safe-call');\n  await trusted();\n}"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ],
   "unconverted": []

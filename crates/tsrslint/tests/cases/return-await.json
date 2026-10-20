@@ -199,7 +199,7 @@
         {
           "code": "\n        async function test() {\n          return await 1;\n        }\n      ",
           "output": [
-            "\n        async function test() {\n          return  1;\n        }\n      "
+            "\n        async function test() {\n          return 1;\n        }\n      "
           ],
           "errors": [
             {
@@ -212,7 +212,7 @@
         {
           "code": "\n        async function test() {\n          const foo = 1;\n          return await { foo };\n        }\n      ",
           "output": [
-            "\n        async function test() {\n          const foo = 1;\n          return  { foo };\n        }\n      "
+            "\n        async function test() {\n          const foo = 1;\n          return { foo };\n        }\n      "
           ],
           "errors": [
             {
@@ -225,7 +225,7 @@
         {
           "code": "\n        async function test() {\n          const foo = 1;\n          return await foo;\n        }\n      ",
           "output": [
-            "\n        async function test() {\n          const foo = 1;\n          return  foo;\n        }\n      "
+            "\n        async function test() {\n          const foo = 1;\n          return foo;\n        }\n      "
           ],
           "errors": [
             {
@@ -238,7 +238,7 @@
         {
           "code": "const test = async () =\u003e await 1;",
           "output": [
-            "const test = async () =\u003e  1;"
+            "const test = async () =\u003e 1;"
           ],
           "errors": [
             {
@@ -251,7 +251,7 @@
         {
           "code": "const test = async () =\u003e await /* comment */ 1;",
           "output": [
-            "const test = async () =\u003e  /* comment */ 1;"
+            "const test = async () =\u003e /* comment */ 1;"
           ],
           "errors": [
             {
@@ -264,7 +264,7 @@
         {
           "code": "const test = async () =\u003e await Promise.resolve(1);",
           "output": [
-            "const test = async () =\u003e  Promise.resolve(1);"
+            "const test = async () =\u003e Promise.resolve(1);"
           ],
           "errors": [
             {
@@ -355,7 +355,7 @@
         {
           "code": "\n        async function test() {\n          return await Promise.resolve(1);\n        }\n      ",
           "output": [
-            "\n        async function test() {\n          return  Promise.resolve(1);\n        }\n      "
+            "\n        async function test() {\n          return Promise.resolve(1);\n        }\n      "
           ],
           "errors": [
             {
@@ -369,7 +369,7 @@
           "code": "\n        async function test() {\n          return await 1;\n        }\n      ",
           "options": "in-try-catch",
           "output": [
-            "\n        async function test() {\n          return  1;\n        }\n      "
+            "\n        async function test() {\n          return 1;\n        }\n      "
           ],
           "errors": [
             {
@@ -383,7 +383,7 @@
           "code": "const test = async () =\u003e await 1;",
           "options": "in-try-catch",
           "output": [
-            "const test = async () =\u003e  1;"
+            "const test = async () =\u003e 1;"
           ],
           "errors": [
             {
@@ -397,7 +397,7 @@
           "code": "const test = async () =\u003e await Promise.resolve(1);",
           "options": "in-try-catch",
           "output": [
-            "const test = async () =\u003e  Promise.resolve(1);"
+            "const test = async () =\u003e Promise.resolve(1);"
           ],
           "errors": [
             {
@@ -411,7 +411,7 @@
           "code": "\n        async function test() {\n          return await Promise.resolve(1);\n        }\n      ",
           "options": "in-try-catch",
           "output": [
-            "\n        async function test() {\n          return  Promise.resolve(1);\n        }\n      "
+            "\n        async function test() {\n          return Promise.resolve(1);\n        }\n      "
           ],
           "errors": [
             {
@@ -425,7 +425,7 @@
           "code": "\n        async function test() {\n          return await 1;\n        }\n      ",
           "options": "never",
           "output": [
-            "\n        async function test() {\n          return  1;\n        }\n      "
+            "\n        async function test() {\n          return 1;\n        }\n      "
           ],
           "errors": [
             {
@@ -445,7 +445,7 @@
               "suggestions": [
                 {
                   "messageId": "disallowedPromiseAwaitSuggestion",
-                  "output": "\n        async function test() {\n          try {\n            return  Promise.resolve(1);\n          } catch (e) {\n            return await Promise.resolve(2);\n          } finally {\n            console.log('cleanup');\n          }\n        }\n      "
+                  "output": "\n        async function test() {\n          try {\n            return Promise.resolve(1);\n          } catch (e) {\n            return await Promise.resolve(2);\n          } finally {\n            console.log('cleanup');\n          }\n        }\n      "
                 }
               ]
             },
@@ -455,7 +455,7 @@
               "suggestions": [
                 {
                   "messageId": "disallowedPromiseAwaitSuggestion",
-                  "output": "\n        async function test() {\n          try {\n            return await Promise.resolve(1);\n          } catch (e) {\n            return  Promise.resolve(2);\n          } finally {\n            console.log('cleanup');\n          }\n        }\n      "
+                  "output": "\n        async function test() {\n          try {\n            return await Promise.resolve(1);\n          } catch (e) {\n            return Promise.resolve(2);\n          } finally {\n            console.log('cleanup');\n          }\n        }\n      "
                 }
               ]
             }
@@ -465,7 +465,7 @@
           "code": "\n        async function test() {\n          return await Promise.resolve(1);\n        }\n      ",
           "options": "never",
           "output": [
-            "\n        async function test() {\n          return  Promise.resolve(1);\n        }\n      "
+            "\n        async function test() {\n          return Promise.resolve(1);\n        }\n      "
           ],
           "errors": [
             {
@@ -479,7 +479,7 @@
           "code": "\n        async function test() {\n          return await 1;\n        }\n      ",
           "options": "always",
           "output": [
-            "\n        async function test() {\n          return  1;\n        }\n      "
+            "\n        async function test() {\n          return 1;\n        }\n      "
           ],
           "errors": [
             {
@@ -569,7 +569,7 @@
           "code": "\nasync function foo() {}\nasync function bar() {}\nasync function buzz() {\n  return (await foo()) ? await 1 : bar();\n}\n      ",
           "options": "always",
           "output": [
-            "\nasync function foo() {}\nasync function bar() {}\nasync function buzz() {\n  return (await foo()) ?  1 : await bar();\n}\n      "
+            "\nasync function foo() {}\nasync function bar() {}\nasync function buzz() {\n  return (await foo()) ? 1 : await bar();\n}\n      "
           ],
           "errors": [
             {
@@ -607,7 +607,7 @@
           "code": "\nasync function foo() {}\nasync function bar() {}\nconst buzz = async () =\u003e ((await foo()) ? await 1 : bar());\n      ",
           "options": "always",
           "output": [
-            "\nasync function foo() {}\nasync function bar() {}\nconst buzz = async () =\u003e ((await foo()) ?  1 : await bar());\n      "
+            "\nasync function foo() {}\nasync function bar() {}\nconst buzz = async () =\u003e ((await foo()) ? 1 : await bar());\n      "
           ],
           "errors": [
             {
@@ -745,7 +745,7 @@
         {
           "code": "\n        async function test() {\n          const res = await Promise.resolve('{}');\n          try {\n            async function nested() {\n              return Promise.resolve('ok');\n            }\n            return await nested();\n          } catch (error) {\n            return await Promise.resolve('error');\n          }\n        }\n      ",
           "output": [
-            "\n        async function test() {\n          const res = await Promise.resolve('{}');\n          try {\n            async function nested() {\n              return Promise.resolve('ok');\n            }\n            return await nested();\n          } catch (error) {\n            return  Promise.resolve('error');\n          }\n        }\n      "
+            "\n        async function test() {\n          const res = await Promise.resolve('{}');\n          try {\n            async function nested() {\n              return Promise.resolve('ok');\n            }\n            return await nested();\n          } catch (error) {\n            return Promise.resolve('error');\n          }\n        }\n      "
           ],
           "errors": [
             {
@@ -850,7 +850,7 @@
           "code": "\ndeclare function asyncFn(): Promise\u003cunknown\u003e;\nasync function outerFunction() {\n  using _ = {\n    [Symbol.dispose]: () =\u003e {\n      console.log('dispose');\n    },\n  };\n\n  async function innerFunction() {\n    return await asyncFn();\n  }\n}\n      ",
           "options": "in-try-catch",
           "output": [
-            "\ndeclare function asyncFn(): Promise\u003cunknown\u003e;\nasync function outerFunction() {\n  using _ = {\n    [Symbol.dispose]: () =\u003e {\n      console.log('dispose');\n    },\n  };\n\n  async function innerFunction() {\n    return  asyncFn();\n  }\n}\n      "
+            "\ndeclare function asyncFn(): Promise\u003cunknown\u003e;\nasync function outerFunction() {\n  using _ = {\n    [Symbol.dispose]: () =\u003e {\n      console.log('dispose');\n    },\n  };\n\n  async function innerFunction() {\n    return asyncFn();\n  }\n}\n      "
           ],
           "errors": [
             {
@@ -864,7 +864,7 @@
           "code": "\ndeclare function asyncFn(): Promise\u003cunknown\u003e;\nasync function outerFunction() {\n  using _ = {\n    [Symbol.dispose]: () =\u003e {\n      console.log('dispose');\n    },\n  };\n\n  const innerFunction = async () =\u003e await asyncFn();\n}\n      ",
           "options": "in-try-catch",
           "output": [
-            "\ndeclare function asyncFn(): Promise\u003cunknown\u003e;\nasync function outerFunction() {\n  using _ = {\n    [Symbol.dispose]: () =\u003e {\n      console.log('dispose');\n    },\n  };\n\n  const innerFunction = async () =\u003e  asyncFn();\n}\n      "
+            "\ndeclare function asyncFn(): Promise\u003cunknown\u003e;\nasync function outerFunction() {\n  using _ = {\n    [Symbol.dispose]: () =\u003e {\n      console.log('dispose');\n    },\n  };\n\n  const innerFunction = async () =\u003e asyncFn();\n}\n      "
           ],
           "errors": [
             {
@@ -877,7 +877,7 @@
         {
           "code": "\nasync function wrapper\u003cT extends number\u003e(value: T) {\n  return await value;\n}\n      ",
           "output": [
-            "\nasync function wrapper\u003cT extends number\u003e(value: T) {\n  return  value;\n}\n      "
+            "\nasync function wrapper\u003cT extends number\u003e(value: T) {\n  return value;\n}\n      "
           ],
           "errors": [
             {
@@ -890,7 +890,7 @@
         {
           "code": "\nclass C\u003cT\u003e {\n  async wrapper\u003cT extends string\u003e(value: T) {\n    return await value;\n  }\n}\n      ",
           "output": [
-            "\nclass C\u003cT\u003e {\n  async wrapper\u003cT extends string\u003e(value: T) {\n    return  value;\n  }\n}\n      "
+            "\nclass C\u003cT\u003e {\n  async wrapper\u003cT extends string\u003e(value: T) {\n    return value;\n  }\n}\n      "
           ],
           "errors": [
             {
@@ -903,12 +903,102 @@
         {
           "code": "\nclass C\u003cR extends number\u003e {\n  async wrapper\u003cT extends R\u003e(value: T) {\n    return await value;\n  }\n}\n      ",
           "output": [
-            "\nclass C\u003cR extends number\u003e {\n  async wrapper\u003cT extends R\u003e(value: T) {\n    return  value;\n  }\n}\n      "
+            "\nclass C\u003cR extends number\u003e {\n  async wrapper\u003cT extends R\u003e(value: T) {\n    return value;\n  }\n}\n      "
           ],
           "errors": [
             {
               "messageId": "nonPromiseAwait",
               "line": 4,
+              "suggestions": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tsconfig": "tsconfig.minimal.json",
+      "valid": [],
+      "invalid": [
+        {
+          "code": "const test = async () =\u003e await { a: 1 };",
+          "output": [
+            "const test = async () =\u003e ({ a: 1 });"
+          ],
+          "errors": [
+            {
+              "messageId": "nonPromiseAwait",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "const test = async () =\u003e await { a: 1 }.a;",
+          "output": [
+            "const test = async () =\u003e ({ a: 1 }.a);"
+          ],
+          "errors": [
+            {
+              "messageId": "nonPromiseAwait",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "const test = async () =\u003e await ({ a: 1 });",
+          "output": [
+            "const test = async () =\u003e ({ a: 1 });"
+          ],
+          "errors": [
+            {
+              "messageId": "nonPromiseAwait",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "const test = async () =\u003e (await { a: 1 });",
+          "output": [
+            "const test = async () =\u003e ({ a: 1 });"
+          ],
+          "errors": [
+            {
+              "messageId": "nonPromiseAwait",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "const test = async () =\u003e (true ? await { a: 1 } : 2);",
+          "output": [
+            "const test = async () =\u003e (true ? { a: 1 } : 2);"
+          ],
+          "errors": [
+            {
+              "messageId": "nonPromiseAwait",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "const test = async () =\u003e await /* comment */ 1;",
+          "output": [
+            "const test = async () =\u003e /* comment */ 1;"
+          ],
+          "errors": [
+            {
+              "messageId": "nonPromiseAwait",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "const test = async () =\u003e await /* comment */ { a: 1 };",
+          "output": [
+            "const test = async () =\u003e /* comment */ ({ a: 1 });"
+          ],
+          "errors": [
+            {
+              "messageId": "nonPromiseAwait",
               "suggestions": []
             }
           ]
