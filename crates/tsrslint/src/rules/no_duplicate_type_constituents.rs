@@ -235,6 +235,7 @@ fn for_each_node_type(ctx: &mut Ctx, union_node: P<Node>, t: P<Type>, constituen
         .question_token
         .get()
         .is_none()
+        || ast::is_parameter_property_declaration(parent, parent.parent().unwrap())
     {
         return;
     }
