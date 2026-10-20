@@ -904,7 +904,9 @@ impl RuleVisitor for Visitor {
     fn visit(&mut self, ctx: &mut Ctx, _l: Listener, node: P<Node>) {
         match node.kind() {
             Kind::BinaryExpression => {
-                if self.o.checks_conditionals {
+                if self.o.checks_conditionals
+                    && ast::is_logical_or_coalescing_binary_expression(node)
+                {
                     self.check_conditional(ctx, Some(node), false);
                 }
                 if self.o.variables && ast::is_assignment_expression(node, false) {
