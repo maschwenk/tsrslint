@@ -4,8 +4,8 @@ use tsrs_ast::{self as ast, Kind, ModifierFlags, Node};
 use tsrs_checker::{Checker, Type, TypeFlags};
 use tsrs_core::P;
 
-use crate::rule::{Ctx, LabeledRange, Listener, Rule, RuleDiagnostic, RuleMessage, RuleVisitor};
-use crate::utils::{self, pos_i32, pos_u32, DiscriminatedAnyType};
+use crate::rule::{Ctx, Listener, Rule, RuleDiagnostic, RuleMessage, RuleVisitor};
+use crate::utils::{self, DiscriminatedAnyType};
 
 type Range = (i32, i32);
 
@@ -24,37 +24,38 @@ fn build_unsafe_return_assignment_message(sender: &str, receiver: &str) -> RuleM
 fn build_unsafe_return_this_message(t: &str) -> RuleMessage {
     RuleMessage::with_help(
         "unsafeReturnThis",
-        format!("Unsafe return of a value of type `{t}`. `this` is typed as `any`."),
-        "You can try to fix this by turning on the `noImplicitThis` compiler option, or adding a `this` parameter to the function.",
+        format!("Unsafe return of a value of type {t}. `this` is typed as `any`."),
+        "Enable `noImplicitThis` or add an explicit `this` parameter to the function.",
     )
 }
 
 fn build_unsafe_return_diagnostic(
-    message: RuleMessage,
-    primary_range: Range,
-    returned_range: Range,
+    mut message: RuleMessage,
+    report_range: Range,
     returned_type: &str,
-    expected_range: Option<Range>,
     expected_type: &str,
 ) -> RuleDiagnostic {
-    let mut diagnostic = RuleDiagnostic {
-        pos: primary_range.0,
-        end: primary_range.1,
-        message,
-        labeled_ranges: vec![LabeledRange {
-            label: format!("Returned expression has type `{returned_type}`."),
-            pos: returned_range.0,
-            end: returned_range.1,
-        }],
+    let mut help = if expected_type.is_empty() {
+        format!("Returned expression has type `{returned_type}`.")
+    } else {
+        format!(
+            "Returned expression has type `{returned_type}`; the function return type is `{expected_type}`."
+        )
     };
-    if let Some(r) = expected_range {
-        diagnostic.labeled_ranges.push(LabeledRange {
-            label: format!("Function expects return type `{expected_type}`."),
-            pos: r.0,
-            end: r.1,
-        });
+    match message.help.as_deref() {
+        Some(message_help) if !message_help.is_empty() => {
+            help.push(' ');
+            help.push_str(message_help);
+        }
+        _ => help.push_str(" Return a safely typed value or narrow the value before returning it."),
     }
-    diagnostic
+    message.help = Some(help);
+    RuleDiagnostic {
+        pos: report_range.0,
+        end: report_range.1,
+        message,
+        labeled_ranges: vec![],
+    }
 }
 
 fn render_return_type(c: &mut Checker, t: P<Type>) -> String {
@@ -96,16 +97,19 @@ struct Visitor {
 }
 
 impl Visitor {
-    fn check_return(&self, ctx: &mut Ctx, return_node: P<Node>, primary_range: Range) {
-        let t = ctx.checker.get_type_at_location(return_node);
-
-        let any_type = utils::discriminate_any_type(t, ctx.checker, ctx.program, return_node);
+    fn check_return(&self, ctx: &mut Ctx, return_node: P<Node>, reporting_node: P<Node>) {
         let Some(function_node) = utils::get_parent_function_node(return_node) else {
             return;
         };
 
+        let return_node_type = ctx.checker.get_type_at_location(return_node);
+
+        let any_type =
+            utils::discriminate_any_type(return_node_type, ctx.checker, ctx.program, return_node);
+
         // function has an explicit return type, so ensure it's a safe return
-        let return_node_type = utils::get_constrained_type_at_location(ctx.checker, return_node);
+        let constrained_return_node_type =
+            utils::get_constrained_type_at_location(ctx.checker, return_node);
 
         // function expressions will not have their return type modified based on receiver typing
         // so we have to use the contextual typing in these cases, i.e.
@@ -120,38 +124,20 @@ impl Visitor {
         let function_type =
             function_type.unwrap_or_else(|| ctx.checker.get_type_at_location(function_node));
         let call_signatures = utils::collect_all_call_signatures(ctx.checker, function_type);
-        let mut expected_range: Option<Range> = None;
-        let mut expected_type = String::new();
-        if let Some(return_type_node) = function_node.type_node() {
-            expected_range = Some(ctx.trim(return_type_node));
-            let rt = ctx.checker.get_type_at_location(return_type_node);
-            expected_type = render_return_type(ctx.checker, rt);
-        } else if uses_contextual_type {
-            for &signature in &call_signatures {
-                let Some(declaration) = signature.declaration.get() else {
-                    continue;
-                };
-                let Some(declaration_type) = declaration.type_node() else {
-                    continue;
-                };
-                if ast::get_source_file_of_node(declaration) != Some(ctx.file) {
-                    continue;
-                }
-                expected_range = Some(ctx.trim(declaration_type));
-                let rt = ctx.checker.get_return_type_of_signature_exported(signature);
-                expected_type = render_return_type(ctx.checker, rt);
-                break;
-            }
-        }
         let report = |ctx: &mut Ctx, message: RuleMessage| {
-            let returned_range = ctx.trim(return_node);
-            let returned_type = render_return_type(ctx.checker, return_node_type);
+            let mut expected_type = String::new();
+            if function_node.type_node().is_some() || uses_contextual_type {
+                if let Some(&signature) = call_signatures.first() {
+                    let rt = ctx.checker.get_return_type_of_signature_exported(signature);
+                    expected_type = render_return_type(ctx.checker, rt);
+                }
+            }
+            let report_range = ctx.trim(reporting_node);
+            let returned_type = render_return_type(ctx.checker, constrained_return_node_type);
             ctx.report_diagnostic(build_unsafe_return_diagnostic(
                 message,
-                primary_range,
-                returned_range,
+                report_range,
                 &returned_type,
-                expected_range,
                 &expected_type,
             ));
         };
@@ -217,7 +203,7 @@ impl Visitor {
                 return;
             }
 
-            let type_string = if utils::is_intrinsic_error_type(return_node_type) {
+            let type_string = if utils::is_intrinsic_error_type(constrained_return_node_type) {
                 "error"
             } else if any_type == DiscriminatedAnyType::Any {
                 "`any`"
@@ -230,9 +216,10 @@ impl Visitor {
             if !self.is_no_implicit_this {
                 // `return this`
                 if let Some(this_expression) = utils::get_this_expression(return_node) {
-                    let this_type =
-                        utils::get_constrained_type_at_location(ctx.checker, this_expression);
-                    if utils::is_type_any_type(this_type) {
+                    if utils::is_type_any_type(utils::get_constrained_type_at_location(
+                        ctx.checker,
+                        this_expression,
+                    )) {
                         report(ctx, build_unsafe_return_this_message(type_string));
                         return;
                     }
@@ -272,20 +259,14 @@ impl RuleVisitor for Visitor {
             Kind::ArrowFunction => {
                 let body = node.body().unwrap();
                 if !ast::is_block(body) {
-                    let token = node
-                        .as_arrow_function()
-                        .equals_greater_than_token()
-                        .unwrap();
-                    let range = ctx.trim(token);
-                    self.check_return(ctx, body, range);
+                    self.check_return(ctx, body, body);
                 }
             }
             Kind::ReturnStatement => {
                 let Some(argument) = node.expression() else {
                     return;
                 };
-                let r = tsrs_scanner::get_range_of_token_at_position(ctx.file, pos_u32(node.pos()));
-                self.check_return(ctx, argument, (pos_i32(r.pos()), pos_i32(r.end())));
+                self.check_return(ctx, argument, node);
             }
             _ => {}
         }
