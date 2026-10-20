@@ -71,11 +71,12 @@ struct Visitor {
 
 fn is_void_returning_function_type(ctx: &mut Ctx, t: P<Type>) -> bool {
     let mut return_types = Vec::new();
-    for part in utils::union_type_parts(t) {
+    utils::visit_union_type_parts(t, |part| {
         for &signature in utils::get_call_signatures(ctx.checker, part) {
             return_types.push(ctx.checker.get_return_type_of_signature(signature));
         }
-    }
+        true
+    });
     !return_types.is_empty()
         && return_types.iter().all(|&rt| {
             utils::union_type_parts(rt)
@@ -207,12 +208,13 @@ impl Visitor {
                     .checker
                     .get_type_of_symbol_at_location(parameters[arg_idx], Some(callee))
                     .unwrap();
-                for part in utils::union_type_parts(param_type) {
+                utils::visit_union_type_parts(param_type, |part| {
                     for &ps in utils::get_call_signatures(ctx.checker, part) {
                         arg_expected_return_types
                             .push(ctx.checker.get_return_type_of_signature(ps));
                     }
-                }
+                    true
+                });
             }
             let has_single_signature = signatures.len() == 1;
             let all_signatures_return_void = arg_expected_return_types
