@@ -496,6 +496,9 @@ type extra_Checker struct {
 func Checker_numberType(v *checker.Checker) *checker.Type {
   return ((*extra_Checker)(unsafe.Pointer(v))).numberType
 }
+func Checker_stringType(v *checker.Checker) *checker.Type {
+  return ((*extra_Checker)(unsafe.Pointer(v))).stringType
+}
 func Checker_booleanType(v *checker.Checker) *checker.Type {
   return ((*extra_Checker)(unsafe.Pointer(v))).booleanType
 }
@@ -1061,6 +1064,9 @@ type extra_TupleType struct {
 }
 func TupleType_combinedFlags(v *checker.TupleType) checker.ElementFlags {
   return ((*extra_TupleType)(unsafe.Pointer(v))).combinedFlags
+}
+func TupleType_minLength(v *checker.TupleType) int {
+  return ((*extra_TupleType)(unsafe.Pointer(v))).minLength
 }
 func TupleType_readonly(v *checker.TupleType) bool {
   return ((*extra_TupleType)(unsafe.Pointer(v))).readonly

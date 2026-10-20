@@ -64,6 +64,7 @@
     ],
     "TupleType": [
       "combinedFlags",
+      "minLength",
       "readonly"
     ],
     "Signature": [
@@ -73,6 +74,7 @@
     ],
     "Checker": [
       "numberType",
+      "stringType",
       "booleanType",
       "globalRegExpType"
     ],
