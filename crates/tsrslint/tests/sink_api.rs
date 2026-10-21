@@ -85,3 +85,43 @@ fn failed_run_ends_with_an_error_message() {
     );
     std::fs::remove_dir_all(&dir).ok();
 }
+
+#[test]
+fn jsdoc_unsafe_assertion_has_an_in_bounds_nonnegative_range() {
+    let dir = project("jsdoc-assertion-range");
+    std::fs::write(dir.join("tsconfig.json"), r#"{"compilerOptions":{"target":"es2020","strict":true,"allowJs":true,"checkJs":true,"noEmit":true}}"#).unwrap();
+    let file = dir.join("a.js");
+    let source = "/** @type {unknown} */ let value;\nexport const narrowed = /** @type {string} */ (value);\n";
+    std::fs::write(&file, source).unwrap();
+    let outputs = run(&dir, &file, "no-unsafe-type-assertion");
+    let diags: Vec<_> = outputs
+        .iter()
+        .filter_map(|output| match output {
+            Output::Diagnostic(diagnostic) => Some(diagnostic),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(diags.len(), 1, "{outputs:?}");
+    assert_eq!(
+        diags[0].rule.as_deref(),
+        Some("no-unsafe-type-assertion"),
+        "{outputs:?}"
+    );
+    assert!(diags[0].range.is_some(), "{outputs:?}");
+    let range = diags[0].range.expect("located assertion diagnostic");
+    assert!(
+        range.pos >= 0
+            && range.end >= range.pos
+            && usize::try_from(range.end).unwrap() <= source.len(),
+        "{range:?}"
+    );
+    let start = i32::try_from(source.rfind("value").unwrap()).unwrap();
+    assert_eq!(
+        range,
+        tsrslint::protocol::Range {
+            pos: start,
+            end: start + 5
+        }
+    );
+    std::fs::remove_dir_all(&dir).ok();
+}
