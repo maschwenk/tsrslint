@@ -57,6 +57,10 @@ fn get_assertion_range(
     expression: P<Node>,
     type_annotation: P<Node>,
 ) -> (i32, i32) {
+    if node.parent().is_some_and(ast::is_jsdoc_type_assertion) {
+        // Reparsed JSDoc types precede the expression, so there is no trailing `as` token.
+        return ctx.trim(node);
+    }
     if ast::is_as_expression(node) {
         let as_keyword_range =
             tsrs_scanner::get_scanner_for_source_file(ctx.file, pos_u32(expression.end()))
