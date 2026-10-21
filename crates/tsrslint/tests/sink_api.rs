@@ -85,3 +85,77 @@ fn failed_run_ends_with_an_error_message() {
     );
     std::fs::remove_dir_all(&dir).ok();
 }
+
+#[test]
+fn unsafe_assertion_reports_the_complete_expression_and_current_help() {
+    let dir = project("assertion-help");
+    let file = dir.join("a.ts");
+    let source = "declare const value: any;\nexport const narrowed = value as string;\n";
+    std::fs::write(&file, source).unwrap();
+    let outputs = run(&dir, &file, "no-unsafe-type-assertion");
+    let diags: Vec<_> = outputs
+        .iter()
+        .filter_map(|output| match output {
+            Output::Diagnostic(diagnostic) => Some(diagnostic),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(diags.len(), 1, "{outputs:?}");
+    let diagnostic = diags[0];
+    let start = i32::try_from(source.find("value as string").unwrap()).unwrap();
+    assert_eq!(
+        diagnostic.range,
+        Some(tsrslint::protocol::Range {
+            pos: start,
+            end: start + 15
+        })
+    );
+    assert!(diagnostic.labeled_ranges.is_empty());
+    assert_eq!(
+        diagnostic.message.help.as_deref(),
+        Some(
+            "The original expression has type `any`, and the assertion changes it to `string`. Use a type guard to check the value before asserting its type."
+        )
+    );
+    std::fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
+fn jsdoc_unsafe_assertion_has_an_in_bounds_nonnegative_range() {
+    let dir = project("jsdoc-assertion-range");
+    std::fs::write(dir.join("tsconfig.json"), r#"{"compilerOptions":{"target":"es2020","strict":true,"allowJs":true,"checkJs":true,"noEmit":true}}"#).unwrap();
+    let file = dir.join("a.js");
+    let source = "/** @type {unknown} */ let value;\nexport const narrowed = /** @type {string} */ (value);\n";
+    std::fs::write(&file, source).unwrap();
+    let outputs = run(&dir, &file, "no-unsafe-type-assertion");
+    let diags: Vec<_> = outputs
+        .iter()
+        .filter_map(|output| match output {
+            Output::Diagnostic(diagnostic) => Some(diagnostic),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(diags.len(), 1, "{outputs:?}");
+    assert_eq!(
+        diags[0].rule.as_deref(),
+        Some("no-unsafe-type-assertion"),
+        "{outputs:?}"
+    );
+    assert!(diags[0].range.is_some(), "{outputs:?}");
+    let range = diags[0].range.expect("located assertion diagnostic");
+    assert!(
+        range.pos >= 0
+            && range.end >= range.pos
+            && usize::try_from(range.end).unwrap() <= source.len(),
+        "{range:?}"
+    );
+    let start = i32::try_from(source.rfind("value").unwrap()).unwrap();
+    assert_eq!(
+        range,
+        tsrslint::protocol::Range {
+            pos: start,
+            end: start + 5
+        }
+    );
+    std::fs::remove_dir_all(&dir).ok();
+}
