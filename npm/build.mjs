@@ -11,7 +11,7 @@
 // `[workspace.package] version` from the workspace Cargo.toml. The main package lists exactly the platforms given
 // here, so a release never points at a platform package that was not published.
 
-import { execFileSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -19,11 +19,12 @@ import { fileURLToPath } from "node:url";
 const npmDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(npmDir, "..");
 
-// Rust target triple -> Node's process.platform / process.arch. Same platforms as tsrs.
+// Rust target triple -> Node's process.platform / process.arch.
 const TARGETS = {
     "aarch64-apple-darwin": { os: "darwin", cpu: "arm64" },
     "x86_64-unknown-linux-gnu": { os: "linux", cpu: "x64", libc: "glibc" },
     "aarch64-unknown-linux-gnu": { os: "linux", cpu: "arm64", libc: "glibc" },
+    "x86_64-pc-windows-msvc": { os: "win32", cpu: "x64" },
 };
 // Cargo's binary name (crates/tsrslint/Cargo.toml) and the file name inside the platform packages.
 const CARGO_EXE = "tsgolint";
@@ -55,8 +56,9 @@ function parseArgs(argv) {
             case "--artifacts": {
                 const dir = path.resolve(value());
                 for (const triple of Object.keys(TARGETS)) {
+                    const suffix = TARGETS[triple].os === "win32" ? ".exe" : "";
                     for (const exe of [CARGO_EXE, PACKAGE_EXE]) {
-                        const file = path.join(dir, triple, exe);
+                        const file = path.join(dir, triple, exe + suffix);
                         if (fs.existsSync(file)) opts.binaries.set(triple, file);
                     }
                 }
@@ -117,7 +119,11 @@ function copyDir(src, dst) {
 }
 
 function npmPack(dir, out) {
-    const stdout = execFileSync("npm", ["pack", "--json", "--pack-destination", out], { cwd: dir, encoding: "utf8" });
+    // Each package is a direct child of out. Keep shell arguments fixed when invoking npm.cmd on Windows.
+    const options = { cwd: dir, encoding: "utf8" };
+    const stdout = process.platform === "win32"
+        ? execSync("npm pack --json --pack-destination ..", options)
+        : execFileSync("npm", ["pack", "--json", "--pack-destination", ".."], options);
     const [info] = JSON.parse(stdout);
     return path.join(out, info.filename);
 }
@@ -159,12 +165,13 @@ function main() {
     for (const [triple, binary] of [...opts.binaries].sort()) {
         if (!fs.existsSync(binary)) throw new Error(`binary for ${triple} not found: ${binary}`);
         const { os, cpu, libc } = TARGETS[triple];
+        const exe = PACKAGE_EXE + (os === "win32" ? ".exe" : "");
         const platformName = `${name}-${os}-${cpu}`;
         const dir = path.join(opts.out, `${baseName}-${os}-${cpu}`);
         fs.mkdirSync(dir, { recursive: true });
 
-        fs.copyFileSync(binary, path.join(dir, PACKAGE_EXE));
-        fs.chmodSync(path.join(dir, PACKAGE_EXE), 0o755);
+        fs.copyFileSync(binary, path.join(dir, exe));
+        fs.chmodSync(path.join(dir, exe), 0o755);
         fs.writeFileSync(path.join(dir, "LICENSE"), license);
         fs.writeFileSync(path.join(dir, "NOTICE"), notice);
         fs.writeFileSync(path.join(dir, "THIRD-PARTY-LICENSE"), thirdParty);
@@ -181,7 +188,7 @@ function main() {
             ...common,
             description: `The ${os}-${cpu} binary for ${name}`,
             preferUnplugged: true,
-            files: [PACKAGE_EXE, "NOTICE", "THIRD-PARTY-LICENSE"],
+            files: [exe, "NOTICE", "THIRD-PARTY-LICENSE"],
             exports: { "./package.json": "./package.json" },
             os: [os],
             cpu: [cpu],

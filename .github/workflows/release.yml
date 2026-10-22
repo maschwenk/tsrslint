@@ -48,11 +48,11 @@ jobs:
           if [ "$GITHUB_REF_TYPE" = tag ]; then node npm/build.mjs --check-tag "$GITHUB_REF_NAME"; fi
           echo "version=$(node npm/build.mjs --print-version)" >> "$GITHUB_OUTPUT"
 
-  # Release binaries are PGO builds with the `dist` profile (fat LTO, one codegen unit; Cargo.toml): an instrumented
+  # Unix release binaries are PGO builds with the `dist` profile (fat LTO, one codegen unit; Cargo.toml): an instrumented
   # build of the tsgolint binary and the rule test suite, the training workload (.github/scripts/pgo-train.sh: the rule
   # tests and two open-source projects with all 59 rules), then the final build with the merged profile. Method and
   # numbers: docs/perf-pgo.md. Each binary is smoke-tested on its own platform: the headless protocol on
-  # npm/smoke/fixture, directly and through the packed npm packages.
+  # npm/smoke/fixture, directly and through the packed npm packages. Windows uses `dist` without the Unix PGO workload.
   build:
     name: build ${{ matrix.target }}
     needs: version
@@ -66,6 +66,7 @@ jobs:
           # Built on 22.04 so the binary needs at most glibc 2.35.
           - { target: x86_64-unknown-linux-gnu, os: ubuntu-22.04 }
           - { target: aarch64-unknown-linux-gnu, os: ubuntu-22.04-arm }
+          - { target: x86_64-pc-windows-msvc, os: windows-2022, exe: ".exe" }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -96,6 +97,7 @@ jobs:
       # format does not have to match rustc's LLVM (maschwenk/tsrs saw the instrumented mimalloc crash in
       # __llvm_profile_instrument_target), so the C code (mimalloc) is built without PGO, as on Linux.
       - name: Instrumented build
+        if: runner.os != 'Windows'
         shell: bash
         env:
           RUSTFLAGS: -Cprofile-generate=${{ runner.temp }}/pgo/raw
@@ -117,6 +119,7 @@ jobs:
             }' "$RUNNER_TEMP/pgo/artifacts.jsonl" "$RUNNER_TEMP/pgo/bin"
       # Runs the workload and merges the raw profiles (weighted; see the script) with rustup's llvm-profdata.
       - name: Training run
+        if: runner.os != 'Windows'
         id: profile
         shell: bash
         run: |
@@ -128,23 +131,27 @@ jobs:
           mv "$RUNNER_TEMP/pgo/merged.profdata" "$RUNNER_TEMP/pgo/$sum.profdata"
           echo "path=$RUNNER_TEMP/pgo/$sum.profdata" >> "$GITHUB_OUTPUT"
       - name: cargo build
+        if: runner.os != 'Windows'
         shell: bash
         env:
           RUSTFLAGS: -Cprofile-use=${{ steps.profile.outputs.path }}
           CFLAGS: ${{ runner.os == 'macOS' && '-fno-profile-use' || '' }}
         run: cargo build --profile dist --locked -p tsrslint --target ${{ matrix.target }}
+      - name: cargo build (Windows, without PGO)
+        if: runner.os == 'Windows'
+        run: cargo build --profile dist --locked -p tsrslint --target ${{ matrix.target }}
       - name: Stage binary
         shell: bash
         run: |
           mkdir -p "out/${{ matrix.target }}"
-          cp "target/${{ matrix.target }}/dist/tsgolint" "out/${{ matrix.target }}/tsgolint"
+          cp "target/${{ matrix.target }}/dist/tsgolint${{ matrix.exe }}" "out/${{ matrix.target }}/tsgolint${{ matrix.exe }}"
       - name: Headless smoke test
-        run: node npm/smoke.mjs "out/${{ matrix.target }}/tsgolint"
+        run: node npm/smoke.mjs "out/${{ matrix.target }}/tsgolint${{ matrix.exe }}"
       - name: npm packaging smoke test
         shell: bash
         run: |
-          node npm/build.mjs --binary "${{ matrix.target }}=out/${{ matrix.target }}/tsgolint" --pack --out "$RUNNER_TEMP/npm"
-          npm/smoke-install.sh "$RUNNER_TEMP/npm"
+          node npm/build.mjs --binary "${{ matrix.target }}=out/${{ matrix.target }}/tsgolint${{ matrix.exe }}" --pack --out "$RUNNER_TEMP/npm"
+          node npm/smoke-install.mjs "$RUNNER_TEMP/npm"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: bin-${{ matrix.target }}
@@ -178,6 +185,7 @@ jobs:
           for t in aarch64-apple-darwin x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu; do
             test -f "artifacts/$t/tsgolint" || { echo "::error::missing binary for $t"; exit 1; }
           done
+          test -f artifacts/x86_64-pc-windows-msvc/tsgolint.exe || { echo "::error::missing Windows x64 binary"; exit 1; }
           ls -lR artifacts
       - name: Assemble and pack
         run: node npm/build.mjs --artifacts artifacts --pack

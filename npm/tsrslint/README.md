@@ -19,7 +19,7 @@ the Node launcher in `node_modules/.bin`:
 `tsrslint ...` itself execs the native binary with the same arguments and stdio (`tsrslint --version`,
 `tsrslint headless < payload.json`).
 
-Supported platforms: macOS arm64, Linux x64/arm64 (glibc). The binary comes from the optional dependency
+Supported platforms: macOS arm64, Linux x64/arm64 (glibc), Windows x64. The binary comes from the optional dependency
 `@maschwenk/tsrslint-<os>-<arch>`, installed automatically for the current platform. To use a locally built binary
 through the launcher and `binaryPath()`, set `TSRSLINT_BINARY=/path/to/binary`.
 
