@@ -123,7 +123,7 @@ function npmPack(dir, out) {
     const options = { cwd: dir, encoding: "utf8" };
     const stdout = process.platform === "win32"
         ? execSync("npm pack --json --pack-destination ..", options)
-        : execFileSync("npm", ["pack", "--json", "--pack-destination", ".."], options);
+        : execFileSync("npm", ["pack", "--json", "--pack-destination", out], options);
     const [info] = JSON.parse(stdout);
     return path.join(out, info.filename);
 }
