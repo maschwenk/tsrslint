@@ -24,6 +24,17 @@ On macOS the workflow sets `CFLAGS=-fno-profile-generate` / `-fno-profile-use`: 
 clang (not to gcc), and Apple clang's instrumentation does not have to match rustc's LLVM (tsrs saw the instrumented
 mimalloc crash at startup with rustc 1.99). So mimalloc's C code is built without PGO on every platform, as tsrs does.
 
+Windows x64 uses the same instrumented build, training workload and weighted profile merge through Git Bash.
+The training script converts profile paths to native Windows paths and enables Git long paths for the training
+checkouts. `main` returns an `ExitCode` instead of calling `process::exit`, allowing the Windows CRT to flush LLVM's
+profile data. The rule-test harness normalizes its absolute fixture path without `canonicalize`, which would add
+the Windows `\\?\` prefix. Empty profiles fail training rather than silently losing a workload.
+
+The Windows pipeline was verified locally with Rust 1.99.0: all 60 rule tests passed in both the instrumented and
+profile-use builds. XState (253 files, 6,513 diagnostics) and Webpack (777 files, 34,802 diagnostics) produced
+byte-identical sorted diagnostics to the non-PGO `dist` build. This establishes build and output compatibility,
+not a Windows performance measurement; the speedup figures below are from macOS.
+
 ## Training workload
 
 Public code only (never private code), fast enough for CI (~15 s locally once the projects are installed):

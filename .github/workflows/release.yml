@@ -48,11 +48,11 @@ jobs:
           if [ "$GITHUB_REF_TYPE" = tag ]; then node npm/build.mjs --check-tag "$GITHUB_REF_NAME"; fi
           echo "version=$(node npm/build.mjs --print-version)" >> "$GITHUB_OUTPUT"
 
-  # Unix release binaries are PGO builds with the `dist` profile (fat LTO, one codegen unit; Cargo.toml): an instrumented
+  # Release binaries are PGO builds with the `dist` profile (fat LTO, one codegen unit; Cargo.toml): an instrumented
   # build of the tsgolint binary and the rule test suite, the training workload (.github/scripts/pgo-train.sh: the rule
   # tests and two open-source projects with all 59 rules), then the final build with the merged profile. Method and
   # numbers: docs/perf-pgo.md. Each binary is smoke-tested on its own platform: the headless protocol on
-  # npm/smoke/fixture, directly and through the packed npm packages. Windows uses `dist` without the Unix PGO workload.
+  # npm/smoke/fixture, directly and through the packed npm packages.
   build:
     name: build ${{ matrix.target }}
     needs: version
@@ -97,7 +97,6 @@ jobs:
       # format does not have to match rustc's LLVM (maschwenk/tsrs saw the instrumented mimalloc crash in
       # __llvm_profile_instrument_target), so the C code (mimalloc) is built without PGO, as on Linux.
       - name: Instrumented build
-        if: runner.os != 'Windows'
         shell: bash
         env:
           RUSTFLAGS: -Cprofile-generate=${{ runner.temp }}/pgo/raw
@@ -115,30 +114,25 @@ jobs:
               const m = exes.find(m => m.target.name === name);
               if (!m) { console.error("no executable for " + name); process.exit(1); }
               fs.mkdirSync(process.argv[2], { recursive: true });
-              fs.copyFileSync(m.executable, process.argv[2] + "/" + name);
+              fs.copyFileSync(m.executable, process.argv[2] + "/" + name + "${{ matrix.exe }}");
             }' "$RUNNER_TEMP/pgo/artifacts.jsonl" "$RUNNER_TEMP/pgo/bin"
       # Runs the workload and merges the raw profiles (weighted; see the script) with rustup's llvm-profdata.
       - name: Training run
-        if: runner.os != 'Windows'
         id: profile
         shell: bash
         run: |
-          .github/scripts/pgo-train.sh "$RUNNER_TEMP/pgo/bin/tsgolint" "$RUNNER_TEMP/pgo/bin/rule_tests" \
+          .github/scripts/pgo-train.sh "$RUNNER_TEMP/pgo/bin/tsgolint${{ matrix.exe }}" "$RUNNER_TEMP/pgo/bin/rule_tests${{ matrix.exe }}" \
             "$RUNNER_TEMP/pgo/work" "$RUNNER_TEMP/pgo/merged.profdata"
           # The profile's hash is part of its path, and so of RUSTFLAGS: cargo then rebuilds dependencies restored by
           # rust-cache whenever the profile changes.
-          sum=$(shasum -a 256 "$RUNNER_TEMP/pgo/merged.profdata" | cut -c1-16)
+          sum=$(node -p 'require("node:crypto").createHash("sha256").update(require("node:fs").readFileSync(process.argv[1])).digest("hex").slice(0, 16)' "$RUNNER_TEMP/pgo/merged.profdata")
           mv "$RUNNER_TEMP/pgo/merged.profdata" "$RUNNER_TEMP/pgo/$sum.profdata"
           echo "path=$RUNNER_TEMP/pgo/$sum.profdata" >> "$GITHUB_OUTPUT"
       - name: cargo build
-        if: runner.os != 'Windows'
         shell: bash
         env:
           RUSTFLAGS: -Cprofile-use=${{ steps.profile.outputs.path }}
           CFLAGS: ${{ runner.os == 'macOS' && '-fno-profile-use' || '' }}
-        run: cargo build --profile dist --locked -p tsrslint --target ${{ matrix.target }}
-      - name: cargo build (Windows, without PGO)
-        if: runner.os == 'Windows'
         run: cargo build --profile dist --locked -p tsrslint --target ${{ matrix.target }}
       - name: Stage binary
         shell: bash

@@ -4,7 +4,7 @@
 #[global_allocator]
 static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
-fn main() {
+fn main() -> std::process::ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     match args.first().map(String::as_str) {
         Some("headless") => {}
@@ -13,11 +13,11 @@ fn main() {
                 "tsrslint {} (tsgolint headless protocol v2)",
                 env!("CARGO_PKG_VERSION")
             );
-            return;
+            return std::process::ExitCode::SUCCESS;
         }
         _ => {
             eprintln!("usage: tsgolint headless [-fix] [-fix-suggestions] [-debug timings] < payload.json");
-            std::process::exit(1);
+            return std::process::ExitCode::FAILURE;
         }
     }
     let rest = args[1..].to_vec();
@@ -33,5 +33,9 @@ fn main() {
         .unwrap()
         .join()
         .unwrap_or(1);
-    std::process::exit(status);
+    if status == 0 {
+        std::process::ExitCode::SUCCESS
+    } else {
+        std::process::ExitCode::FAILURE
+    }
 }

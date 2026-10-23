@@ -34,8 +34,8 @@ On Windows, use `target\release\tsgolint.exe` for the binary and `x86_64-pc-wind
 
 ## Releasing
 
-`.github/workflows/release.yml`: a tag push `v<version>` builds the four platforms (`dist` profile, with PGO on Unix
-and without PGO on Windows), smoke-tests each natively, packs, and publishes the platform packages first, then the
+`.github/workflows/release.yml`: a tag push `v<version>` builds the four platforms (`dist` profile with PGO),
+smoke-tests each natively, packs, and publishes the platform packages first, then the
 main package using npm trusted publishing. Configure the trusted publisher for `@maschwenk/tsrslint-win32-x64`
 as for the existing platform packages before publishing the first Windows release.
 `gh workflow run release.yml -f dry_run=true` does everything with `npm publish --dry-run`.
