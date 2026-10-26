@@ -291,6 +291,27 @@
         },
         {
           "code": "\nconst f = \u003cT,\u003e(\n  setValue: (v: T) =\u003e NoInfer\u003cT\u003e,\n  getValue: (v: NoInfer\u003cT\u003e) =\u003e NoInfer\u003cT\u003e,\n) =\u003e {};\n    "
+        },
+        {
+          "code": "\ntype Pair\u003cT\u003e = [T, T];\ndeclare function makePair\u003cK, T\u003e(kind: K): K extends string ? Pair\u003cT\u003e : never;\n"
+        },
+        {
+          "code": "\ntype Pair\u003cT\u003e = [T, T];\ndeclare function makePair\u003cK, T\u003e(kind: K): K extends string ? never : Pair\u003cT\u003e;\n"
+        },
+        {
+          "code": "\ntype Pair\u003cT\u003e = [T, T];\ndeclare function makePair\u003cK, T\u003e(kind: K): K extends string ? Pair\u003c(T)\u003e : never;\n"
+        },
+        {
+          "code": "\ntype Outcome\u003cT, E\u003e = { value: T } | { error: E };\ntype Flatten\u003cR\u003e = R extends Outcome\u003cinfer T, infer E\u003e ? Outcome\u003cT, E\u003e : never;\ndeclare function flatten\u003cT, E extends Error\u003e(value: T): T extends Outcome\u003cunknown, Error\u003e\n  ? Flatten\u003cOutcome\u003cT, E\u003e\u003e\n  : T;\n"
+        },
+        {
+          "code": "declare function makeQualifiedArray\u003cT\u003e(): globalThis.Array\u003cT\u003e;"
+        },
+        {
+          "code": "\nexport {};\ntype Array\u003cT\u003e = [T, T];\ndeclare function makePair\u003cK, T\u003e(kind: K): K extends string ? Array\u003cT\u003e : never;\n"
+        },
+        {
+          "code": "\nexport {};\ntype ReadonlyArray\u003cT\u003e = readonly [T, T];\ndeclare function makePair\u003cK, T\u003e(kind: K): K extends string ? ReadonlyArray\u003cT\u003e : never;\n"
         }
       ],
       "invalid": [
@@ -1523,6 +1544,76 @@
                 {
                   "messageId": "replaceUsagesWithConstraint",
                   "output": "declare function foo(arg: [string?]): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare function takeArray\u003cT\u003e(input: Array\u003cT\u003e): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function takeArray(input: Array\u003cunknown\u003e): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare function makeReadonlyArray\u003cT\u003e(): ReadonlyArray\u003cT\u003e;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function makeReadonlyArray(): ReadonlyArray\u003cunknown\u003e;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare function takeQualifiedArray\u003cT\u003e(input: globalThis.Array\u003cT\u003e): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function takeQualifiedArray(input: globalThis.Array\u003cunknown\u003e): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare function takeQualifiedReadonlyArray\u003cT\u003e(input: globalThis.ReadonlyArray\u003cT\u003e): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function takeQualifiedReadonlyArray(input: globalThis.ReadonlyArray\u003cunknown\u003e): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare function makeQualifiedReadonlyArray\u003cT\u003e(): globalThis.ReadonlyArray\u003cT\u003e;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function makeQualifiedReadonlyArray(): globalThis.ReadonlyArray\u003cunknown\u003e;"
                 }
               ]
             }
