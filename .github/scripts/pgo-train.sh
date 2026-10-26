@@ -42,7 +42,7 @@ setup() { # $1 = work dir; shallow clone of each project's commit + install, ski
     for i in 1 2 3; do # network steps get a few attempts
       rm -rf "$dest" && mkdir -p "$dest"
       if git -C "$dest" init -q && git -C "$dest" fetch -q --depth 1 "$repo" "$commit" \
-        && git -C "$dest" -c advice.detachedHead=false checkout -q FETCH_HEAD \
+        && git -C "$dest" -c core.longpaths=true -c advice.detachedHead=false checkout -q FETCH_HEAD \
         && (cd "$dest" && CI=true HUSKY=0 bash -c "$install"); then
         echo "$commit $install" > "$dest/.pgo-setup"
         break
@@ -67,22 +67,31 @@ out=$4
 profdata=${LLVM_PROFDATA:-$(rustc --print sysroot)/lib/rustlib/$(rustc -vV | sed -n 's/^host: //p')/bin/llvm-profdata}
 raw="$work/raw"
 rm -rf "$raw" && mkdir -p "$raw"
+native_raw="$raw"
+if [ "${OS:-}" = Windows_NT ]; then
+  native_raw=$(cygpath -m "$raw")
+fi
 
 setup "$work"
 
-time LLVM_PROFILE_FILE="$raw/rule-tests-%p.profraw" "$rule_tests" --quiet
+time LLVM_PROFILE_FILE="$native_raw/rule-tests-%p.profraw" "$rule_tests" --quiet
 
-time LLVM_PROFILE_FILE="$raw/xstate-%p.profraw" node "$here/headless-lint.mjs" run "$tsgolint" "$work/xstate" \
+time LLVM_PROFILE_FILE="$native_raw/xstate-%p.profraw" node "$here/headless-lint.mjs" run "$tsgolint" "$work/xstate" \
   --include packages
-time LLVM_PROFILE_FILE="$raw/webpack-%p.profraw" node "$here/headless-lint.mjs" run "$tsgolint" "$work/webpack" \
+time LLVM_PROFILE_FILE="$native_raw/webpack-%p.profraw" node "$here/headless-lint.mjs" run "$tsgolint" "$work/webpack" \
   --ext js --include lib --include bin
 
 ls -l "$raw"
 for f in rule-tests xstate webpack; do
   compgen -G "$raw/$f-*.profraw" > /dev/null || { echo "::error::no profile from $f"; exit 1; }
+  for profile in "$raw/$f-"*.profraw; do
+    [ -s "$profile" ] || { echo "::error::empty profile from $f"; exit 1; }
+  done
 done
 
 weighted=()
-for f in "$raw"/xstate-*.profraw "$raw"/webpack-*.profraw; do weighted+=("--weighted-input=8,$f"); done
+for f in "$raw"/xstate-*.profraw "$raw"/webpack-*.profraw; do
+  weighted+=("--weighted-input=8,$native_raw/$(basename "$f")")
+done
 "$profdata" merge -o "$out" "$raw"/rule-tests-*.profraw "${weighted[@]}"
 "$profdata" show "$out" | tail -5

@@ -17,8 +17,8 @@ OXLINT_TSGOLINT_PATH="$(npx tsrslint-path)" npx oxlint --type-aware
 oxlint runs the backend that `OXLINT_TSGOLINT_PATH` points at, and otherwise the `tsgolint` bin in `node_modules/.bin`.
 tsrslint's bin is named `tsrslint` so it can sit next to `oxlint-tsgolint`; you opt in by pointing the variable at the
 native binary, whose path `tsrslint-path` prints (`require("@maschwenk/tsrslint").binaryPath()` in Node). Binaries
-ship for macOS arm64 and Linux x64 and arm64 (glibc). From source, `cargo build --release` builds
-`target/release/tsgolint`. Packaging details: [npm/README.md](npm/README.md).
+ship for macOS arm64, Linux x64 and arm64 (glibc), and Windows x64. From source, `cargo build --release` builds
+`target/release/tsgolint` (`target\release\tsgolint.exe` on Windows). Packaging details: [npm/README.md](npm/README.md).
 
 ## Conformance
 

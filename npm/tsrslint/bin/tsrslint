@@ -16,7 +16,7 @@ catch (e) {
 const args = process.argv.slice(2);
 
 // Node >= 22.15 / 23.11: replace this process with the binary, so exit codes and signals need no forwarding.
-if (typeof process.execve === "function") {
+if (process.platform !== "win32" && typeof process.execve === "function") {
     try {
         process.execve(exe, [exe, ...args]);
     }

@@ -7,7 +7,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const pkg = require("../package.json");
 
-const EXE_NAME = "tsrslint";
+const EXE_NAME = process.platform === "win32" ? "tsrslint.exe" : "tsrslint";
 
 function binaryPath() {
     const override = process.env.TSRSLINT_BINARY;

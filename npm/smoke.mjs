@@ -3,19 +3,22 @@
 // for npm/smoke/fixture, parses the framed stdout and checks that the expected rule diagnostics come back.
 //
 //   node npm/smoke.mjs target/release/tsgolint
-//   node npm/smoke.mjs node_modules/.bin/tsrslint      # through the npm launcher
+//   node npm/smoke.mjs --node npm/tsrslint/bin/tsrslint  # through the npm launcher
 
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-const arg = process.argv[2];
+const nodeLauncher = process.argv[2] === "--node";
+const arg = process.argv[nodeLauncher ? 3 : 2];
 if (!arg) {
-    console.error("usage: node npm/smoke.mjs <tsrslint binary or launcher>");
+    console.error("usage: node npm/smoke.mjs [--node] <tsrslint binary or launcher>");
     process.exit(2);
 }
 // The binary runs with the fixture as cwd, so a relative path is resolved here (a bare name is looked up on PATH).
-const exe = arg.includes("/") ? path.resolve(arg) : arg;
+const binary = nodeLauncher || arg.includes("/") || arg.includes("\\") ? path.resolve(arg) : arg;
+const exe = nodeLauncher ? process.execPath : binary;
+const prefix = nodeLauncher ? [binary] : [];
 
 const fixture = path.join(path.dirname(fileURLToPath(import.meta.url)), "smoke", "fixture");
 const file = path.join(fixture, "index.ts");
@@ -27,11 +30,15 @@ const payload = {
     report_semantic: false,
 };
 
-const version = spawnSync(exe, ["--version"], { encoding: "utf8" });
+const version = spawnSync(exe, [...prefix, "--version"], { encoding: "utf8" });
 if (version.status !== 0) fail(`${exe} --version exited with ${version.status}: ${version.stderr}${version.error ?? ""}`);
 console.log(version.stdout.trim());
 
-const result = spawnSync(exe, ["headless"], { cwd: fixture, input: JSON.stringify(payload), maxBuffer: 64 << 20 });
+const result = spawnSync(exe, [...prefix, "headless"], {
+    cwd: fixture,
+    input: JSON.stringify(payload),
+    maxBuffer: 64 << 20,
+});
 if (result.error) fail(`failed to run ${exe}: ${result.error.message}`);
 if (result.status !== 0) fail(`${exe} headless exited with ${result.status}\n${result.stderr}`);
 
@@ -58,7 +65,7 @@ if (JSON.stringify(rules) !== JSON.stringify(expected)) {
     fail(`expected diagnostics for ${expected.join(", ")}, got ${JSON.stringify(diagnostics, undefined, 2)}`);
 }
 for (const d of diagnostics) {
-    if (d.file_path !== file) fail(`diagnostic for unexpected file ${d.file_path}`);
+    if (path.normalize(d.file_path) !== file) fail(`diagnostic for unexpected file ${d.file_path}`);
     console.log(`ok ${d.rule} ${d.range.pos}-${d.range.end}: ${d.message.description}`);
 }
 console.log("smoke test passed");

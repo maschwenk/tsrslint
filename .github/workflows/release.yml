@@ -66,6 +66,7 @@ jobs:
           # Built on 22.04 so the binary needs at most glibc 2.35.
           - { target: x86_64-unknown-linux-gnu, os: ubuntu-22.04 }
           - { target: aarch64-unknown-linux-gnu, os: ubuntu-22.04-arm }
+          - { target: x86_64-pc-windows-msvc, os: windows-2022, exe: ".exe" }
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -113,18 +114,18 @@ jobs:
               const m = exes.find(m => m.target.name === name);
               if (!m) { console.error("no executable for " + name); process.exit(1); }
               fs.mkdirSync(process.argv[2], { recursive: true });
-              fs.copyFileSync(m.executable, process.argv[2] + "/" + name);
+              fs.copyFileSync(m.executable, process.argv[2] + "/" + name + "${{ matrix.exe }}");
             }' "$RUNNER_TEMP/pgo/artifacts.jsonl" "$RUNNER_TEMP/pgo/bin"
       # Runs the workload and merges the raw profiles (weighted; see the script) with rustup's llvm-profdata.
       - name: Training run
         id: profile
         shell: bash
         run: |
-          .github/scripts/pgo-train.sh "$RUNNER_TEMP/pgo/bin/tsgolint" "$RUNNER_TEMP/pgo/bin/rule_tests" \
+          .github/scripts/pgo-train.sh "$RUNNER_TEMP/pgo/bin/tsgolint${{ matrix.exe }}" "$RUNNER_TEMP/pgo/bin/rule_tests${{ matrix.exe }}" \
             "$RUNNER_TEMP/pgo/work" "$RUNNER_TEMP/pgo/merged.profdata"
           # The profile's hash is part of its path, and so of RUSTFLAGS: cargo then rebuilds dependencies restored by
           # rust-cache whenever the profile changes.
-          sum=$(shasum -a 256 "$RUNNER_TEMP/pgo/merged.profdata" | cut -c1-16)
+          sum=$(node -p 'require("node:crypto").createHash("sha256").update(require("node:fs").readFileSync(process.argv[1])).digest("hex").slice(0, 16)' "$RUNNER_TEMP/pgo/merged.profdata")
           mv "$RUNNER_TEMP/pgo/merged.profdata" "$RUNNER_TEMP/pgo/$sum.profdata"
           echo "path=$RUNNER_TEMP/pgo/$sum.profdata" >> "$GITHUB_OUTPUT"
       - name: cargo build
@@ -137,14 +138,14 @@ jobs:
         shell: bash
         run: |
           mkdir -p "out/${{ matrix.target }}"
-          cp "target/${{ matrix.target }}/dist/tsgolint" "out/${{ matrix.target }}/tsgolint"
+          cp "target/${{ matrix.target }}/dist/tsgolint${{ matrix.exe }}" "out/${{ matrix.target }}/tsgolint${{ matrix.exe }}"
       - name: Headless smoke test
-        run: node npm/smoke.mjs "out/${{ matrix.target }}/tsgolint"
+        run: node npm/smoke.mjs "out/${{ matrix.target }}/tsgolint${{ matrix.exe }}"
       - name: npm packaging smoke test
         shell: bash
         run: |
-          node npm/build.mjs --binary "${{ matrix.target }}=out/${{ matrix.target }}/tsgolint" --pack --out "$RUNNER_TEMP/npm"
-          npm/smoke-install.sh "$RUNNER_TEMP/npm"
+          node npm/build.mjs --binary "${{ matrix.target }}=out/${{ matrix.target }}/tsgolint${{ matrix.exe }}" --pack --out "$RUNNER_TEMP/npm"
+          node npm/smoke-install.mjs "$RUNNER_TEMP/npm"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: bin-${{ matrix.target }}
@@ -178,6 +179,7 @@ jobs:
           for t in aarch64-apple-darwin x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu; do
             test -f "artifacts/$t/tsgolint" || { echo "::error::missing binary for $t"; exit 1; }
           done
+          test -f artifacts/x86_64-pc-windows-msvc/tsgolint.exe || { echo "::error::missing Windows x64 binary"; exit 1; }
           ls -lR artifacts
       - name: Assemble and pack
         run: node npm/build.mjs --artifacts artifacts --pack

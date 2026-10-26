@@ -140,7 +140,7 @@ impl CompilerHost for CachedCompilerHost {
 
 fn fixtures_root() -> String {
     let p = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../internal/rules/fixtures");
-    tspath::normalize_path(&std::fs::canonicalize(p).unwrap().to_string_lossy())
+    tspath::normalize_path(&p.to_string_lossy())
 }
 
 fn base_fs() -> Arc<dyn FS> {
