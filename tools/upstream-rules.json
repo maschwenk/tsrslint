@@ -1,8 +1,8 @@
 {
   "repository": "https://github.com/oxc-project/tsgolint",
-  "ref": "a61289117febcb1a60cf3bc75ef2b6bbccc4b665",
-  "date": "2026-10-10",
-  "describe": "v7.0.2004",
+  "ref": "4ebf80fd2b166cba4890c6896220fec4a1462b29",
+  "date": "2026-10-22",
+  "describe": "v7.0.2005",
   "rules": [
     "await-thenable",
     "consistent-return",
@@ -33,6 +33,7 @@
     "no-unsafe-argument",
     "no-unsafe-assignment",
     "no-unsafe-call",
+    "no-unsafe-enum-assignment",
     "no-unsafe-enum-comparison",
     "no-unsafe-member-access",
     "no-unsafe-return",

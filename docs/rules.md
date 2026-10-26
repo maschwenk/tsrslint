@@ -5,18 +5,18 @@ Every tsgolint rule tsrslint ports, the tsgolint test cases each one passes, and
 fails when it is stale, and the benchmark workflow regenerates it with each result.
 
 <!-- rules:start -->
-60 of tsgolint v7.0.2004's 60 rules are ported. Their test cases are tsgolint's own Go tests, extracted to `crates/tsrslint/tests/cases/<rule>.json`: 7,599 pass and 28 are skipped (the cases upstream marks `Skip: true`) of 7,627. CI's rule-test step fails on any failing case, so passed = cases - skipped on every green commit.
+61 of tsgolint v7.0.2005's 61 rules are ported. Their test cases are tsgolint's own Go tests, extracted to `crates/tsrslint/tests/cases/<rule>.json`: 7,933 pass and 28 are skipped (the cases upstream marks `Skip: true`) of 7,961. CI's rule-test step fails on any failing case, so passed = cases - skipped on every green commit.
 
 | rule | ported | test cases | passed | skipped | bench diagnostics |
 | --- | --- | ---: | ---: | ---: | ---: |
-| `await-thenable` | yes | 166 | 166 | 0 | 361 (5/8) |
+| `await-thenable` | yes | 190 | 190 | 0 | 361 (5/8) |
 | `consistent-return` | yes | 31 | 31 | 0 | 2,247 (7/8) |
 | `consistent-type-exports` | yes | 49 | 49 | 0 | 22 (2/8) |
 | `dot-notation` | yes | 75 | 75 | 0 | 3,524 (6/8) |
 | `no-array-delete` | yes | 31 | 31 | 0 | 7 (1/8) |
 | `no-base-to-string` | yes | 381 | 380 | 1 | 364 (8/8) |
 | `no-confusing-void-expression` | yes | 110 | 109 | 1 | 16,414 (8/8) |
-| `no-deprecated` | yes | 250 | 238 | 12 | 3,547 (8/8), stock 3,550 |
+| `no-deprecated` | yes | 254 | 242 | 12 | 3,547 (8/8), stock 3,550 |
 | `no-duplicate-type-constituents` | yes | 90 | 88 | 2 | 221 (8/8), stock 218 |
 | `no-floating-promises` | yes | 189 | 188 | 1 | 8,058 (7/8) |
 | `no-for-in-array` | yes | 24 | 24 | 0 | 7 (2/8) |
@@ -34,10 +34,11 @@ fails when it is stale, and the benchmark workflow regenerates it with each resu
 | `no-unnecessary-type-arguments` | yes | 111 | 110 | 1 | 510 (8/8) |
 | `no-unnecessary-type-assertion` | yes | 376 | 376 | 0 | 5,494 (8/8) |
 | `no-unnecessary-type-conversion` | yes | 77 | 77 | 0 | 748 (8/8) |
-| `no-unnecessary-type-parameters` | yes | 175 | 175 | 0 | 434 (7/8) |
+| `no-unnecessary-type-parameters` | yes | 187 | 187 | 0 | 434 (7/8) |
 | `no-unsafe-argument` | yes | 43 | 43 | 0 | 5,968 (8/8) |
 | `no-unsafe-assignment` | yes | 95 | 94 | 1 | 11,761 (8/8) |
 | `no-unsafe-call` | yes | 36 | 36 | 0 | 3,773 (8/8) |
+| `no-unsafe-enum-assignment` | yes | 284 | 284 | 0 | 0 |
 | `no-unsafe-enum-comparison` | yes | 93 | 93 | 0 | 2,037 (6/8) |
 | `no-unsafe-member-access` | yes | 36 | 36 | 0 | 13,965 (8/8) |
 | `no-unsafe-return` | yes | 76 | 76 | 0 | 2,243 (8/8) |
@@ -59,7 +60,7 @@ fails when it is stale, and the benchmark workflow regenerates it with each resu
 | `prefer-string-starts-ends-with` | yes | 132 | 132 | 0 | 269 (6/8) |
 | `promise-function-async` | yes | 53 | 53 | 0 | 13,963 (8/8) |
 | `related-getter-setter-pairs` | yes | 23 | 23 | 0 | 12 (2/8) |
-| `require-array-sort-compare` | yes | 47 | 47 | 0 | 73 (7/8) |
+| `require-array-sort-compare` | yes | 55 | 55 | 0 | 73 (7/8) |
 | `require-await` | yes | 90 | 90 | 0 | 11,058 (8/8) |
 | `restrict-plus-operands` | yes | 122 | 122 | 0 | 61 (4/8) |
 | `restrict-template-expressions` | yes | 72 | 72 | 0 | 836 (8/8) |
@@ -67,10 +68,10 @@ fails when it is stale, and the benchmark workflow regenerates it with each resu
 | `strict-boolean-expressions` | yes | 218 | 218 | 0 | 44,784 (8/8) |
 | `strict-void-return` | yes | 215 | 214 | 1 | 6,767 (8/8) |
 | `switch-exhaustiveness-check` | yes | 107 | 107 | 0 | 1,031 (8/8) |
-| `unbound-method` | yes | 223 | 221 | 2 | 4,077 (7/8), stock 4,076 |
+| `unbound-method` | yes | 225 | 223 | 2 | 4,077 (7/8), stock 4,076 |
 | `use-unknown-in-catch-callback-variable` | yes | 57 | 56 | 1 | 800 (8/8) |
 
 bench diagnostics: what tsrslint reports for the rule (default options) in the newest CI benchmark run (2026-10-16 02:30 UTC, commit `62acafda6e48`), summed over its projects (vscode, mui-docs, xstate, webpack, cal-diy, formbricks-web, supabase-studio, t3code-server), and in how many of them it fires; ", stock N" where stock tsgolint v7.0.2003 reports a different number. 0: those projects never trigger the rule (its test cases still run).
 
-Upstream: oxc-project/tsgolint at `a61289117feb` (2026-10-10, v7.0.2004) has 60 rules. All of them are ported.
+Upstream: oxc-project/tsgolint at `4ebf80fd2b16` (2026-10-22, v7.0.2005) has 61 rules. All of them are ported.
 <!-- rules:end -->
