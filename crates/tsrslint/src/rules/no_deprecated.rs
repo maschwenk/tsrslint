@@ -1,5 +1,6 @@
 // Port of internal/rules/no_deprecated/no_deprecated.go.
 
+use rustc_hash::FxHashSet;
 use tsrs_ast::{self as ast, Kind, Node, NodeFlags, Symbol, SymbolFlags};
 use tsrs_checker::{CheckMode, Checker, ContextFlags, LiteralValue, Type, TypeFlags};
 use tsrs_core::P;
@@ -185,7 +186,10 @@ fn search_for_deprecation_in_aliases_chain(
         return (false, String::new());
     }
     let target_symbol = ctx.checker.get_aliased_symbol(symbol);
-    while utils::is_symbol_flag_set(Some(symbol), SymbolFlags::Alias) {
+    // A circular alias chain (for example `export { x } from './a'` in a.ts) never reaches nil or
+    // target_symbol, so stop at the first alias that has been visited.
+    let mut visited = FxHashSet::default();
+    while utils::is_symbol_flag_set(Some(symbol), SymbolFlags::Alias) && visited.insert(symbol) {
         let (is_deprecated, reason) = get_js_doc_deprecation(ctx, Some(symbol));
         if is_deprecated {
             return (true, reason);

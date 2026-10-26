@@ -362,6 +362,24 @@
           "files": {
             "release-port-normal.ts": "export const normalVariable = 1;"
           }
+        },
+        {
+          "code": "export { x } from './file';",
+          "fileName": "file.ts"
+        },
+        {
+          "code": "export { default } from './circular-reexport';",
+          "fileName": "file.ts",
+          "files": {
+            "circular-reexport.ts": "export { default } from './file';"
+          }
+        },
+        {
+          "code": "import value from './circular-import-a';\nvoid value;",
+          "files": {
+            "circular-import-a.ts": "import value from './circular-import-b';\nexport default value;",
+            "circular-import-b.ts": "import value from './circular-import-a';\nexport default value;"
+          }
         }
       ],
       "invalid": [
@@ -1931,6 +1949,25 @@
         {
           "code": "/** @deprecated Statement reason. */\nconst /** @deprecated */ oldValue = 1;\noldValue;",
           "errors": [
+            {
+              "messageId": "deprecated",
+              "line": 3,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "import value from './circular-deprecated';\nexport default value;\nvalue;",
+          "fileName": "file.ts",
+          "files": {
+            "circular-deprecated.ts": "import value from './file';\n/** @deprecated */\nexport default value;"
+          },
+          "errors": [
+            {
+              "messageId": "deprecated",
+              "line": 2,
+              "suggestions": []
+            },
             {
               "messageId": "deprecated",
               "line": 3,
