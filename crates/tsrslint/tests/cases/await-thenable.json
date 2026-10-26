@@ -249,6 +249,102 @@
         },
         {
           "code": "\ndeclare const maybePromise: Promise\u003cnumber\u003e | number;\n\nPromise.all([\n  maybePromise,\n  Promise.resolve(1),\n  Promise.resolve(2),\n  Promise.resolve(3),\n]);\n      "
+        },
+        {
+          "code": "\ndeclare const maybePromises: (number | Promise\u003cnumber\u003e)[];\nPromise.all(maybePromises);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\ndeclare const maybePromises: [number, Promise\u003cnumber\u003e];\nPromise.all(maybePromises);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\ndeclare const maybePromises: number[] | Promise\u003cnumber\u003e[];\nPromise.all(maybePromises);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\nPromise.all([1, 2, Promise.resolve(3)]);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\ndeclare const maybePromise: number | Promise\u003cnumber\u003e;\nPromise.all([1, maybePromise]);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\nPromise.all([]);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\nPromise.all(1);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\ndeclare const input: unknown;\nPromise.all(input);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\ndeclare const input: any;\nPromise.all(input);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\nfunction test\u003cT\u003e(input: T) {\n  Promise.all(input);\n}\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\nfunction test\u003cT extends Iterable\u003cnumber | Promise\u003cnumber\u003e\u003e\u003e(maybePromises: T) {\n  Promise.all(maybePromises);\n}\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\ndeclare const maybePromises: ReadonlyArray\u003cnumber | PromiseLike\u003cnumber\u003e\u003e;\nPromise.all(maybePromises);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\ndeclare const maybePromises: Set\u003cnumber | Promise\u003cnumber\u003e\u003e;\nPromise.all(maybePromises);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\ndeclare const value: unknown;\nPromise.all([1, value]);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\ndeclare const value: any;\nPromise.all([1, value]);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\ndeclare const promises: Promise\u003cnumber\u003e[];\nPromise.all([1, ...promises]);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
         }
       ],
       "invalid": [
@@ -797,6 +893,120 @@
               "line": 2,
               "column": 14,
               "endColumn": 26,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const numbers: number[];\nPromise.all(numbers);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          },
+          "errors": [
+            {
+              "messageId": "invalidPromiseAggregatorInput",
+              "line": 3,
+              "column": 13,
+              "endLine": 3,
+              "endColumn": 20,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const numbers: [number, string];\nPromise.all(numbers);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          },
+          "errors": [
+            {
+              "messageId": "invalidPromiseAggregatorInput",
+              "line": 3,
+              "column": 13,
+              "endLine": 3,
+              "endColumn": 20,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\nPromise.all([1, 2]);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          },
+          "errors": [
+            {
+              "messageId": "invalidPromiseAggregatorInput",
+              "line": 2,
+              "column": 14,
+              "endLine": 2,
+              "endColumn": 15,
+              "suggestions": []
+            },
+            {
+              "messageId": "invalidPromiseAggregatorInput",
+              "line": 2,
+              "column": 17,
+              "endLine": 2,
+              "endColumn": 18,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\nPromise.all('abc');\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          },
+          "errors": [
+            {
+              "messageId": "invalidPromiseAggregatorInput",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const numbers: Set\u003cnumber\u003e;\nPromise.all(numbers);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          },
+          "errors": [
+            {
+              "messageId": "invalidPromiseAggregatorInput",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\nfunction test\u003cT extends Iterable\u003cnumber\u003e\u003e(numbers: T) {\n  Promise.all(numbers);\n}\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          },
+          "errors": [
+            {
+              "messageId": "invalidPromiseAggregatorInput",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\nPromise.all([1, Promise.resolve(2)]);\n      ",
+          "options": {},
+          "errors": [
+            {
+              "messageId": "invalidPromiseAggregatorInput",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\nPromise.all([1, Promise.resolve(2)]);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": false
+          },
+          "errors": [
+            {
+              "messageId": "invalidPromiseAggregatorInput",
               "suggestions": []
             }
           ]

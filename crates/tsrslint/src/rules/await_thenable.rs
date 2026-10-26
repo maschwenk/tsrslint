@@ -1,11 +1,12 @@
 // Port of internal/rules/await_thenable/await_thenable.go.
 
 use tsrs_ast::{self as ast, Kind, Node, SourceFile};
-use tsrs_checker::{Checker, Type};
+use tsrs_checker::{Checker, ObjectFlags, Type};
 use tsrs_core::P;
 
 use crate::rule::{
-    Ctx, LabeledRange, Listener, Rule, RuleDiagnostic, RuleMessage, RuleSuggestion, RuleVisitor,
+    opt_bool, options_object, Ctx, LabeledRange, Listener, Rule, RuleDiagnostic, RuleMessage,
+    RuleSuggestion, RuleVisitor,
 };
 use crate::utils::{self, pos_i32, pos_u32, TypeAwaitable};
 
@@ -77,10 +78,15 @@ fn build_await_thenable_diagnostic(
 
 const PROMISE_AGGREGATOR_METHODS: &[&str] = &["all", "allSettled", "any", "race"];
 
-pub struct AwaitThenable;
+pub struct AwaitThenable {
+    allow_mixed_promise_arrays: bool,
+}
 
-pub fn create(_options: Option<&serde_json::Value>) -> Result<Box<dyn Rule>, String> {
-    Ok(Box::new(AwaitThenable))
+pub fn create(options: Option<&serde_json::Value>) -> Result<Box<dyn Rule>, String> {
+    let m = options_object(options);
+    Ok(Box::new(AwaitThenable {
+        allow_mixed_promise_arrays: opt_bool(&m, "allowMixedPromiseArrays", false),
+    }))
 }
 
 const LISTENERS: &[Listener] = &[
@@ -95,11 +101,13 @@ impl Rule for AwaitThenable {
         "await-thenable"
     }
     fn create_visitor(&'static self, _ctx: &mut Ctx) -> Box<dyn RuleVisitor> {
-        Box::new(Visitor)
+        Box::new(Visitor { o: self })
     }
 }
 
-struct Visitor;
+struct Visitor {
+    o: &'static AwaitThenable,
+}
 
 fn is_promise_aggregator_method(ctx: &mut Ctx, call_expression: P<Node>) -> bool {
     let callee = ast::skip_parentheses(call_expression.expression().unwrap());
@@ -128,6 +136,18 @@ fn is_invalid_promise_aggregator_input(c: &mut Checker, node: P<Node>, t: P<Type
     false
 }
 
+fn has_maybe_awaitable_value(c: &mut Checker, node: P<Node>) -> bool {
+    let t = utils::get_constrained_type_at_location(c, node);
+    for part in utils::union_type_parts(t) {
+        for value_type in get_value_types_of_array_like(c, part) {
+            if !is_always_non_awaitable_type(c, node, value_type) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 fn get_value_types_of_array_like(c: &mut Checker, t: P<Type>) -> Vec<P<Type>> {
     if t.is_tuple_type() {
         return c.get_type_arguments(t).to_vec();
@@ -135,9 +155,11 @@ fn get_value_types_of_array_like(c: &mut Checker, t: P<Type>) -> Vec<P<Type>> {
     if let Some(number_index_type) = utils::get_number_index_type(c, t) {
         return vec![number_index_type];
     }
-    let type_arguments = c.get_type_arguments(t);
-    if !type_arguments.is_empty() {
-        return type_arguments[..1].to_vec();
+    if t.object_flags().intersects(ObjectFlags::Reference) {
+        let type_arguments = c.get_type_arguments(t);
+        if !type_arguments.is_empty() {
+            return type_arguments[..1].to_vec();
+        }
     }
     Vec::new()
 }
@@ -256,6 +278,9 @@ impl Visitor {
             return;
         }
         let argument = args[0];
+        if self.o.allow_mixed_promise_arrays && has_maybe_awaitable_value(ctx.checker, argument) {
+            return;
+        }
         if ast::is_array_literal_expression(argument) {
             for &element in argument.as_array_literal_expression().elements.nodes() {
                 if ast::is_omitted_expression(element) {
