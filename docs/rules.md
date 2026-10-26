@@ -16,8 +16,8 @@ fails when it is stale, and the benchmark workflow regenerates it with each resu
 | `no-array-delete` | yes | 31 | 31 | 0 | 7 (1/8) |
 | `no-base-to-string` | yes | 381 | 380 | 1 | 364 (8/8) |
 | `no-confusing-void-expression` | yes | 110 | 109 | 1 | 16,414 (8/8) |
-| `no-deprecated` | yes | 254 | 242 | 12 | 3,547 (8/8), stock 3,550 |
-| `no-duplicate-type-constituents` | yes | 90 | 88 | 2 | 221 (8/8), stock 218 |
+| `no-deprecated` | yes | 254 | 242 | 12 | 3,550 (8/8) |
+| `no-duplicate-type-constituents` | yes | 90 | 88 | 2 | 218 (8/8) |
 | `no-floating-promises` | yes | 189 | 188 | 1 | 8,058 (7/8) |
 | `no-for-in-array` | yes | 24 | 24 | 0 | 7 (2/8) |
 | `no-generated-empty-object-type` | yes | 29 | 29 | 0 | 20 (4/8) |
@@ -28,21 +28,21 @@ fails when it is stale, and the benchmark workflow regenerates it with each resu
 | `no-mixed-enums` | yes | 51 | 51 | 0 | 3 (1/8) |
 | `no-redundant-type-constituents` | yes | 104 | 104 | 0 | 641 (7/8) |
 | `no-unnecessary-boolean-literal-compare` | yes | 50 | 50 | 0 | 641 (7/8) |
-| `no-unnecessary-condition` | yes | 384 | 384 | 0 | 18,210 (8/8), stock 18,177 |
+| `no-unnecessary-condition` | yes | 384 | 384 | 0 | 18,177 (8/8) |
 | `no-unnecessary-qualifier` | yes | 18 | 18 | 0 | 65 (2/8) |
 | `no-unnecessary-template-expression` | yes | 183 | 183 | 0 | 299 (6/8) |
 | `no-unnecessary-type-arguments` | yes | 111 | 110 | 1 | 510 (8/8) |
-| `no-unnecessary-type-assertion` | yes | 376 | 376 | 0 | 5,494 (8/8) |
+| `no-unnecessary-type-assertion` | yes | 376 | 376 | 0 | 5,498 (8/8) |
 | `no-unnecessary-type-conversion` | yes | 77 | 77 | 0 | 748 (8/8) |
-| `no-unnecessary-type-parameters` | yes | 187 | 187 | 0 | 434 (7/8) |
+| `no-unnecessary-type-parameters` | yes | 187 | 187 | 0 | 428 (7/8) |
 | `no-unsafe-argument` | yes | 43 | 43 | 0 | 5,968 (8/8) |
 | `no-unsafe-assignment` | yes | 95 | 94 | 1 | 11,761 (8/8) |
 | `no-unsafe-call` | yes | 36 | 36 | 0 | 3,773 (8/8) |
-| `no-unsafe-enum-assignment` | yes | 284 | 284 | 0 | 0 |
+| `no-unsafe-enum-assignment` | yes | 284 | 284 | 0 | 1,444 (4/8) |
 | `no-unsafe-enum-comparison` | yes | 93 | 93 | 0 | 2,037 (6/8) |
 | `no-unsafe-member-access` | yes | 36 | 36 | 0 | 13,965 (8/8) |
-| `no-unsafe-return` | yes | 76 | 76 | 0 | 2,243 (8/8) |
-| `no-unsafe-type-assertion` | yes | 101 | 101 | 0 | 27,197 (8/8), stock 27,195 |
+| `no-unsafe-return` | yes | 76 | 76 | 0 | 2,233 (8/8) |
+| `no-unsafe-type-assertion` | yes | 101 | 101 | 0 | 27,193 (8/8), stock 27,191 |
 | `no-unsafe-unary-minus` | yes | 23 | 23 | 0 | 0 |
 | `no-useless-default-assignment` | yes | 93 | 93 | 0 | 338 (8/8) |
 | `non-nullable-type-assertion-style` | yes | 26 | 26 | 0 | 2,053 (8/8), stock 2,050 |
@@ -53,7 +53,7 @@ fails when it is stale, and the benchmark workflow regenerates it with each resu
 | `prefer-optional-chain` | yes | 1,170 | 1,170 | 0 | 1,917 (8/8) |
 | `prefer-promise-reject-errors` | yes | 162 | 161 | 1 | 208 (8/8) |
 | `prefer-readonly` | yes | 162 | 162 | 0 | 3,382 (5/8) |
-| `prefer-readonly-parameter-types` | yes | 135 | 135 | 0 | 205,938 (8/8), stock 205,940 |
+| `prefer-readonly-parameter-types` | yes | 135 | 135 | 0 | 205,938 (8/8), stock 205,939 |
 | `prefer-reduce-type-parameter` | yes | 31 | 31 | 0 | 66 (5/8) |
 | `prefer-regexp-exec` | yes | 36 | 36 | 0 | 412 (8/8) |
 | `prefer-return-this-type` | yes | 22 | 22 | 0 | 63 (2/8) |
@@ -68,10 +68,10 @@ fails when it is stale, and the benchmark workflow regenerates it with each resu
 | `strict-boolean-expressions` | yes | 218 | 218 | 0 | 44,784 (8/8) |
 | `strict-void-return` | yes | 215 | 214 | 1 | 6,767 (8/8) |
 | `switch-exhaustiveness-check` | yes | 107 | 107 | 0 | 1,031 (8/8) |
-| `unbound-method` | yes | 225 | 223 | 2 | 4,077 (7/8), stock 4,076 |
+| `unbound-method` | yes | 225 | 223 | 2 | 4,076 (7/8) |
 | `use-unknown-in-catch-callback-variable` | yes | 57 | 56 | 1 | 800 (8/8) |
 
-bench diagnostics: what tsrslint reports for the rule (default options) in the newest CI benchmark run (2026-10-16 02:30 UTC, commit `62acafda6e48`), summed over its projects (vscode, mui-docs, xstate, webpack, cal-diy, formbricks-web, supabase-studio, t3code-server), and in how many of them it fires; ", stock N" where stock tsgolint v7.0.2003 reports a different number. 0: those projects never trigger the rule (its test cases still run).
+bench diagnostics: what tsrslint reports for the rule (default options) in the newest CI benchmark run (2026-10-26 12:37 UTC, commit `bb26e2ca28e9`), summed over its projects (vscode, mui-docs, xstate, webpack, cal-diy, formbricks-web, supabase-studio, t3code-server), and in how many of them it fires; ", stock N" where stock tsgolint v7.0.2005 reports a different number. 0: those projects never trigger the rule (its test cases still run).
 
 Upstream: oxc-project/tsgolint at `4ebf80fd2b16` (2026-10-22, v7.0.2005) has 61 rules. All of them are ported.
 <!-- rules:end -->
