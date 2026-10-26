@@ -71,7 +71,7 @@ fails when it is stale, and the benchmark workflow regenerates it with each resu
 | `unbound-method` | yes | 225 | 223 | 2 | 4,076 (7/8) |
 | `use-unknown-in-catch-callback-variable` | yes | 57 | 56 | 1 | 800 (8/8) |
 
-bench diagnostics: what tsrslint reports for the rule (default options) in the newest CI benchmark run (2026-10-26 12:37 UTC, commit `bb26e2ca28e9`), summed over its projects (vscode, mui-docs, xstate, webpack, cal-diy, formbricks-web, supabase-studio, t3code-server), and in how many of them it fires; ", stock N" where stock tsgolint v7.0.2005 reports a different number. 0: those projects never trigger the rule (its test cases still run).
+bench diagnostics: what tsrslint reports for the rule (default options) in the newest CI benchmark run (2026-10-26 13:03 UTC, commit `7cec06124f4e`), summed over its projects (vscode, mui-docs, xstate, webpack, cal-diy, formbricks-web, supabase-studio, t3code-server), and in how many of them it fires; ", stock N" where stock tsgolint v7.0.2005 reports a different number. 0: those projects never trigger the rule (its test cases still run).
 
 Upstream: oxc-project/tsgolint at `4ebf80fd2b16` (2026-10-22, v7.0.2005) has 61 rules. All of them are ported.
 <!-- rules:end -->
