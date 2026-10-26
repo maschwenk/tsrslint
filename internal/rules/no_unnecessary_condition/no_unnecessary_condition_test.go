@@ -3,40 +3,9 @@ package no_unnecessary_condition
 import (
 	"testing"
 
-	"github.com/microsoft/typescript-go/shim/core"
 	"github.com/typescript-eslint/tsgolint/internal/rule_tester"
 	"github.com/typescript-eslint/tsgolint/internal/rules/fixtures"
 )
-
-func TestDiagnosticRangesAndLabels(t *testing.T) {
-	t.Parallel()
-
-	primaryRange := core.NewTextRange(10, 3)
-	leftRange := core.NewTextRange(2, 1)
-	rightRange := core.NewTextRange(16, 9)
-	diagnostic := buildNoOverlapDiagnostic(primaryRange, "string", leftRange, "undefined", rightRange)
-
-	if diagnostic.Range.Pos() != primaryRange.Pos() || diagnostic.Range.End() != primaryRange.End() {
-		t.Fatalf("comparison primary range = %v, want %v", diagnostic.Range, primaryRange)
-	}
-	if len(diagnostic.LabeledRanges) != 2 {
-		t.Fatalf("comparison labels = %d, want 2", len(diagnostic.LabeledRanges))
-	}
-	if diagnostic.LabeledRanges[0].Label != "Type: string" || diagnostic.LabeledRanges[0].Range != leftRange {
-		t.Fatalf("left comparison label = %+v", diagnostic.LabeledRanges[0])
-	}
-	if diagnostic.LabeledRanges[1].Label != "Type: undefined" || diagnostic.LabeledRanges[1].Range != rightRange {
-		t.Fatalf("right comparison label = %+v", diagnostic.LabeledRanges[1])
-	}
-
-	typedDiagnostic := buildTypedValueDiagnostic(buildAlwaysTruthyMessage(), primaryRange, leftRange, "object")
-	if len(typedDiagnostic.LabeledRanges) != 1 || typedDiagnostic.LabeledRanges[0].Label != "Type: object" {
-		t.Fatalf("type labels = %+v", typedDiagnostic.LabeledRanges)
-	}
-	if noisyDiagnostic := buildTypedValueDiagnostic(buildAlwaysTruthyMessage(), primaryRange, leftRange, ""); len(noisyDiagnostic.LabeledRanges) != 0 {
-		t.Fatalf("self-explanatory value labels = %+v, want none", noisyDiagnostic.LabeledRanges)
-	}
-}
 
 func TestNoUnnecessaryConditionRule(t *testing.T) {
 	t.Parallel()
@@ -559,6 +528,16 @@ declare const b1: boolean;
 declare const b2: true;
 const x = b1 && b2;
       `},
+		{Code: `
+function test(foo?: boolean, bar?: boolean) {
+  return (foo && 'foo') || (bar && 'bar');
+}
+      `},
+		{Code: `
+declare const b1: boolean;
+declare const b2: boolean;
+const x = (b1 && 'b1') || b2;
+      `},
 
 		// Allow constant loop conditions
 		{
@@ -998,6 +977,66 @@ declare const key: Key;
 foo.bar[key] ??= 1;
     `},
 		{Code: `
+type Fields = { hello?: number; world?: boolean };
+let fields: Fields = {};
+for (const key of ['hello', 'world'] as const) {
+  fields[key] ??= undefined;
+}`},
+		{Code: `
+type Fields = { hello?: boolean | number; world?: boolean };
+let fields: Fields = {};
+for (const key of ['hello', 'world'] as const) {
+  fields[key] ??= undefined;
+}`},
+		{Code: `
+type Fields = { hello?: number; world?: 1 | 2 | 3 };
+let fields: Fields = {};
+for (const key of ['hello', 'world'] as const) {
+  fields[key] ??= undefined;
+}`},
+		{Code: `
+type Fields = { hello?: 1 | 2 | 4; world?: 1 | 3 | 5 };
+let fields: Fields = {};
+for (const key of ['hello', 'world'] as const) {
+  fields[key] ??= undefined;
+}`},
+		{Code: `
+interface Foo { bizz?: number; buzz?: boolean }
+let fields: Foo = {};
+for (const key of ['bizz', 'buzz'] as const) {
+  fields[key] ??= undefined;
+}`},
+		{Code: `
+let fields: { 0?: number; 1?: boolean } = {};
+for (const key of [0, 1] as const) {
+  fields[key] ??= undefined;
+}`},
+		{Code: `
+declare const a: unique symbol;
+declare const b: unique symbol;
+let fields: { [a]?: number; [b]?: boolean } = {};
+for (const key of [a, b] as const) {
+  fields[key] ??= undefined;
+}`},
+		{Code: `
+declare const sym: unique symbol;
+declare const key: 'x' | typeof sym;
+declare const fields: { [k: string]: number | undefined; [k: symbol]: boolean | undefined };
+fields[key] ??= undefined;
+`},
+		{Code: `
+declare const sym: unique symbol;
+declare const key: string | symbol;
+declare const fields: { [k: string]: number | undefined; [k: symbol]: boolean | undefined };
+fields[key] ??= undefined;
+`},
+		{Code: `
+declare const sym: unique symbol;
+declare const key: number | symbol;
+declare const fields: { [k: string]: number | undefined; [k: symbol]: boolean | undefined };
+fields[key] ??= undefined;
+`},
+		{Code: `
 enum Keys {
   A = 'A',
   B = 'B',
@@ -1121,6 +1160,13 @@ declare function assert(x: unknown): asserts x;
 
 assert(Math.random() > 0.5);
       `,
+			Options: NoUnnecessaryConditionOptions{CheckTypePredicates: true},
+		},
+		{
+			Code: `
+declare function assertSecond(x: unknown, y: unknown): asserts y;
+declare const b: boolean;
+assertSecond(b && 'b', b);`,
 			Options: NoUnnecessaryConditionOptions{CheckTypePredicates: true},
 		},
 		{
@@ -1622,7 +1668,7 @@ function test(a: 'a') {
   return a === 'a';
 }
       `,
-			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "comparisonBetweenLiteralTypes", Line: 3, Column: 12, EndLine: 3, EndColumn: 15}},
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "comparisonBetweenLiteralTypes", Line: 3, Column: 10, EndLine: 3, EndColumn: 19}},
 		},
 		{
 			Code: `
@@ -1638,7 +1684,7 @@ const y = 1;
 if (y === 0) {
 }
       `,
-			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "comparisonBetweenLiteralTypes", Line: 3, Column: 7, EndLine: 3, EndColumn: 10}},
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "comparisonBetweenLiteralTypes", Line: 3, Column: 5, EndLine: 3, EndColumn: 12}},
 		},
 		{
 			Code: `
@@ -1705,7 +1751,7 @@ const x = Foo.a;
 if (x === Foo.a) {
 }
       `,
-			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "comparisonBetweenLiteralTypes", Line: 8, Column: 7, EndLine: 8, EndColumn: 10}},
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "comparisonBetweenLiteralTypes", Line: 8, Column: 5, EndLine: 8, EndColumn: 16}},
 		},
 		{
 			Code: `
@@ -1794,7 +1840,7 @@ function test(a: string) {
 }
       `,
 			Errors: []rule_tester.InvalidTestCaseError{
-				{MessageId: "noOverlapBooleanExpression", Line: 3, Column: 16, EndLine: 3, EndColumn: 19},
+				{MessageId: "noOverlapBooleanExpression", Line: 3, Column: 14, EndLine: 3, EndColumn: 29},
 				{MessageId: "noOverlapBooleanExpression"},
 				{MessageId: "noOverlapBooleanExpression"},
 				{MessageId: "noOverlapBooleanExpression"},
@@ -2017,7 +2063,13 @@ if (x[0]?.foo) {
       `,
 			Errors: []rule_tester.InvalidTestCaseError{
 				{MessageId: "alwaysTruthy"},
-				{MessageId: "neverOptionalChain"},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+const x = [{}] as [{ foo: string }];
+if (x[0]) {
+}
+if (x[0].foo) {
+}
+      `}}},
 			},
 		},
 		{
@@ -2169,13 +2221,40 @@ foo ?. bar;
 foo ?.
   bar;
 foo
-  ?. bar;
-      `,
+  ?. bar;`,
 			Errors: []rule_tester.InvalidTestCaseError{
-				{MessageId: "neverOptionalChain"},
-				{MessageId: "neverOptionalChain"},
-				{MessageId: "neverOptionalChain"},
-				{MessageId: "neverOptionalChain"},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+let foo = { bar: true };
+foo.bar;
+foo ?. bar;
+foo ?.
+  bar;
+foo
+  ?. bar;`}}},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+let foo = { bar: true };
+foo?.bar;
+foo . bar;
+foo ?.
+  bar;
+foo
+  ?. bar;`}}},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+let foo = { bar: true };
+foo?.bar;
+foo ?. bar;
+foo .
+  bar;
+foo
+  ?. bar;`}}},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+let foo = { bar: true };
+foo?.bar;
+foo ?. bar;
+foo ?.
+  bar;
+foo
+  . bar;`}}},
 			},
 		},
 		{
@@ -2186,13 +2265,40 @@ foo ?. ();
 foo ?.
   ();
 foo
-  ?. ();
-      `,
+  ?. ();`,
 			Errors: []rule_tester.InvalidTestCaseError{
-				{MessageId: "neverOptionalChain"},
-				{MessageId: "neverOptionalChain"},
-				{MessageId: "neverOptionalChain"},
-				{MessageId: "neverOptionalChain"},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+let foo = () => {};
+foo();
+foo ?. ();
+foo ?.
+  ();
+foo
+  ?. ();`}}},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+let foo = () => {};
+foo?.();
+foo  ();
+foo ?.
+  ();
+foo
+  ?. ();`}}},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+let foo = () => {};
+foo?.();
+foo ?. ();
+foo` + " " + `
+  ();
+foo
+  ?. ();`}}},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+let foo = () => {};
+foo?.();
+foo ?. ();
+foo ?.
+  ();
+foo
+   ();`}}},
 			},
 		},
 		{
@@ -2203,53 +2309,95 @@ foo ?. (bar);
 foo ?.
   (bar);
 foo
-  ?. (bar);
-      `,
+  ?. (bar);`,
 			Errors: []rule_tester.InvalidTestCaseError{
-				{MessageId: "neverOptionalChain"},
-				{MessageId: "neverOptionalChain"},
-				{MessageId: "neverOptionalChain"},
-				{MessageId: "neverOptionalChain"},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+let foo = () => {};
+foo(bar);
+foo ?. (bar);
+foo ?.
+  (bar);
+foo
+  ?. (bar);`}}},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+let foo = () => {};
+foo?.(bar);
+foo  (bar);
+foo ?.
+  (bar);
+foo
+  ?. (bar);`}}},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+let foo = () => {};
+foo?.(bar);
+foo ?. (bar);
+foo` + " " + `
+  (bar);
+foo
+  ?. (bar);`}}},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+let foo = () => {};
+foo?.(bar);
+foo ?. (bar);
+foo ?.
+  (bar);
+foo
+   (bar);`}}},
 			},
 		},
 		{
 			Code:   "const foo = [1, 2, 3]?.[0];",
-			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain", Line: 1, Column: 22, EndLine: 1, EndColumn: 24}},
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain", Line: 1, Column: 13, EndLine: 1, EndColumn: 27, Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `const foo = [1, 2, 3][0];`}}}},
 		},
 		{
 			Code: `
 declare const x: { a?: { b: string } };
 x?.a?.b;
       `,
-			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain"}},
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+declare const x: { a?: { b: string } };
+x.a?.b;
+      `}}}},
 		},
 		{
 			Code: `
 declare const x: { a: { b?: { c: string } } };
 x.a?.b?.c;
       `,
-			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain"}},
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+declare const x: { a: { b?: { c: string } } };
+x.a.b?.c;
+      `}}}},
 		},
 		{
 			Code: `
 let x: { a?: string };
 x?.a;
       `,
-			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain"}},
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+let x: { a?: string };
+x.a;
+      `}}}},
 		},
 		{
 			Code: `
 declare const foo: { bar: { baz: { c: string } } } | null;
 foo?.bar?.baz;
       `,
-			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain"}},
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+declare const foo: { bar: { baz: { c: string } } } | null;
+foo?.bar.baz;
+      `}}}},
 		},
 		{
 			Code: `
 declare const foo: { bar?: { baz: { qux: string } } } | null;
 foo?.bar?.baz?.qux;
       `,
-			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain"}},
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+declare const foo: { bar?: { baz: { qux: string } } } | null;
+foo?.bar?.baz.qux;
+      `}}}},
 		},
 		{
 			Code: `
@@ -2257,8 +2405,14 @@ declare const foo: { bar: { baz: { qux?: () => {} } } } | null;
 foo?.bar?.baz?.qux?.();
       `,
 			Errors: []rule_tester.InvalidTestCaseError{
-				{MessageId: "neverOptionalChain"},
-				{MessageId: "neverOptionalChain"},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+declare const foo: { bar: { baz: { qux?: () => {} } } } | null;
+foo?.bar?.baz.qux?.();
+      `}}},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+declare const foo: { bar: { baz: { qux?: () => {} } } } | null;
+foo?.bar.baz?.qux?.();
+      `}}},
 			},
 		},
 		{
@@ -2267,9 +2421,18 @@ declare const foo: { bar: { baz: { qux: () => {} } } } | null;
 foo?.bar?.baz?.qux?.();
       `,
 			Errors: []rule_tester.InvalidTestCaseError{
-				{MessageId: "neverOptionalChain"},
-				{MessageId: "neverOptionalChain"},
-				{MessageId: "neverOptionalChain"},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+declare const foo: { bar: { baz: { qux: () => {} } } } | null;
+foo?.bar?.baz?.qux();
+      `}}},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+declare const foo: { bar: { baz: { qux: () => {} } } } | null;
+foo?.bar?.baz.qux?.();
+      `}}},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+declare const foo: { bar: { baz: { qux: () => {} } } } | null;
+foo?.bar.baz?.qux?.();
+      `}}},
 			},
 		},
 		{
@@ -2279,9 +2442,21 @@ declare const foo: { bar: { baz: baz } } | null;
 foo?.bar?.baz?.().qux?.();
       `,
 			Errors: []rule_tester.InvalidTestCaseError{
-				{MessageId: "neverOptionalChain"},
-				{MessageId: "neverOptionalChain"},
-				{MessageId: "neverOptionalChain"},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+type baz = () => { qux: () => {} };
+declare const foo: { bar: { baz: baz } } | null;
+foo?.bar?.baz?.().qux();
+      `}}},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+type baz = () => { qux: () => {} };
+declare const foo: { bar: { baz: baz } } | null;
+foo?.bar?.baz().qux?.();
+      `}}},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+type baz = () => { qux: () => {} };
+declare const foo: { bar: { baz: baz } } | null;
+foo?.bar.baz?.().qux?.();
+      `}}},
 			},
 		},
 		{
@@ -2291,8 +2466,16 @@ declare const foo: { bar: { baz: baz } } | null;
 foo?.bar?.baz?.().qux?.();
       `,
 			Errors: []rule_tester.InvalidTestCaseError{
-				{MessageId: "neverOptionalChain"},
-				{MessageId: "neverOptionalChain"},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+type baz = null | (() => { qux: () => {} });
+declare const foo: { bar: { baz: baz } } | null;
+foo?.bar?.baz?.().qux();
+      `}}},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+type baz = null | (() => { qux: () => {} });
+declare const foo: { bar: { baz: baz } } | null;
+foo?.bar.baz?.().qux?.();
+      `}}},
 			},
 		},
 		{
@@ -2302,8 +2485,16 @@ declare const foo: { bar: { baz: baz } } | null;
 foo?.bar?.baz?.()?.qux?.();
       `,
 			Errors: []rule_tester.InvalidTestCaseError{
-				{MessageId: "neverOptionalChain"},
-				{MessageId: "neverOptionalChain"},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+type baz = null | (() => { qux: () => {} } | null);
+declare const foo: { bar: { baz: baz } } | null;
+foo?.bar?.baz?.()?.qux();
+      `}}},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+type baz = null | (() => { qux: () => {} } | null);
+declare const foo: { bar: { baz: baz } } | null;
+foo?.bar.baz?.()?.qux?.();
+      `}}},
 			},
 		},
 		{
@@ -2313,14 +2504,22 @@ type Bar = { baz: null | string | { qux: string } };
 declare const foo: { fooOrBar: Foo | Bar } | null;
 foo?.fooOrBar?.baz?.qux;
       `,
-			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain"}},
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+type Foo = { baz: number };
+type Bar = { baz: null | string | { qux: string } };
+declare const foo: { fooOrBar: Foo | Bar } | null;
+foo?.fooOrBar.baz?.qux;
+      `}}}},
 		},
 		{
 			Code: `
 declare const x: { a: { b: number } }[];
 x[0].a?.b;
       `,
-			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain"}},
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+declare const x: { a: { b: number } }[];
+x[0].a.b;
+      `}}}},
 		},
 		{
 			Code: `
@@ -2331,7 +2530,14 @@ declare const key: Key;
 
 foo?.[key]?.trim();
       `,
-			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain", Line: 7, Column: 11, EndLine: 7, EndColumn: 13}},
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain", Line: 7, Column: 1, EndLine: 7, EndColumn: 17, Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+type Foo = { [key: string]: string; foo: 'foo'; bar: 'bar' } | null;
+type Key = 'bar' | 'foo';
+declare const foo: Foo;
+declare const key: Key;
+
+foo?.[key].trim();
+      `}}}},
 		},
 		{
 			Code: `
@@ -2340,7 +2546,12 @@ declare const foo: Foo;
 const key = 'bar';
 foo?.[key]?.trim();
       `,
-			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain"}},
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+type Foo = { [key: string]: string; foo: 'foo'; bar: 'bar' } | null;
+declare const foo: Foo;
+const key = 'bar';
+foo?.[key].trim();
+      `}}}},
 		},
 		{
 			Code: `
@@ -2356,7 +2567,19 @@ export function test(outer: Outer): number | undefined {
   return outer.inner?.[key]?.charCodeAt(0);
 }
       `,
-			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain"}},
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+interface Outer {
+  inner?: {
+    [key: string]: string | undefined;
+    bar: 'bar';
+  };
+}
+
+export function test(outer: Outer): number | undefined {
+  const key = 'bar';
+  return outer.inner?.[key].charCodeAt(0);
+}
+      `}}}},
 		},
 		{
 			Code: `
@@ -2372,7 +2595,19 @@ function Foo(outer: Outer, key: Bar): number | undefined {
   return outer.inner?.[key]?.charCodeAt(0);
 }
       `,
-			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain"}},
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+interface Outer {
+  inner?: {
+    [key: string]: string | undefined;
+    bar: 'bar';
+  };
+}
+type Bar = 'bar';
+
+function Foo(outer: Outer, key: Bar): number | undefined {
+  return outer.inner?.[key].charCodeAt(0);
+}
+      `}}}},
 		},
 
 		// Nullish coalescing with testVal
@@ -2443,7 +2678,16 @@ type OptionalFoo = Foo | undefined;
 declare const foo: OptionalFoo;
 foo?.test?.length;
       `,
-			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain"}},
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+interface Foo {
+  test: string;
+  [key: string]: [string] | undefined;
+}
+
+type OptionalFoo = Foo | undefined;
+declare const foo: OptionalFoo;
+foo?.test.length;
+      `}}}},
 		},
 		{
 			Code: `
@@ -2499,6 +2743,118 @@ foo ??= null;
 		},
 		{
 			Code: `
+declare const foo: { bar: null };
+foo.bar ??= null;`,
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "alwaysNullish", Line: 3, Column: 1, EndLine: 3, EndColumn: 8}},
+		},
+		{
+			Code: `
+declare const foo: Record<string, undefined>;
+declare const key: string;
+foo[key] ??= undefined;`,
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "alwaysNullish", Line: 4, Column: 1, EndLine: 4, EndColumn: 9}},
+		},
+		{
+			Code: `
+type Fields = { hello?: undefined; world?: null };
+let fields: Fields = {};
+for (const key of ['hello', 'world'] as const) {
+  fields[key] ??= undefined;
+}`,
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "alwaysNullish", Line: 5, Column: 3, EndLine: 5, EndColumn: 14}},
+		},
+		{
+			Code: `
+interface Foo { bizz?: undefined; buzz?: null }
+let fields: Foo = {};
+for (const key of ['buzz', 'bizz'] as const) {
+  fields[key] ??= undefined;
+}`,
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "alwaysNullish", Line: 5, Column: 3, EndLine: 5, EndColumn: 14}},
+		},
+		{
+			Code: `
+declare const obj: { x: number | null };
+if (obj['x'] === null) {
+  obj['x'] ?? 1;
+}`,
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "alwaysNullish", Line: 4}},
+		},
+		{
+			Code: `
+declare const a: unique symbol;
+declare const b: unique symbol;
+let fields: { [a]?: undefined; [b]?: null } = {};
+for (const key of [a, b] as const) {
+  fields[key] ??= undefined;
+}`,
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "alwaysNullish", Line: 6}},
+		},
+		{
+			Code: `
+declare let obj: { x: number | null };
+if (obj['x'] === null) {
+  obj['x'] ??= 1;
+}`,
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "alwaysNullish", Line: 4}},
+		},
+		{
+			Code: `
+declare let obj: { x: number | null; y: boolean | null };
+declare const key: 'x' | 'y';
+if (key === 'x' && obj[key] === null) {
+  (obj[key]) ??= 1;
+}`,
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "alwaysNullish", Line: 5}},
+		},
+		{
+			Code: `
+declare let obj: { x: number | null; y: number | null };
+declare const key: 'x' | 'y';
+if (obj[key] === null) {
+  obj[key] ??= null;
+}`,
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "alwaysNullish", Line: 5}},
+		},
+		{
+			Code: `
+declare let obj: { x: number | null; y: boolean | null };
+declare const key: 'x' | 'y';
+if (obj[key] === null) {
+  obj[key] ??= null;
+}`,
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "alwaysNullish", Line: 5}},
+		},
+		{
+			Code: `
+declare let obj: { x: number | null; y: boolean | null };
+declare const key: 'x' | 'y';
+if (obj[key] === null) {
+  obj[key] ??= null;
+}`,
+			TSConfig: "tsconfig.noUncheckedIndexedAccess.json",
+			Errors:   []rule_tester.InvalidTestCaseError{{MessageId: "alwaysNullish", Line: 5}},
+		},
+		{
+			Code: `
+declare const sym: unique symbol;
+declare const key: 'x' | typeof sym;
+declare const fields: { [k: string]: undefined; [k: symbol]: undefined };
+fields[key] ??= undefined;`,
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "alwaysNullish", Line: 5}},
+		},
+		{
+			Code: `
+declare const sym: unique symbol;
+declare const key: 'x' | typeof sym;
+declare const fields: { [k: string]: number | undefined; [k: symbol]: boolean | undefined };
+if (fields[key] === undefined) {
+  fields[key] ??= undefined;
+}`,
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "alwaysNullish", Line: 6}},
+		},
+		{
+			Code: `
 declare let foo: {};
 foo ||= 1;
       `,
@@ -2541,7 +2897,11 @@ type Foo = { bar: () => number } | null;
 declare const foo: Foo;
 foo?.bar()?.toExponential();
       `,
-			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain"}},
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+type Foo = { bar: () => number } | null;
+declare const foo: Foo;
+foo?.bar().toExponential();
+      `}}}},
 		},
 		{
 			Code: `
@@ -2550,8 +2910,16 @@ declare const foo: Foo;
 foo?.bar?.baz()?.qux?.toExponential();
       `,
 			Errors: []rule_tester.InvalidTestCaseError{
-				{MessageId: "neverOptionalChain"},
-				{MessageId: "neverOptionalChain"},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+type Foo = { bar: null | { baz: () => { qux: number } } } | null;
+declare const foo: Foo;
+foo?.bar?.baz()?.qux.toExponential();
+      `}}},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+type Foo = { bar: null | { baz: () => { qux: number } } } | null;
+declare const foo: Foo;
+foo?.bar?.baz().qux?.toExponential();
+      `}}},
 			},
 		},
 		{
@@ -2560,7 +2928,11 @@ type Foo = (() => number) | null;
 declare const foo: Foo;
 foo?.()?.toExponential();
       `,
-			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain"}},
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+type Foo = (() => number) | null;
+declare const foo: Foo;
+foo?.().toExponential();
+      `}}}},
 		},
 		{
 			Code: `
@@ -2568,7 +2940,11 @@ type Foo = { [key: string]: () => number } | null;
 declare const foo: Foo;
 foo?.['bar']()?.toExponential();
       `,
-			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain"}},
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+type Foo = { [key: string]: () => number } | null;
+declare const foo: Foo;
+foo?.['bar']().toExponential();
+      `}}}},
 		},
 		{
 			Code: `
@@ -2576,7 +2952,11 @@ type Foo = { [key: string]: () => number } | null;
 declare const foo: Foo;
 foo?.['bar']?.()?.toExponential();
       `,
-			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain"}},
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+type Foo = { [key: string]: () => number } | null;
+declare const foo: Foo;
+foo?.['bar']?.().toExponential();
+      `}}}},
 		},
 		{
 			Code: `
@@ -2738,7 +3118,19 @@ declare const a: A;
 
 a.a?.a?.a;
       `,
-			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain"}},
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+type A = {
+  [name in Lowercase<string>]?: {
+    [name in Lowercase<string>]: {
+      a: 1;
+    };
+  };
+};
+
+declare const a: A;
+
+a.a?.a.a;
+      `}}}},
 		},
 		{
 			Code: `
@@ -2764,9 +3156,72 @@ declare const t: T;
 t.a?.a?.a?.value;
       `,
 			Errors: []rule_tester.InvalidTestCaseError{
-				{MessageId: "neverOptionalChain"},
-				{MessageId: "neverOptionalChain"},
-				{MessageId: "neverOptionalChain"},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+interface T {
+  [name: Lowercase<string>]: {
+    [name: Lowercase<string>]: {
+      [name: Lowercase<string>]: {
+        value: 'value';
+      };
+    };
+  };
+  [name: Uppercase<string>]: null | {
+    [name: Uppercase<string>]: null | {
+      [name: Uppercase<string>]: null | {
+        VALUE: 'VALUE';
+      };
+    };
+  };
+}
+
+declare const t: T;
+
+t.a?.a?.a.value;
+      `}}},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+interface T {
+  [name: Lowercase<string>]: {
+    [name: Lowercase<string>]: {
+      [name: Lowercase<string>]: {
+        value: 'value';
+      };
+    };
+  };
+  [name: Uppercase<string>]: null | {
+    [name: Uppercase<string>]: null | {
+      [name: Uppercase<string>]: null | {
+        VALUE: 'VALUE';
+      };
+    };
+  };
+}
+
+declare const t: T;
+
+t.a?.a.a?.value;
+      `}}},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+interface T {
+  [name: Lowercase<string>]: {
+    [name: Lowercase<string>]: {
+      [name: Lowercase<string>]: {
+        value: 'value';
+      };
+    };
+  };
+  [name: Uppercase<string>]: null | {
+    [name: Uppercase<string>]: null | {
+      [name: Uppercase<string>]: null | {
+        VALUE: 'VALUE';
+      };
+    };
+  };
+}
+
+declare const t: T;
+
+t.a.a?.a?.value;
+      `}}},
 			},
 		},
 
@@ -2780,7 +3235,13 @@ if (test[0]?.a) {
 }
       `,
 			TSConfig: "tsconfig.noUncheckedIndexedAccess.json",
-			Errors:   []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain"}},
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+declare const test: Array<{ a?: string }>;
+
+if (test[0]?.a) {
+  test[0].a;
+}
+      `}}}},
 		},
 		{
 			Code: `
@@ -2789,8 +3250,14 @@ arr2[42]?.x?.y?.z;
       `,
 			TSConfig: "tsconfig.noUncheckedIndexedAccess.json",
 			Errors: []rule_tester.InvalidTestCaseError{
-				{MessageId: "neverOptionalChain"},
-				{MessageId: "neverOptionalChain"},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+declare const arr2: Array<{ x: { y: { z: object } } }>;
+arr2[42]?.x?.y.z;
+      `}}},
+				{MessageId: "neverOptionalChain", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "suggestRemoveOptionalChain", Output: `
+declare const arr2: Array<{ x: { y: { z: object } } }>;
+arr2[42]?.x.y?.z;
+      `}}},
 			},
 		},
 		{
@@ -2911,6 +3378,98 @@ function test(value: string) {
 				EndLine:   4,
 				EndColumn: 19,
 			}},
+		},
+		{
+			Code: `
+declare const b1: boolean;
+declare const b2: boolean;
+if ((b1 && 'b1') || b2) {
+}`,
+			Errors: []rule_tester.InvalidTestCaseError{{
+				MessageId: "alwaysTruthy",
+				Line:      4,
+				Column:    12,
+				EndLine:   4,
+				EndColumn: 16,
+			}},
+		},
+		{
+			Code: `
+declare const b1: boolean;
+declare const b2: boolean;
+do {} while ((b1 && 'b1') || b2);`,
+			Errors: []rule_tester.InvalidTestCaseError{{
+				MessageId: "alwaysTruthy",
+				Line:      4,
+				Column:    21,
+				EndLine:   4,
+				EndColumn: 25,
+			}},
+		},
+		{
+			Code: `
+declare const b1: boolean;
+declare const b2: boolean;
+for (; (b1 && 'b1') || b2;) {}`,
+			Errors: []rule_tester.InvalidTestCaseError{{
+				MessageId: "alwaysTruthy",
+				Line:      4,
+				Column:    15,
+				EndLine:   4,
+				EndColumn: 19,
+			}},
+		},
+		{
+			Code: `
+declare const b1: boolean;
+declare const b2: boolean;
+if (!((b1 && 'b1') || b2)) {
+}`,
+			Errors: []rule_tester.InvalidTestCaseError{{
+				MessageId: "alwaysTruthy",
+				Line:      4,
+				Column:    14,
+				EndLine:   4,
+				EndColumn: 18,
+			}},
+		},
+		{
+			Code: `
+declare const b1: boolean;
+declare const b2: boolean;
+const t1 = b1 && 'b1' && b2;`,
+			Errors: []rule_tester.InvalidTestCaseError{{
+				MessageId: "alwaysTruthy",
+				Line:      4,
+				Column:    18,
+				EndLine:   4,
+				EndColumn: 22,
+			}},
+		},
+		{
+			Code: `
+declare function assert(x: unknown): asserts x;
+declare const b: boolean;
+assert(b && 'b');`,
+			Options: NoUnnecessaryConditionOptions{CheckTypePredicates: true},
+			Errors:  []rule_tester.InvalidTestCaseError{{MessageId: "alwaysTruthy"}},
+		},
+		{
+			Code: `
+declare function assert(x: unknown): asserts x;
+declare const b: boolean;
+declare const c: boolean;
+assert((b && 'b') || c);`,
+			Options: NoUnnecessaryConditionOptions{CheckTypePredicates: true},
+			Errors:  []rule_tester.InvalidTestCaseError{{MessageId: "alwaysTruthy"}},
+		},
+		{
+			Code: `
+declare function assertSecond(x: unknown, y: unknown): asserts y;
+declare const b: boolean;
+assertSecond(b, b && 'b');`,
+			Options: NoUnnecessaryConditionOptions{CheckTypePredicates: true},
+			Errors:  []rule_tester.InvalidTestCaseError{{MessageId: "alwaysTruthy"}},
 		},
 	})
 }

@@ -90,6 +90,22 @@
         },
         {
           "code": "\n      class Foo {\n        public foo(): this {\n          return this;\n        }\n\n        protected then(resolve: () =\u003e void): void {\n          resolve();\n        }\n      }\n    "
+        },
+        {
+          "code": "\ninterface Schema\u003cOutput = any\u003e {\n  readonly _output: Output;\n  parse(input: unknown): Output;\n}\ntype Infer\u003cS extends Schema\u003e = S['_output'];\nconst parse = \u003cS extends Schema\u003e(schema: S, input: unknown): Infer\u003cS\u003e =\u003e\n  schema.parse(input) as Infer\u003cS\u003e;\n    "
+        },
+        {
+          "code": "\nfunction f\u003cT extends Set\u003cany\u003e\u003e(x: T): Set\u003cstring\u003e {\n  return x;\n}\n    "
+        },
+        {
+          "code": "\n/** @callback Fn */\n\n/** @type {Fn} */\nconst f = function () {\n  return 1;\n};",
+          "fileName": "repro.js",
+          "tsconfig": "tsconfig.checkJs.json"
+        },
+        {
+          "code": "\n/** @callback Fn */\n\n/** @type {Fn} */\nconst f = () =\u003e 1;",
+          "fileName": "repro.js",
+          "tsconfig": "tsconfig.checkJs.json"
         }
       ],
       "invalid": [
@@ -256,14 +272,14 @@
               "messageId": "unsafeReturnThis",
               "line": 3,
               "column": 3,
-              "endColumn": 9,
+              "endColumn": 15,
               "suggestions": []
             },
             {
               "messageId": "unsafeReturnThis",
               "line": 7,
-              "column": 13,
-              "endColumn": 15,
+              "column": 16,
+              "endColumn": 20,
               "suggestions": []
             }
           ]
@@ -274,8 +290,8 @@
             {
               "messageId": "unsafeReturn",
               "line": 3,
-              "column": 8,
-              "endColumn": 10,
+              "column": 11,
+              "endColumn": 23,
               "suggestions": []
             }
           ]
@@ -287,7 +303,7 @@
               "messageId": "unsafeReturn",
               "line": 5,
               "column": 3,
-              "endColumn": 9,
+              "endColumn": 16,
               "suggestions": []
             }
           ]
@@ -445,8 +461,116 @@
             {
               "messageId": "unsafeReturnAssignment",
               "line": 3,
+              "column": 23,
+              "endColumn": 37,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ninterface Schema\u003cOutput = any\u003e {\n  readonly _output: Output;\n}\ntype Infer\u003cS extends Schema\u003e = S['_output'];\nconst getOutput = \u003cS extends Schema\u003e(schema: S): Infer\u003cS\u003e =\u003e\n  schema._output;",
+          "errors": [
+            {
+              "messageId": "unsafeReturn",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n/**\n * @callback Fn\n * @param {*} value\n */\n\n/** @type {Fn} */\nconst f = function (value) {\n  return value;\n};",
+          "fileName": "repro.js",
+          "tsconfig": "tsconfig.checkJs.json",
+          "errors": [
+            {
+              "messageId": "unsafeReturn",
+              "line": 9,
+              "column": 3,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n/**\n * @callback Fn\n * @param {*} value\n */\n\n/** @type {Fn} */\nconst f = value =\u003e value;",
+          "fileName": "repro.js",
+          "tsconfig": "tsconfig.checkJs.json",
+          "errors": [
+            {
+              "messageId": "unsafeReturn",
+              "line": 8,
               "column": 20,
-              "endColumn": 22,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\n/**\n * @callback Fn\n * @param {*} value\n * @returns {number}\n */\n\n/** @type {Fn} */\nconst f = value =\u003e value;",
+          "fileName": "repro.js",
+          "tsconfig": "tsconfig.checkJs.json",
+          "errors": [
+            {
+              "messageId": "unsafeReturn",
+              "line": 9,
+              "column": 20,
+              "suggestions": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tsconfig": "tsconfig.minimal.json",
+      "valid": [],
+      "invalid": [
+        {
+          "code": "const foo = () =\u003e 1 as any;",
+          "errors": [
+            {
+              "messageId": "unsafeReturn",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "const foo = function () { return 1 as any; };",
+          "errors": [
+            {
+              "messageId": "unsafeReturn",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "const foo = (): number =\u003e 1 as any;",
+          "errors": [
+            {
+              "messageId": "unsafeReturn",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "const foo = function (): number { return 1 as any; };",
+          "errors": [
+            {
+              "messageId": "unsafeReturn",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "const foo: () =\u003e number = () =\u003e 1 as any;",
+          "errors": [
+            {
+              "messageId": "unsafeReturn",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "const foo: () =\u003e number = function () { return 1 as any; };",
+          "errors": [
+            {
+              "messageId": "unsafeReturn",
               "suggestions": []
             }
           ]

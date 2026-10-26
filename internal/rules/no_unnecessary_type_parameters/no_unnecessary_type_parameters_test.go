@@ -106,6 +106,36 @@ func TestNoUnnecessaryTypeParameters(t *testing.T) {
 		{Code: "\ntype Silly<T> = { [P in keyof T]: T[P] };\n\ntype SillyFoo<T, Value> = Silly<{ [P in keyof T]: Value }>;\n\ntype Foo<T, Value> = { [P in keyof T]: Value };\n\ndeclare function foo<T, Constant>(data: T, c: Constant): Foo<T, Constant>;\ndeclare function foo<T, Constant>(c: Constant): (data: T) => Foo<T, Constant>;\n\ndeclare function sillyFoo<T, Constant>(\n  data: T,\n  c: Constant,\n): SillyFoo<T, Constant>;\ndeclare function sillyFoo<T, Constant>(\n  c: Constant,\n): (data: T) => SillyFoo<T, Constant>;\n    "},
 		{Code: "\nconst f = <T,>(setValue: (v: T) => void, getValue: () => NoInfer<T>) => {};\n    "},
 		{Code: "\nconst f = <T,>(\n  setValue: (v: T) => NoInfer<T>,\n  getValue: (v: NoInfer<T>) => NoInfer<T>,\n) => {};\n    "},
+		{Code: `
+type Pair<T> = [T, T];
+declare function makePair<K, T>(kind: K): K extends string ? Pair<T> : never;
+`},
+		{Code: `
+type Pair<T> = [T, T];
+declare function makePair<K, T>(kind: K): K extends string ? never : Pair<T>;
+`},
+		{Code: `
+type Pair<T> = [T, T];
+declare function makePair<K, T>(kind: K): K extends string ? Pair<(T)> : never;
+`},
+		{Code: `
+type Outcome<T, E> = { value: T } | { error: E };
+type Flatten<R> = R extends Outcome<infer T, infer E> ? Outcome<T, E> : never;
+declare function flatten<T, E extends Error>(value: T): T extends Outcome<unknown, Error>
+  ? Flatten<Outcome<T, E>>
+  : T;
+`},
+		{Code: "declare function makeQualifiedArray<T>(): globalThis.Array<T>;"},
+		{Code: `
+export {};
+type Array<T> = [T, T];
+declare function makePair<K, T>(kind: K): K extends string ? Array<T> : never;
+`},
+		{Code: `
+export {};
+type ReadonlyArray<T> = readonly [T, T];
+declare function makePair<K, T>(kind: K): K extends string ? ReadonlyArray<T> : never;
+`},
 	}, []rule_tester.InvalidTestCase{
 		{Code: "const func = <T,>(param: T) => null;", Errors: []rule_tester.InvalidTestCaseError{{MessageId: "sole", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "replaceUsagesWithConstraint", Output: "const func = (param: unknown) => null;"}}}}},
 		{Code: "const func = <T,>(param: [T]) => null;", Errors: []rule_tester.InvalidTestCaseError{{MessageId: "sole", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "replaceUsagesWithConstraint", Output: "const func = (param: [unknown]) => null;"}}}}},
@@ -176,5 +206,20 @@ func TestNoUnnecessaryTypeParameters(t *testing.T) {
 		{Code: "\ntype A = string;\ntype B = string;\ntype C = string;\ndeclare function f<T extends A | B>(): T & C;\n      ", Errors: []rule_tester.InvalidTestCaseError{{MessageId: "sole", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "replaceUsagesWithConstraint", Output: "\ntype A = string;\ntype B = string;\ntype C = string;\ndeclare function f(): (A | B) & C;\n      "}}}}},
 		{Code: "\ntype A = string;\ntype B = string;\ntype C = string;\ntype D = string;\ndeclare function f<T extends A extends B ? C : D>(): T | null;\n      ", Errors: []rule_tester.InvalidTestCaseError{{MessageId: "sole", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "replaceUsagesWithConstraint", Output: "\ntype A = string;\ntype B = string;\ntype C = string;\ntype D = string;\ndeclare function f(): (A extends B ? C : D) | null;\n      "}}}}},
 		{Code: "\ndeclare class C {\n  m<T>(x: { self: C; arg: T }): void;\n}\n      ", Errors: []rule_tester.InvalidTestCaseError{{MessageId: "sole", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "replaceUsagesWithConstraint", Output: "\ndeclare class C {\n  m(x: { self: C; arg: unknown }): void;\n}\n      "}}}}},
+		{Code: "declare function foo<T extends () => number>(arg: T[]): void;", Errors: []rule_tester.InvalidTestCaseError{{MessageId: "sole", Line: 1, Column: 22, EndLine: 1, EndColumn: 44, Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "replaceUsagesWithConstraint", Output: "declare function foo(arg: (() => number)[]): void;"}}}}},
+		{Code: "interface Foo { a: string; b: number; }\ndeclare function foo<T extends keyof Foo>(arg: T[]): void;", Errors: []rule_tester.InvalidTestCaseError{{MessageId: "sole", Line: 2, Column: 22, EndLine: 2, EndColumn: 41, Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "replaceUsagesWithConstraint", Output: "interface Foo { a: string; b: number; }\ndeclare function foo(arg: (keyof Foo)[]): void;"}}}}},
+		{Code: "declare function foo<T extends () => void>(arg: T | string): void;", Errors: []rule_tester.InvalidTestCaseError{{MessageId: "sole", Line: 1, Column: 22, EndLine: 1, EndColumn: 42, Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "replaceUsagesWithConstraint", Output: "declare function foo(arg: (() => void) | string): void;"}}}}},
+		{Code: "interface A { x: string; shared: string; }\ninterface B { y: string; shared: string; }\ndeclare function foo<T extends A | B>(k: keyof T): void;", Errors: []rule_tester.InvalidTestCaseError{{MessageId: "sole", Line: 3, Column: 22, EndLine: 3, EndColumn: 37, Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "replaceUsagesWithConstraint", Output: "interface A { x: string; shared: string; }\ninterface B { y: string; shared: string; }\ndeclare function foo(k: keyof (A | B)): void;"}}}}},
+		{Code: "class Foo {}\ndeclare function bar<T extends new () => Foo>(arg: T[]): void;", Errors: []rule_tester.InvalidTestCaseError{{MessageId: "sole", Line: 2, Column: 22, EndLine: 2, EndColumn: 45, Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "replaceUsagesWithConstraint", Output: "class Foo {}\ndeclare function bar(arg: (new () => Foo)[]): void;"}}}}},
+		{Code: "declare function foo<T extends () => Promise<string>>(arg: T extends () => Promise<infer R> ? R : never): void;", Errors: []rule_tester.InvalidTestCaseError{{MessageId: "sole", Line: 1, Column: 22, EndLine: 1, EndColumn: 53, Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "replaceUsagesWithConstraint", Output: "declare function foo(arg: (() => Promise<string>) extends () => Promise<infer R> ? R : never): void;"}}}}},
+		{Code: "declare function foo<T extends readonly string[]>(x: T[]): void;", Errors: []rule_tester.InvalidTestCaseError{{MessageId: "sole", Line: 1, Column: 22, EndLine: 1, EndColumn: 49, Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "replaceUsagesWithConstraint", Output: "declare function foo(x: (readonly string[])[]): void;"}}}}},
+		{Code: "declare function foo<T extends string | number>(arg: [T?]): void;", Errors: []rule_tester.InvalidTestCaseError{{MessageId: "sole", Line: 1, Column: 22, EndLine: 1, EndColumn: 47, Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "replaceUsagesWithConstraint", Output: "declare function foo(arg: [(string | number)?]): void;"}}}}},
+		{Code: "declare function foo<T extends () => void>(arg: [T?]): void;", Errors: []rule_tester.InvalidTestCaseError{{MessageId: "sole", Line: 1, Column: 22, EndLine: 1, EndColumn: 42, Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "replaceUsagesWithConstraint", Output: "declare function foo(arg: [(() => void)?]): void;"}}}}},
+		{Code: "declare function foo<T extends string>(arg: [T?]): void;", Errors: []rule_tester.InvalidTestCaseError{{MessageId: "sole", Line: 1, Column: 22, EndLine: 1, EndColumn: 38, Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "replaceUsagesWithConstraint", Output: "declare function foo(arg: [string?]): void;"}}}}},
+		{Code: "declare function takeArray<T>(input: Array<T>): void;", Errors: []rule_tester.InvalidTestCaseError{{MessageId: "sole", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "replaceUsagesWithConstraint", Output: "declare function takeArray(input: Array<unknown>): void;"}}}}},
+		{Code: "declare function makeReadonlyArray<T>(): ReadonlyArray<T>;", Errors: []rule_tester.InvalidTestCaseError{{MessageId: "sole", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "replaceUsagesWithConstraint", Output: "declare function makeReadonlyArray(): ReadonlyArray<unknown>;"}}}}},
+		{Code: "declare function takeQualifiedArray<T>(input: globalThis.Array<T>): void;", Errors: []rule_tester.InvalidTestCaseError{{MessageId: "sole", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "replaceUsagesWithConstraint", Output: "declare function takeQualifiedArray(input: globalThis.Array<unknown>): void;"}}}}},
+		{Code: "declare function takeQualifiedReadonlyArray<T>(input: globalThis.ReadonlyArray<T>): void;", Errors: []rule_tester.InvalidTestCaseError{{MessageId: "sole", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "replaceUsagesWithConstraint", Output: "declare function takeQualifiedReadonlyArray(input: globalThis.ReadonlyArray<unknown>): void;"}}}}},
+		{Code: "declare function makeQualifiedReadonlyArray<T>(): globalThis.ReadonlyArray<T>;", Errors: []rule_tester.InvalidTestCaseError{{MessageId: "sole", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "replaceUsagesWithConstraint", Output: "declare function makeQualifiedReadonlyArray(): globalThis.ReadonlyArray<unknown>;"}}}}},
 	})
 }

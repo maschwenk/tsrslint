@@ -123,3 +123,20 @@ pub fn collect_all_call_signatures(c: &mut Checker, t: P<Type>) -> Vec<P<Signatu
     }
     c.get_signatures_of_type(t, SignatureKind::Call).to_vec()
 }
+
+/// ts_api_utils.go VisitUnionTypeParts: visits each union member, or `t` when it is not a union.
+/// A `false` from `visit` stops the iteration and makes the function return `false`.
+pub fn visit_union_type_parts(t: P<Type>, mut visit: impl FnMut(P<Type>) -> bool) -> bool {
+    if is_union_type(t) {
+        return t.types().iter().all(|&part| visit(part));
+    }
+    visit(t)
+}
+
+/// ts_api_utils.go SomeUnionTypePart: whether a union member, or `t` itself, matches.
+pub fn some_union_type_part(t: P<Type>, mut predicate: impl FnMut(P<Type>) -> bool) -> bool {
+    if is_union_type(t) {
+        return t.types().iter().any(|&part| predicate(part));
+    }
+    predicate(t)
+}

@@ -291,6 +291,27 @@
         },
         {
           "code": "\nconst f = \u003cT,\u003e(\n  setValue: (v: T) =\u003e NoInfer\u003cT\u003e,\n  getValue: (v: NoInfer\u003cT\u003e) =\u003e NoInfer\u003cT\u003e,\n) =\u003e {};\n    "
+        },
+        {
+          "code": "\ntype Pair\u003cT\u003e = [T, T];\ndeclare function makePair\u003cK, T\u003e(kind: K): K extends string ? Pair\u003cT\u003e : never;\n"
+        },
+        {
+          "code": "\ntype Pair\u003cT\u003e = [T, T];\ndeclare function makePair\u003cK, T\u003e(kind: K): K extends string ? never : Pair\u003cT\u003e;\n"
+        },
+        {
+          "code": "\ntype Pair\u003cT\u003e = [T, T];\ndeclare function makePair\u003cK, T\u003e(kind: K): K extends string ? Pair\u003c(T)\u003e : never;\n"
+        },
+        {
+          "code": "\ntype Outcome\u003cT, E\u003e = { value: T } | { error: E };\ntype Flatten\u003cR\u003e = R extends Outcome\u003cinfer T, infer E\u003e ? Outcome\u003cT, E\u003e : never;\ndeclare function flatten\u003cT, E extends Error\u003e(value: T): T extends Outcome\u003cunknown, Error\u003e\n  ? Flatten\u003cOutcome\u003cT, E\u003e\u003e\n  : T;\n"
+        },
+        {
+          "code": "declare function makeQualifiedArray\u003cT\u003e(): globalThis.Array\u003cT\u003e;"
+        },
+        {
+          "code": "\nexport {};\ntype Array\u003cT\u003e = [T, T];\ndeclare function makePair\u003cK, T\u003e(kind: K): K extends string ? Array\u003cT\u003e : never;\n"
+        },
+        {
+          "code": "\nexport {};\ntype ReadonlyArray\u003cT\u003e = readonly [T, T];\ndeclare function makePair\u003cK, T\u003e(kind: K): K extends string ? ReadonlyArray\u003cT\u003e : never;\n"
         }
       ],
       "invalid": [
@@ -1343,6 +1364,256 @@
                 {
                   "messageId": "replaceUsagesWithConstraint",
                   "output": "\ndeclare class C {\n  m(x: { self: C; arg: unknown }): void;\n}\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare function foo\u003cT extends () =\u003e number\u003e(arg: T[]): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "line": 1,
+              "column": 22,
+              "endLine": 1,
+              "endColumn": 44,
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function foo(arg: (() =\u003e number)[]): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "interface Foo { a: string; b: number; }\ndeclare function foo\u003cT extends keyof Foo\u003e(arg: T[]): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "line": 2,
+              "column": 22,
+              "endLine": 2,
+              "endColumn": 41,
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "interface Foo { a: string; b: number; }\ndeclare function foo(arg: (keyof Foo)[]): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare function foo\u003cT extends () =\u003e void\u003e(arg: T | string): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "line": 1,
+              "column": 22,
+              "endLine": 1,
+              "endColumn": 42,
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function foo(arg: (() =\u003e void) | string): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "interface A { x: string; shared: string; }\ninterface B { y: string; shared: string; }\ndeclare function foo\u003cT extends A | B\u003e(k: keyof T): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "line": 3,
+              "column": 22,
+              "endLine": 3,
+              "endColumn": 37,
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "interface A { x: string; shared: string; }\ninterface B { y: string; shared: string; }\ndeclare function foo(k: keyof (A | B)): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "class Foo {}\ndeclare function bar\u003cT extends new () =\u003e Foo\u003e(arg: T[]): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "line": 2,
+              "column": 22,
+              "endLine": 2,
+              "endColumn": 45,
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "class Foo {}\ndeclare function bar(arg: (new () =\u003e Foo)[]): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare function foo\u003cT extends () =\u003e Promise\u003cstring\u003e\u003e(arg: T extends () =\u003e Promise\u003cinfer R\u003e ? R : never): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "line": 1,
+              "column": 22,
+              "endLine": 1,
+              "endColumn": 53,
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function foo(arg: (() =\u003e Promise\u003cstring\u003e) extends () =\u003e Promise\u003cinfer R\u003e ? R : never): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare function foo\u003cT extends readonly string[]\u003e(x: T[]): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "line": 1,
+              "column": 22,
+              "endLine": 1,
+              "endColumn": 49,
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function foo(x: (readonly string[])[]): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare function foo\u003cT extends string | number\u003e(arg: [T?]): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "line": 1,
+              "column": 22,
+              "endLine": 1,
+              "endColumn": 47,
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function foo(arg: [(string | number)?]): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare function foo\u003cT extends () =\u003e void\u003e(arg: [T?]): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "line": 1,
+              "column": 22,
+              "endLine": 1,
+              "endColumn": 42,
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function foo(arg: [(() =\u003e void)?]): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare function foo\u003cT extends string\u003e(arg: [T?]): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "line": 1,
+              "column": 22,
+              "endLine": 1,
+              "endColumn": 38,
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function foo(arg: [string?]): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare function takeArray\u003cT\u003e(input: Array\u003cT\u003e): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function takeArray(input: Array\u003cunknown\u003e): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare function makeReadonlyArray\u003cT\u003e(): ReadonlyArray\u003cT\u003e;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function makeReadonlyArray(): ReadonlyArray\u003cunknown\u003e;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare function takeQualifiedArray\u003cT\u003e(input: globalThis.Array\u003cT\u003e): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function takeQualifiedArray(input: globalThis.Array\u003cunknown\u003e): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare function takeQualifiedReadonlyArray\u003cT\u003e(input: globalThis.ReadonlyArray\u003cT\u003e): void;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function takeQualifiedReadonlyArray(input: globalThis.ReadonlyArray\u003cunknown\u003e): void;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare function makeQualifiedReadonlyArray\u003cT\u003e(): globalThis.ReadonlyArray\u003cT\u003e;",
+          "errors": [
+            {
+              "messageId": "sole",
+              "suggestions": [
+                {
+                  "messageId": "replaceUsagesWithConstraint",
+                  "output": "declare function makeQualifiedReadonlyArray(): globalThis.ReadonlyArray\u003cunknown\u003e;"
                 }
               ]
             }

@@ -44,22 +44,33 @@ fn find_type_parameter_index(type_parameters: &[P<Node>], target: P<Node>) -> Op
     type_parameters.iter().position(|&t| t == target)
 }
 
-fn is_complex_constraint(node: Option<P<Node>>) -> bool {
+fn is_weak_precedence_constraint(node: Option<P<Node>>) -> bool {
     node.is_some_and(|node| {
         matches!(
             node.kind(),
-            Kind::UnionType | Kind::IntersectionType | Kind::ConditionalType
+            Kind::UnionType
+                | Kind::IntersectionType
+                | Kind::ConditionalType
+                | Kind::TypeOperator
+                | Kind::FunctionType
+                | Kind::ConstructorType
         )
     })
 }
 
-fn has_matching_ancestor_type(reference: P<Node>) -> bool {
+fn is_weak_precedence_type_parent(reference: P<Node>) -> bool {
     let Some(grandparent) = reference.parent().and_then(|p| p.parent()) else {
         return false;
     };
     matches!(
         grandparent.kind(),
-        Kind::ArrayType | Kind::IndexedAccessType | Kind::IntersectionType | Kind::UnionType
+        Kind::ArrayType
+            | Kind::IndexedAccessType
+            | Kind::IntersectionType
+            | Kind::UnionType
+            | Kind::ConditionalType
+            | Kind::TypeOperator
+            | Kind::OptionalType
     )
 }
 
@@ -276,6 +287,7 @@ fn get_start_of_body(node: P<Node>) -> i32 {
 }
 
 fn is_type_parameter_repeated_in_ast(
+    ctx: &mut Ctx,
     type_parameter: P<Node>,
     references: &[P<Node>],
     start_of_body: i32,
@@ -289,6 +301,36 @@ fn is_type_parameter_repeated_in_ast(
         // References in the body don't count for fast-path usage checks.
         if pos_i32(reference.pos()) > start_of_body {
             continue;
+        }
+        // A type argument can be reused by the generic type even when it occurs
+        // only once in this signature. Leave arrays to the type-aware check.
+        if let Some(mut type_argument) = reference
+            .parent()
+            .filter(|&p| ast::is_type_reference_node(p))
+        {
+            while let Some(parent) = type_argument
+                .parent()
+                .filter(|&p| ast::is_parenthesized_type_node(p))
+            {
+                type_argument = parent;
+            }
+            if let Some(parent) = type_argument.parent() {
+                if matches!(
+                    parent.kind(),
+                    Kind::TypeReference
+                        | Kind::ExpressionWithTypeArguments
+                        | Kind::ImportType
+                        | Kind::TypeQuery
+                ) {
+                    let is_array = ast::is_type_reference_node(parent) && {
+                        let t = ctx.checker.get_type_at_location(parent);
+                        ctx.checker.is_array_type(t)
+                    };
+                    if !is_array && parent.type_arguments().contains(&type_argument) {
+                        return true;
+                    }
+                }
+            }
         }
         total += 1;
         if total >= 2 {
@@ -603,7 +645,7 @@ fn check_no_unnecessary_type_parameters_node(ctx: &mut Ctx, node: P<Node>, descr
             type_parameter_symbol,
             type_parameter_name_node,
         );
-        if is_type_parameter_repeated_in_ast(type_parameter, &references, start_of_body) {
+        if is_type_parameter_repeated_in_ast(ctx, type_parameter, &references, start_of_body) {
             continue;
         }
         candidates.push(CandidateTypeParameter {
@@ -656,10 +698,12 @@ fn check_no_unnecessary_type_parameters_node(ctx: &mut Ctx, node: P<Node>, descr
                     continue;
                 }
                 let mut replacement = constraint_text.clone();
-                if is_complex_constraint(constraint_node) && has_matching_ancestor_type(reference) {
+                if is_weak_precedence_constraint(constraint_node)
+                    && is_weak_precedence_type_parent(reference)
+                {
                     replacement = format!("({replacement})");
                 }
-                fixes.push(ctx.fix_replace(reference, replacement));
+                fixes.push(ctx.fix_replace(reference.parent().unwrap(), replacement));
             }
             fixes.push(
                 ctx.fix_remove_range(pos_i32(removal_range.pos()), pos_i32(removal_range.end())),

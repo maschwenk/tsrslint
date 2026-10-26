@@ -111,6 +111,21 @@
         },
         {
           "code": "(a: string | undefined) =\u003e {};"
+        },
+        {
+          "code": "export class A { constructor(readonly name?: string | undefined) {} }"
+        },
+        {
+          "code": "class A { constructor(public name?: string | undefined) {} }"
+        },
+        {
+          "code": "class A { constructor(protected name?: string | undefined) {} }"
+        },
+        {
+          "code": "class A { constructor(private name?: string | undefined) {} }"
+        },
+        {
+          "code": "\ntype U = undefined;\nclass A { constructor(private readonly name?: string | U) {} }\n"
         }
       ],
       "invalid": [
@@ -725,6 +740,42 @@
           "errors": [
             {
               "messageId": "unnecessary",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "class A { constructor(name?: string | undefined) {} }",
+          "output": [
+            "class A { constructor(name?: string  ) {} }"
+          ],
+          "errors": [
+            {
+              "messageId": "unnecessary",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "class A { constructor(readonly name?: string | string | undefined) {} }",
+          "output": [
+            "class A { constructor(readonly name?: string   | undefined) {} }"
+          ],
+          "errors": [
+            {
+              "messageId": "duplicate",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "class A { constructor(readonly name?: string | undefined | undefined) {} }",
+          "output": [
+            "class A { constructor(readonly name?: string | undefined  ) {} }"
+          ],
+          "errors": [
+            {
+              "messageId": "duplicate",
               "suggestions": []
             }
           ]

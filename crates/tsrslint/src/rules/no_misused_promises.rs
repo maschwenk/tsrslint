@@ -188,9 +188,7 @@ fn any_signature_is_thenable_type(ctx: &mut Ctx, node: P<Node>, t: P<Type>) -> b
 fn returns_thenable(ctx: &mut Ctx, node: P<Node>) -> bool {
     let at = ctx.checker.get_type_at_location(node);
     let t = ctx.checker.get_apparent_type(at);
-    utils::union_type_parts(t)
-        .into_iter()
-        .any(|t| any_signature_is_thenable_type(ctx, node, t))
+    utils::some_union_type_part(t, |t| any_signature_is_thenable_type(ctx, node, t))
 }
 
 fn local_expectation_for_declaration(
@@ -379,8 +377,8 @@ fn get_member_if_exists(ctx: &mut Ctx, t: P<Type>, member_name: &str) -> Option<
 
 fn is_void_returning_function_type(ctx: &mut Ctx, node: P<Node>, t: P<Type>) -> bool {
     let mut had_void_return = false;
-    for t in utils::union_type_parts(t) {
-        for &sig in utils::get_call_signatures(ctx.checker, t) {
+    if !utils::visit_union_type_parts(t, |part| {
+        for &sig in utils::get_call_signatures(ctx.checker, part) {
             let return_type = ctx.checker.get_return_type_of_signature(sig);
             // If a certain positional argument accepts both thenable and void returns, a
             // promise-returning function is valid.
@@ -390,6 +388,9 @@ fn is_void_returning_function_type(ctx: &mut Ctx, node: P<Node>, t: P<Type>) -> 
             had_void_return =
                 had_void_return || utils::is_type_flag_set(return_type, TypeFlags::Void);
         }
+        true
+    }) {
+        return false;
     }
     had_void_return
 }
@@ -460,9 +461,7 @@ fn check_spread(ctx: &mut Ctx, node: P<Node>) {
 }
 
 fn is_thenable_returning_function_type(ctx: &mut Ctx, node: P<Node>, t: P<Type>) -> bool {
-    utils::union_type_parts(t)
-        .into_iter()
-        .any(|t| any_signature_is_thenable_type(ctx, node, t))
+    utils::some_union_type_part(t, |t| any_signature_is_thenable_type(ctx, node, t))
 }
 
 struct ArgumentState {
@@ -527,7 +526,7 @@ fn void_function_arguments(
     };
     let callee = node.expression().unwrap();
     let t = ctx.checker.get_type_at_location(callee);
-    for sub_type in utils::union_type_parts(t) {
+    utils::visit_union_type_parts(t, |sub_type| {
         let signatures = if ast::is_call_expression(node) {
             utils::get_call_signatures(ctx.checker, sub_type)
         } else {
@@ -583,7 +582,8 @@ fn void_function_arguments(
                 }
             }
         }
-    }
+        true
+    });
     let ArgumentState {
         thenable_return_indices,
         mut void_return_indices,
@@ -904,7 +904,9 @@ impl RuleVisitor for Visitor {
     fn visit(&mut self, ctx: &mut Ctx, _l: Listener, node: P<Node>) {
         match node.kind() {
             Kind::BinaryExpression => {
-                if self.o.checks_conditionals {
+                if self.o.checks_conditionals
+                    && ast::is_logical_or_coalescing_binary_expression(node)
+                {
                     self.check_conditional(ctx, Some(node), false);
                 }
                 if self.o.variables && ast::is_assignment_expression(node, false) {

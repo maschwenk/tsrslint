@@ -58,6 +58,7 @@ impl RuleVisitor for Visitor {
         if self.o.ignore_string_arrays && ctx.checker.is_array_or_tuple_type(callee_obj_type) {
             let type_arguments = ctx.checker.get_type_arguments(callee_obj_type);
             if type_arguments.iter().all(|&t| {
+                let t = ctx.checker.get_base_constraint_of_type(t).unwrap_or(t);
                 utils::is_type_flag_set(t, TypeFlags::String)
                     || utils::get_type_name(ctx.checker, t) == "string"
             }) {
@@ -66,7 +67,7 @@ impl RuleVisitor for Visitor {
         }
         if utils::union_type_parts(callee_obj_type)
             .into_iter()
-            .all(|t| ctx.checker.is_array_type(t))
+            .all(|t| ctx.checker.is_array_type(t) || t.is_tuple_type())
         {
             ctx.report_node(node, build_require_compare_message());
         }

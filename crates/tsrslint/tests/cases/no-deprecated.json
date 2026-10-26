@@ -356,6 +356,30 @@
         },
         {
           "code": "\n\t\t\tinterface NavItemOptions { text: string; icon?: string }\n\t\t\tinterface AutoLinkOptions extends NavItemOptions { link: string }\n\t\t\tinterface SidebarGroupOptions extends NavItemOptions {\n\t\t\t\tprefix?: string;\n\t\t\t\tlink?: string;\n\t\t\t\tchildren: SidebarItemOptions[];\n\t\t\t}\n\t\t\tinterface SidebarStructureOptions extends NavItemOptions {\n\t\t\t\tprefix?: string;\n\t\t\t\tlink?: string;\n\t\t\t\tchildren: \"structure\";\n\t\t\t}\n\t\t\ttype SidebarItemOptions = AutoLinkOptions | SidebarGroupOptions | SidebarStructureOptions | string;\n\t\t\ttype SidebarArrayOptions = SidebarItemOptions[];\n\t\t\ttype SidebarObjectOptions = Record\u003cstring, SidebarArrayOptions | \"structure\" | false\u003e;\n\t\t\ttype SidebarOptions = SidebarArrayOptions | SidebarObjectOptions | \"structure\" | false;\n\t\t\tdeclare const sidebar: (options: SidebarOptions) =\u003e SidebarOptions;\n\n\t\t\tsidebar({\n\t\t\t\t\"/\": [{\n\t\t\t\t\ttext: \"Demo\",\n\t\t\t\t\tprefix: \"demo/\",\n\t\t\t\t\tlink: \"demo/\",\n\t\t\t\t\tchildren: \"structure\",\n\t\t\t\t}],\n\t\t\t});\n\t\t"
+        },
+        {
+          "code": "import { normalVariable } from './release-port-normal';\nvoid { normalVariable };",
+          "files": {
+            "release-port-normal.ts": "export const normalVariable = 1;"
+          }
+        },
+        {
+          "code": "export { x } from './file';",
+          "fileName": "file.ts"
+        },
+        {
+          "code": "export { default } from './circular-reexport';",
+          "fileName": "file.ts",
+          "files": {
+            "circular-reexport.ts": "export { default } from './file';"
+          }
+        },
+        {
+          "code": "import value from './circular-import-a';\nvoid value;",
+          "files": {
+            "circular-import-a.ts": "import value from './circular-import-b';\nexport default value;",
+            "circular-import-b.ts": "import value from './circular-import-a';\nexport default value;"
+          }
         }
       ],
       "invalid": [
@@ -427,7 +451,7 @@
           "code": "\n        /** @deprecated Reason. */ const a = { b: 1 };\n        const c = a;\n      ",
           "errors": [
             {
-              "messageId": "deprecated",
+              "messageId": "deprecatedWithReason",
               "suggestions": []
             }
           ]
@@ -1817,6 +1841,298 @@
               "line": 9,
               "column": 18,
               "endColumn": 23,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "import { deprecatedVariable } from './deprecated';\nvoid { deprecatedVariable };",
+          "errors": [
+            {
+              "messageId": "deprecated",
+              "line": 2,
+              "column": 8,
+              "endColumn": 26,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "import { normalVariable } from './deprecated';\nvoid { normalVariable };",
+          "errors": [
+            {
+              "messageId": "deprecated",
+              "line": 2,
+              "column": 8,
+              "endColumn": 22,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "import { deprecatedVariable } from './deprecated';\ndeprecatedVariable;",
+          "errors": [
+            {
+              "messageId": "deprecated",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "/** @deprecated Use replacementConst instead. */\nconst oldConst = 1;\n/** @deprecated Use replacementLet instead. */\nlet oldLet: number = 1;\n/** @deprecated Use replacementVar instead. */\nvar oldVar = 1;\noldConst;\noldLet;\noldVar;",
+          "errors": [
+            {
+              "messageId": "deprecatedWithReason",
+              "line": 7,
+              "suggestions": []
+            },
+            {
+              "messageId": "deprecatedWithReason",
+              "line": 8,
+              "suggestions": []
+            },
+            {
+              "messageId": "deprecatedWithReason",
+              "line": 9,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "import { constA, constMultiline, constTyped, letA, constReexported, constInline } from './variable-reasons';\nconstA;\nconstMultiline();\nconstTyped;\nletA;\nconstReexported;\nconstInline;",
+          "files": {
+            "variable-reasons.ts": "/** @deprecated reason for constA */\nexport const constA = 1;\n/**\n * @deprecated reason for constMultiline\n */\nexport const constMultiline = () =\u003e 1;\n/** @deprecated reason for constTyped */\nexport const constTyped: number = 1;\n/** @deprecated reason for letA */\nexport let letA = 1;\n/** @deprecated reason for constReexported */\nconst constReexported = 1;\nexport { constReexported };\nexport const /** @deprecated reason for constInline */ constInline = 1;"
+          },
+          "errors": [
+            {
+              "messageId": "deprecatedWithReason",
+              "line": 2,
+              "suggestions": []
+            },
+            {
+              "messageId": "deprecatedWithReason",
+              "line": 3,
+              "suggestions": []
+            },
+            {
+              "messageId": "deprecatedWithReason",
+              "line": 4,
+              "suggestions": []
+            },
+            {
+              "messageId": "deprecatedWithReason",
+              "line": 5,
+              "suggestions": []
+            },
+            {
+              "messageId": "deprecatedWithReason",
+              "line": 6,
+              "suggestions": []
+            },
+            {
+              "messageId": "deprecatedWithReason",
+              "line": 7,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "/** @deprecated Statement reason. */\nconst /** @deprecated Inline reason. */ oldValue = 1;\noldValue;",
+          "errors": [
+            {
+              "messageId": "deprecatedWithReason",
+              "line": 3,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "/** @deprecated Statement reason. */\nconst /** @deprecated */ oldValue = 1;\noldValue;",
+          "errors": [
+            {
+              "messageId": "deprecated",
+              "line": 3,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "import value from './circular-deprecated';\nexport default value;\nvalue;",
+          "fileName": "file.ts",
+          "files": {
+            "circular-deprecated.ts": "import value from './file';\n/** @deprecated */\nexport default value;"
+          },
+          "errors": [
+            {
+              "messageId": "deprecated",
+              "line": 2,
+              "suggestions": []
+            },
+            {
+              "messageId": "deprecated",
+              "line": 3,
+              "suggestions": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tsconfig": "tsconfig.minimal.json",
+      "valid": [
+        {
+          "code": "import { deprecatedValue } from './deprecated';\nvoid { deprecatedValue };",
+          "options": {
+            "allow": [
+              {
+                "name": [
+                  "deprecatedValue"
+                ],
+                "path": "./deprecated.ts",
+                "from": "file"
+              }
+            ]
+          },
+          "files": {
+            "deprecated.ts": "/** @deprecated */\nexport const deprecatedValue = 1;"
+          }
+        }
+      ],
+      "invalid": [
+        {
+          "code": "import { deprecatedValue } from './deprecated';\nvoid { deprecatedValue };",
+          "options": {
+            "allow": [
+              {
+                "path": "./file.ts",
+                "from": "file",
+                "name": [
+                  "deprecatedValue"
+                ]
+              }
+            ]
+          },
+          "files": {
+            "deprecated.ts": "/** @deprecated */\nexport const deprecatedValue = 1;"
+          },
+          "errors": [
+            {
+              "messageId": "deprecated",
+              "line": 2,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "import { deprecatedValue } from './deprecated';\nvoid { deprecatedValue };",
+          "options": {
+            "allow": [
+              {
+                "from": "file",
+                "name": [
+                  "deprecatedValue"
+                ],
+                "path": "./missing.ts"
+              }
+            ]
+          },
+          "files": {
+            "deprecated.ts": "/** @deprecated */\nexport const deprecatedValue = 1;"
+          },
+          "errors": [
+            {
+              "messageId": "deprecated",
+              "line": 2,
+              "suggestions": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tsconfig": "tsconfig.minimal.json",
+      "valid": [
+        {
+          "code": "async function probe() {\n  const { deprecatedValue } = await import('./deprecated');\n}",
+          "options": {
+            "allow": [
+              {
+                "from": "file",
+                "name": [
+                  "deprecatedValue"
+                ],
+                "path": "./deprecated.ts"
+              }
+            ]
+          },
+          "files": {
+            "deprecated.ts": "/** @deprecated */\nexport const deprecatedValue = 1;"
+          }
+        },
+        {
+          "code": "async function probe() {\n  const { deprecatedValue: renamed } = await import('./deprecated');\n}",
+          "options": {
+            "allow": [
+              {
+                "from": "file",
+                "name": [
+                  "deprecatedValue",
+                  "renamed"
+                ],
+                "path": "./deprecated.ts"
+              }
+            ]
+          },
+          "files": {
+            "deprecated.ts": "/** @deprecated */\nexport const deprecatedValue = 1;"
+          }
+        }
+      ],
+      "invalid": [
+        {
+          "code": "async function probe() {\n  const { deprecatedValue } = await import('./deprecated');\n}",
+          "options": {
+            "allow": [
+              {
+                "from": "file",
+                "name": [
+                  "deprecatedValue"
+                ],
+                "path": "./file.ts"
+              }
+            ]
+          },
+          "files": {
+            "deprecated.ts": "/** @deprecated */\nexport const deprecatedValue = 1;"
+          },
+          "errors": [
+            {
+              "messageId": "deprecated",
+              "line": 2,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "async function probe() {\n  const { deprecatedValue } = await import('./deprecated');\n}",
+          "options": {
+            "allow": [
+              {
+                "from": "file",
+                "name": [
+                  "deprecatedValue"
+                ],
+                "path": "./missing.ts"
+              }
+            ]
+          },
+          "files": {
+            "deprecated.ts": "/** @deprecated */\nexport const deprecatedValue = 1;"
+          },
+          "errors": [
+            {
+              "messageId": "deprecated",
+              "line": 2,
               "suggestions": []
             }
           ]

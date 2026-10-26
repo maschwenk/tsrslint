@@ -24,7 +24,6 @@ func buildPreferOptionalSyntaxMessage() rule.RuleMessage {
 	return rule.RuleMessage{
 		Id:          "preferOptionalSyntax",
 		Description: "Using `= undefined` to make a parameter optional adds unnecessary runtime logic.",
-		Help:        "Use the `?` optional syntax instead.",
 	}
 }
 
@@ -47,7 +46,14 @@ func buildUselessDefaultAssignmentWithTypeMessage(assignmentType string, typeTex
 func buildRemoveDefaultAssignmentSuggestionMessage() rule.RuleMessage {
 	return rule.RuleMessage{
 		Id:          "removeDefaultAssignment",
-		Description: "Remove the default assignment.",
+		Description: "Remove the default value.",
+	}
+}
+
+func buildUseOptionalSyntaxSuggestionMessage() rule.RuleMessage {
+	return rule.RuleMessage{
+		Id:          "useOptionalSyntax",
+		Description: "Use the `?` optional syntax instead.",
 	}
 }
 
@@ -390,8 +396,11 @@ var NoUselessDefaultAssignmentRule = rule.Rule{
 			if initializer == nil {
 				return
 			}
-			ctx.ReportNodeWithFixes(initializer, buildUselessUndefinedMessage(getPluralAssignmentType(assignmentType)), func() []rule.RuleFix {
-				return []rule.RuleFix{buildRemoveDefaultFix(node)}
+			ctx.ReportNodeWithSuggestions(initializer, buildUselessUndefinedMessage(getPluralAssignmentType(assignmentType)), func() []rule.RuleSuggestion {
+				return []rule.RuleSuggestion{{
+					Message:  buildRemoveDefaultAssignmentSuggestionMessage(),
+					FixesArr: []rule.RuleFix{buildRemoveDefaultFix(node)},
+				}}
 			})
 		}
 
@@ -401,7 +410,7 @@ var NoUselessDefaultAssignmentRule = rule.Rule{
 				return
 			}
 
-			ctx.ReportNodeWithFixes(initializer, buildPreferOptionalSyntaxMessage(), func() []rule.RuleFix {
+			ctx.ReportNodeWithSuggestions(initializer, buildPreferOptionalSyntaxMessage(), func() []rule.RuleSuggestion {
 				fixes := []rule.RuleFix{buildRemoveDefaultFix(node)}
 
 				if ast.IsParameterDeclaration(node) {
@@ -412,7 +421,10 @@ var NoUselessDefaultAssignmentRule = rule.Rule{
 					}
 				}
 
-				return fixes
+				return []rule.RuleSuggestion{{
+					Message:  buildUseOptionalSyntaxSuggestionMessage(),
+					FixesArr: fixes,
+				}}
 			})
 		}
 
@@ -511,8 +523,28 @@ var NoUselessDefaultAssignmentRule = rule.Rule{
 					return
 				}
 
-				if !canBeUndefined(tupleArgs[elementIndex]) {
-					reportUselessDefaultAssignment(node, "property", tupleArgs[elementIndex])
+				tupleTarget := sourceType.Target().AsTupleType()
+				if elementIndex >= checker.TupleType_minLength(tupleTarget) {
+					return
+				}
+
+				elementTypes := tupleArgs[elementIndex : elementIndex+1]
+				if elementIndex >= tupleTarget.FixedLength() {
+					// A trailing element cannot reach this position if too many required elements precede it.
+					end := tupleTarget.FixedLength()
+					position := end
+					elementInfos := tupleTarget.ElementInfos()
+					for end < len(tupleArgs) && position <= elementIndex {
+						if elementInfos[end].TupleElementFlags()&checker.ElementFlagsRequired != 0 {
+							position++
+						}
+						end++
+					}
+					elementTypes = tupleArgs[tupleTarget.FixedLength():end]
+				}
+				if !slices.ContainsFunc(elementTypes, canBeUndefined) {
+					elementType := checker.Checker_getUnionTypeEx(ctx.TypeChecker, elementTypes, checker.UnionReductionLiteral, nil, nil)
+					reportUselessDefaultAssignment(node, "property", elementType)
 				}
 			}
 		}

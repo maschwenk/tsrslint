@@ -1,5 +1,5 @@
 {
-  "source": "only_throw_error_test.go",
+  "source": "only_throw_error_test.go,package_specifier_test.go",
   "groups": [
     {
       "tsconfig": "tsconfig.minimal.json",
@@ -735,6 +735,526 @@
           "files": {
             "node_modules/errors-like/index.d.ts": "\nexport interface ErrorLike {\n  message: string;\n}\nexport function createError(): ErrorLike;\n",
             "node_modules/errors-like/package.json": "{\n  \"name\": \"errors-like\",\n  \"version\": \"1.0.0\",\n  \"types\": \"index.d.ts\"\n}"
+          },
+          "errors": [
+            {
+              "messageId": "object",
+              "suggestions": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tsconfig": "tsconfig.minimal.json",
+      "valid": [
+        {
+          "code": "import type { ErrorLike } from \"@angular/core\"; declare const error: ErrorLike; throw error;",
+          "options": {
+            "allow": [
+              {
+                "from": "package",
+                "name": [
+                  "ErrorLike"
+                ],
+                "package": "@angular"
+              }
+            ],
+            "allowRethrowing": false,
+            "allowThrowingAny": false,
+            "allowThrowingUnknown": false
+          },
+          "files": {
+            "node_modules/@angular/core/lib/index.d.ts": "export interface ErrorLike { message: string }",
+            "node_modules/@angular/core/package.json": "{\"name\": \"@angular/core\", \"version\": \"1.0.0\", \"types\": \"lib/index.d.ts\"}"
+          }
+        },
+        {
+          "code": "import type { ErrorLike } from \"@angular/core\"; declare const error: ErrorLike; throw error;",
+          "options": {
+            "allow": [
+              {
+                "from": "package",
+                "name": [
+                  "ErrorLike"
+                ],
+                "package": "@angular/core"
+              }
+            ],
+            "allowRethrowing": false,
+            "allowThrowingAny": false,
+            "allowThrowingUnknown": false
+          },
+          "files": {
+            "node_modules/@angular/core/lib/index.d.ts": "export interface ErrorLike { message: string }",
+            "node_modules/@angular/core/package.json": "{\"name\": \"@angular/core\", \"version\": \"1.0.0\", \"types\": \"lib/index.d.ts\"}"
+          }
+        },
+        {
+          "code": "import type { ErrorLike } from \"@babel/code-frame\"; declare const error: ErrorLike; throw error;",
+          "options": {
+            "allow": [
+              {
+                "from": "package",
+                "name": [
+                  "ErrorLike"
+                ],
+                "package": "@babel/code-frame"
+              }
+            ],
+            "allowRethrowing": false,
+            "allowThrowingAny": false,
+            "allowThrowingUnknown": false
+          },
+          "files": {
+            "node_modules/@types/babel__code-frame/lib/index.d.ts": "export interface ErrorLike { message: string }",
+            "node_modules/@types/babel__code-frame/package.json": "{\"name\": \"@types/babel__code-frame\", \"version\": \"1.0.0\", \"types\": \"lib/index.d.ts\"}"
+          }
+        },
+        {
+          "code": "import type { ErrorLike } from \"@babel/code-frame\"; declare const error: ErrorLike; throw error;",
+          "options": {
+            "allow": [
+              {
+                "from": "package",
+                "name": [
+                  "ErrorLike"
+                ],
+                "package": "@types/babel__code-frame"
+              }
+            ],
+            "allowRethrowing": false,
+            "allowThrowingAny": false,
+            "allowThrowingUnknown": false
+          },
+          "files": {
+            "node_modules/@types/babel__code-frame/lib/index.d.ts": "export interface ErrorLike { message: string }",
+            "node_modules/@types/babel__code-frame/package.json": "{\"name\": \"@types/babel__code-frame\", \"version\": \"1.0.0\", \"types\": \"lib/index.d.ts\"}"
+          }
+        },
+        {
+          "code": "import type { ErrorLike } from \"semver\"; declare const error: ErrorLike; throw error;",
+          "options": {
+            "allow": [
+              {
+                "from": "package",
+                "name": [
+                  "ErrorLike"
+                ],
+                "package": "@types/semver"
+              }
+            ],
+            "allowRethrowing": false,
+            "allowThrowingAny": false,
+            "allowThrowingUnknown": false
+          },
+          "files": {
+            "node_modules/@types/semver/lib/index.d.ts": "export interface ErrorLike { message: string }",
+            "node_modules/@types/semver/package.json": "{\"name\": \"@types/semver\", \"version\": \"1.0.0\", \"types\": \"lib/index.d.ts\"}"
+          }
+        },
+        {
+          "code": "import type { ErrorLike } from \"semver\"; declare const error: ErrorLike; throw error;",
+          "options": {
+            "allow": [
+              {
+                "name": [
+                  "ErrorLike"
+                ],
+                "package": "semver",
+                "from": "package"
+              }
+            ],
+            "allowRethrowing": false,
+            "allowThrowingAny": false,
+            "allowThrowingUnknown": false
+          },
+          "files": {
+            "node_modules/@types/semver/lib/index.d.ts": "export interface ErrorLike { message: string }",
+            "node_modules/@types/semver/package.json": "{\"name\": \"@types/semver\", \"version\": \"1.0.0\", \"types\": \"lib/index.d.ts\"}"
+          }
+        },
+        {
+          "code": "import type { ErrorLike } from \"s.mver\"; declare const error: ErrorLike; throw error;",
+          "options": {
+            "allow": [
+              {
+                "from": "package",
+                "name": [
+                  "ErrorLike"
+                ],
+                "package": "s.mver"
+              }
+            ],
+            "allowRethrowing": false,
+            "allowThrowingAny": false,
+            "allowThrowingUnknown": false
+          },
+          "files": {
+            "node_modules/s.mver/lib/index.d.ts": "export interface ErrorLike { message: string }",
+            "node_modules/s.mver/package.json": "{\"name\": \"s.mver\", \"version\": \"1.0.0\", \"types\": \"lib/index.d.ts\"}"
+          }
+        },
+        {
+          "code": "import type { ErrorLike } from \"semver\"; declare const error: ErrorLike; throw error;",
+          "options": {
+            "allow": [
+              {
+                "from": "package",
+                "name": [
+                  "ErrorLike"
+                ],
+                "package": "semver"
+              }
+            ],
+            "allowRethrowing": false,
+            "allowThrowingAny": false,
+            "allowThrowingUnknown": false
+          },
+          "files": {
+            "node_modules/semver/lib/index.d.ts": "export interface ErrorLike { message: string }",
+            "node_modules/semver/package.json": "{\"name\": \"semver\", \"version\": \"1.0.0\", \"types\": \"lib/index.d.ts\"}"
+          }
+        },
+        {
+          "code": "import type { ErrorLike } from \"typescript\"; declare const error: ErrorLike; throw error;",
+          "options": {
+            "allow": [
+              {
+                "package": "typescript",
+                "from": "package",
+                "name": [
+                  "ErrorLike"
+                ]
+              }
+            ],
+            "allowRethrowing": false,
+            "allowThrowingAny": false,
+            "allowThrowingUnknown": false
+          },
+          "files": {
+            "node_modules/typescript/lib/index.d.ts": "export interface ErrorLike { message: string }",
+            "node_modules/typescript/package.json": "{\"name\": \"typescript\", \"version\": \"1.0.0\", \"types\": \"lib/index.d.ts\"}"
+          }
+        }
+      ],
+      "invalid": [
+        {
+          "code": "import type { ErrorLike } from \"@angular/core-extra\"; declare const error: ErrorLike; throw error;",
+          "options": {
+            "allow": [
+              {
+                "from": "package",
+                "name": [
+                  "ErrorLike"
+                ],
+                "package": "@angular/core"
+              }
+            ],
+            "allowRethrowing": false,
+            "allowThrowingAny": false,
+            "allowThrowingUnknown": false
+          },
+          "files": {
+            "node_modules/@angular/core-extra/lib/index.d.ts": "export interface ErrorLike { message: string }",
+            "node_modules/@angular/core-extra/package.json": "{\"name\": \"@angular/core-extra\", \"version\": \"1.0.0\", \"types\": \"lib/index.d.ts\"}"
+          },
+          "errors": [
+            {
+              "messageId": "object",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "import type { ErrorLike } from \"@angularlol/core\"; declare const error: ErrorLike; throw error;",
+          "options": {
+            "allow": [
+              {
+                "from": "package",
+                "name": [
+                  "ErrorLike"
+                ],
+                "package": "@angular"
+              }
+            ],
+            "allowRethrowing": false,
+            "allowThrowingAny": false,
+            "allowThrowingUnknown": false
+          },
+          "files": {
+            "node_modules/@angularlol/core/lib/index.d.ts": "export interface ErrorLike { message: string }",
+            "node_modules/@angularlol/core/package.json": "{\"name\": \"@angularlol/core\", \"version\": \"1.0.0\", \"types\": \"lib/index.d.ts\"}"
+          },
+          "errors": [
+            {
+              "messageId": "object",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "import type { ErrorLike } from \"@babel/code-frame-extra\"; declare const error: ErrorLike; throw error;",
+          "options": {
+            "allow": [
+              {
+                "name": [
+                  "ErrorLike"
+                ],
+                "package": "@babel/code-frame",
+                "from": "package"
+              }
+            ],
+            "allowRethrowing": false,
+            "allowThrowingAny": false,
+            "allowThrowingUnknown": false
+          },
+          "files": {
+            "node_modules/@types/babel__code-frame-extra/lib/index.d.ts": "export interface ErrorLike { message: string }",
+            "node_modules/@types/babel__code-frame-extra/package.json": "{\"name\": \"@types/babel__code-frame-extra\", \"version\": \"1.0.0\", \"types\": \"lib/index.d.ts\"}"
+          },
+          "errors": [
+            {
+              "messageId": "object",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "import type { ErrorLike } from \"semver\"; declare const error: ErrorLike; throw error;",
+          "options": {
+            "allow": [
+              {
+                "package": "s.mver",
+                "from": "package",
+                "name": [
+                  "ErrorLike"
+                ]
+              }
+            ],
+            "allowRethrowing": false,
+            "allowThrowingAny": false,
+            "allowThrowingUnknown": false
+          },
+          "files": {
+            "node_modules/@types/semver/lib/index.d.ts": "export interface ErrorLike { message: string }",
+            "node_modules/@types/semver/package.json": "{\"name\": \"@types/semver\", \"version\": \"1.0.0\", \"types\": \"lib/index.d.ts\"}"
+          },
+          "errors": [
+            {
+              "messageId": "object",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "import type { ErrorLike } from \"semver\"; declare const error: ErrorLike; throw error;",
+          "options": {
+            "allow": [
+              {
+                "from": "package",
+                "name": [
+                  "ErrorLike"
+                ],
+                "package": "sem"
+              }
+            ],
+            "allowRethrowing": false,
+            "allowThrowingAny": false,
+            "allowThrowingUnknown": false
+          },
+          "files": {
+            "node_modules/@types/semver/lib/index.d.ts": "export interface ErrorLike { message: string }",
+            "node_modules/@types/semver/package.json": "{\"name\": \"@types/semver\", \"version\": \"1.0.0\", \"types\": \"lib/index.d.ts\"}"
+          },
+          "errors": [
+            {
+              "messageId": "object",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "import type { ErrorLike } from \"semver\"; declare const error: ErrorLike; throw error;",
+          "options": {
+            "allow": [
+              {
+                "from": "package",
+                "name": [
+                  "ErrorLike"
+                ],
+                "package": "semve"
+              }
+            ],
+            "allowRethrowing": false,
+            "allowThrowingAny": false,
+            "allowThrowingUnknown": false
+          },
+          "files": {
+            "node_modules/@types/semver/lib/index.d.ts": "export interface ErrorLike { message: string }",
+            "node_modules/@types/semver/package.json": "{\"name\": \"@types/semver\", \"version\": \"1.0.0\", \"types\": \"lib/index.d.ts\"}"
+          },
+          "errors": [
+            {
+              "messageId": "object",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "import type { ErrorLike } from \"my-semver\"; declare const error: ErrorLike; throw error;",
+          "options": {
+            "allow": [
+              {
+                "package": "semver",
+                "from": "package",
+                "name": [
+                  "ErrorLike"
+                ]
+              }
+            ],
+            "allowRethrowing": false,
+            "allowThrowingAny": false,
+            "allowThrowingUnknown": false
+          },
+          "files": {
+            "node_modules/my-semver/lib/index.d.ts": "export interface ErrorLike { message: string }",
+            "node_modules/my-semver/package.json": "{\"name\": \"my-semver\", \"version\": \"1.0.0\", \"types\": \"lib/index.d.ts\"}"
+          },
+          "errors": [
+            {
+              "messageId": "object",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "import type { ErrorLike } from \"semver-compare\"; declare const error: ErrorLike; throw error;",
+          "options": {
+            "allow": [
+              {
+                "from": "package",
+                "name": [
+                  "ErrorLike"
+                ],
+                "package": "semver"
+              }
+            ],
+            "allowRethrowing": false,
+            "allowThrowingAny": false,
+            "allowThrowingUnknown": false
+          },
+          "files": {
+            "node_modules/semver-compare/lib/index.d.ts": "export interface ErrorLike { message: string }",
+            "node_modules/semver-compare/package.json": "{\"name\": \"semver-compare\", \"version\": \"1.0.0\", \"types\": \"lib/index.d.ts\"}"
+          },
+          "errors": [
+            {
+              "messageId": "object",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "import type { ErrorLike } from \"semver\"; declare const error: ErrorLike; throw error;",
+          "options": {
+            "allow": [
+              {
+                "from": "package",
+                "name": [
+                  "ErrorLike"
+                ],
+                "package": "s.mver"
+              }
+            ],
+            "allowRethrowing": false,
+            "allowThrowingAny": false,
+            "allowThrowingUnknown": false
+          },
+          "files": {
+            "node_modules/semver/lib/index.d.ts": "export interface ErrorLike { message: string }",
+            "node_modules/semver/package.json": "{\"name\": \"semver\", \"version\": \"1.0.0\", \"types\": \"lib/index.d.ts\"}"
+          },
+          "errors": [
+            {
+              "messageId": "object",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "import type { ErrorLike } from \"semver\"; declare const error: ErrorLike; throw error;",
+          "options": {
+            "allow": [
+              {
+                "package": "sem",
+                "from": "package",
+                "name": [
+                  "ErrorLike"
+                ]
+              }
+            ],
+            "allowRethrowing": false,
+            "allowThrowingAny": false,
+            "allowThrowingUnknown": false
+          },
+          "files": {
+            "node_modules/semver/lib/index.d.ts": "export interface ErrorLike { message: string }",
+            "node_modules/semver/package.json": "{\"name\": \"semver\", \"version\": \"1.0.0\", \"types\": \"lib/index.d.ts\"}"
+          },
+          "errors": [
+            {
+              "messageId": "object",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "import type { ErrorLike } from \"semver\"; declare const error: ErrorLike; throw error;",
+          "options": {
+            "allow": [
+              {
+                "from": "package",
+                "name": [
+                  "ErrorLike"
+                ],
+                "package": "semve"
+              }
+            ],
+            "allowRethrowing": false,
+            "allowThrowingAny": false,
+            "allowThrowingUnknown": false
+          },
+          "files": {
+            "node_modules/semver/lib/index.d.ts": "export interface ErrorLike { message: string }",
+            "node_modules/semver/package.json": "{\"name\": \"semver\", \"version\": \"1.0.0\", \"types\": \"lib/index.d.ts\"}"
+          },
+          "errors": [
+            {
+              "messageId": "object",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "import type { ErrorLike } from \"typescript\"; declare const error: ErrorLike; throw error;",
+          "options": {
+            "allow": [
+              {
+                "from": "package",
+                "name": [
+                  "ErrorLike"
+                ],
+                "package": "script"
+              }
+            ],
+            "allowRethrowing": false,
+            "allowThrowingAny": false,
+            "allowThrowingUnknown": false
+          },
+          "files": {
+            "node_modules/typescript/lib/index.d.ts": "export interface ErrorLike { message: string }",
+            "node_modules/typescript/package.json": "{\"name\": \"typescript\", \"version\": \"1.0.0\", \"types\": \"lib/index.d.ts\"}"
           },
           "errors": [
             {

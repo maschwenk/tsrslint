@@ -1,6 +1,7 @@
 // Port of internal/rules/no_deprecated/no_deprecated.go.
 
-use tsrs_ast::{self as ast, Kind, Node, Symbol, SymbolFlags};
+use rustc_hash::FxHashSet;
+use tsrs_ast::{self as ast, Kind, Node, NodeFlags, Symbol, SymbolFlags};
 use tsrs_checker::{CheckMode, Checker, ContextFlags, LiteralValue, Type, TypeFlags};
 use tsrs_core::P;
 
@@ -122,7 +123,17 @@ fn has_deprecated_tag(jsdocs: &[P<Node>]) -> bool {
 }
 
 /// Extracts the deprecation reason from a JSDoc deprecated tag.
-fn get_js_doc_deprecation_from_node(node: Option<P<Node>>) -> String {
+fn get_js_doc_deprecation_from_node(mut node: Option<P<Node>>) -> String {
+    // Match IsDeprecatedDeclaration's lookup: variable declarations can
+    // inherit their @deprecated tag from the containing statement.
+    while let Some(n) = node {
+        if n.flags()
+            .intersects(NodeFlags::PossiblyContainsDeprecatedTag)
+        {
+            break;
+        }
+        node = n.parent();
+    }
     let Some(node) = node else {
         return String::new();
     };
@@ -175,7 +186,10 @@ fn search_for_deprecation_in_aliases_chain(
         return (false, String::new());
     }
     let target_symbol = ctx.checker.get_aliased_symbol(symbol);
-    while utils::is_symbol_flag_set(Some(symbol), SymbolFlags::Alias) {
+    // A circular alias chain (for example `export { x } from './a'` in a.ts) never reaches nil or
+    // target_symbol, so stop at the first alias that has been visited.
+    let mut visited = FxHashSet::default();
+    while utils::is_symbol_flag_set(Some(symbol), SymbolFlags::Alias) && visited.insert(symbol) {
         let (is_deprecated, reason) = get_js_doc_deprecation(ctx, Some(symbol));
         if is_deprecated {
             return (true, reason);
@@ -398,7 +412,7 @@ impl Visitor {
         if !allow.is_empty() {
             let ty = ctx.checker.get_type_at_location(node);
             if utils::type_matches_some_specifier(ty, allow, ctx.program)
-                || utils::value_matches_some_specifier(node, allow, ctx.program, Some(ty))
+                || utils::value_matches_some_specifier(node, allow, ctx.program, ctx.checker)
             {
                 return;
             }
@@ -522,6 +536,7 @@ fn check_property_symbols(
     ctx: &mut Ctx,
     property: Option<P<Symbol>>,
     property_symbol: Option<P<Symbol>>,
+    follow_value_aliases: bool,
 ) -> Option<(bool, String)> {
     // Check alias chain first
     let (is_deprecated, reason) =
@@ -539,12 +554,17 @@ fn check_property_symbols(
     if is_deprecated {
         return Some((true, reason));
     }
-    // Check shorthand assignment value symbol
+    // Check shorthand assignment value symbol. Upstream follows its alias chain only for shorthand property
+    // assignments (tsgolint#1235); the destructuring branch checks the value symbol itself.
     if let Some(value_declaration) = property_symbol.and_then(|s| s.value_declaration()) {
         let value_symbol = ctx
             .checker
             .get_shorthand_assignment_value_symbol(Some(value_declaration));
-        let (is_deprecated, reason) = get_js_doc_deprecation(ctx, value_symbol);
+        let (is_deprecated, reason) = if follow_value_aliases {
+            search_for_deprecation_in_aliases_chain(ctx, value_symbol, true)
+        } else {
+            get_js_doc_deprecation(ctx, value_symbol)
+        };
         if is_deprecated {
             return Some((true, reason));
         }
@@ -581,7 +601,7 @@ fn get_deprecation_reason(ctx: &mut Ctx, node: P<Node>) -> (bool, String) {
                 }
                 let property = ctx.checker.get_property_of_type(source_type, property_name);
                 let property_symbol = ctx.checker.get_symbol_at_location_exported(node);
-                if let Some(r) = check_property_symbols(ctx, property, property_symbol) {
+                if let Some(r) = check_property_symbols(ctx, property, property_symbol, false) {
                     return r;
                 }
             }
@@ -592,7 +612,7 @@ fn get_deprecation_reason(ctx: &mut Ctx, node: P<Node>) -> (bool, String) {
                 let parent_type = ctx.checker.get_type_at_location(object);
                 let property_symbol = ctx.checker.get_symbol_at_location_exported(node);
                 let property = ctx.checker.get_property_of_type(parent_type, node.text());
-                if let Some(r) = check_property_symbols(ctx, property, property_symbol) {
+                if let Some(r) = check_property_symbols(ctx, property, property_symbol, true) {
                     return r;
                 }
             }

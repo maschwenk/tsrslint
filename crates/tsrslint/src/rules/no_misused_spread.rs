@@ -94,6 +94,12 @@ fn is_map(program: &Program, c: &mut Checker, t: P<Type>) -> bool {
     })
 }
 
+fn is_iterable_map(program: &Program, c: &mut Checker, t: P<Type>) -> bool {
+    utils::type_recurser(t, &mut |t| {
+        utils::is_builtin_symbol_like(program, c, t, &["Map", "ReadonlyMap"])
+    })
+}
+
 fn is_array(c: &mut Checker, t: P<Type>) -> bool {
     utils::type_recurser(t, &mut |t| c.is_array_or_tuple_type(t))
 }
@@ -187,9 +193,9 @@ fn get_map_spread_suggestions(
     argument: P<Node>,
     t: P<Type>,
 ) -> Vec<RuleSuggestion> {
-    // TODO(port): do we need this loop?
+    // Every union member must be an iterable map for Object.fromEntries.
     for t in utils::union_type_parts(t) {
-        if !is_map(ctx.program, ctx.checker, t) {
+        if !is_iterable_map(ctx.program, ctx.checker, t) {
             return Vec::new();
         }
     }

@@ -608,6 +608,18 @@
         },
         {
           "code": "if (process.env.SKIP) { return x; }"
+        },
+        {
+          "code": "\nconst sent: string[] = [];\nconst send = (message: string): Promise\u003cvoid\u003e =\u003e (sent.push(message), Promise.resolve());\n    "
+        },
+        {
+          "code": "\nconst sent: string[] = [];\ndeclare const pending: Promise\u003cvoid\u003e;\nconst all = ['a', 'b'].map(message =\u003e (sent.push(message), pending));\n    "
+        },
+        {
+          "code": "\nconst sent: string[] = [];\ndeclare const pending: Promise\u003cvoid\u003e;\nconst last = (sent.push('c'), pending);\n    "
+        },
+        {
+          "code": "\nconst sent: string[] = [];\ndeclare const pending: Promise\u003cvoid\u003e;\nlet assigned: Promise\u003cvoid\u003e;\nassigned = (sent.push('a'), pending);\nfunction returned(): Promise\u003cvoid\u003e {\n  return (sent.push('b'), pending);\n}\n(sent.push('c'), pending);\n    "
         }
       ],
       "invalid": [
@@ -1767,6 +1779,52 @@
             {
               "messageId": "voidReturnVariable",
               "line": 7,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\nconst sent: string[] = [];\ndeclare const pending: Promise\u003cvoid\u003e;\n(sent.push('x'), pending) ? 1 : 2;\n      ",
+          "errors": [
+            {
+              "messageId": "conditional",
+              "line": 4,
+              "column": 2,
+              "endLine": 4,
+              "endColumn": 25,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\nconst sent: string[] = [];\ndeclare const pending: Promise\u003cvoid\u003e;\n(sent.push('x'), pending) || false;\n      ",
+          "errors": [
+            {
+              "messageId": "conditional",
+              "line": 4,
+              "column": 2,
+              "endLine": 4,
+              "endColumn": 25,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\nconst sent: string[] = [];\ndeclare const pending: Promise\u003cvoid\u003e;\nif (sent.push('a'), pending) {}\n!(sent.push('b'), pending);\n(sent.push('c'), pending) \u0026\u0026 true;",
+          "errors": [
+            {
+              "messageId": "conditional",
+              "line": 4,
+              "suggestions": []
+            },
+            {
+              "messageId": "conditional",
+              "line": 5,
+              "suggestions": []
+            },
+            {
+              "messageId": "conditional",
+              "line": 6,
               "suggestions": []
             }
           ]

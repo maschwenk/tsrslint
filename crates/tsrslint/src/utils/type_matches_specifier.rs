@@ -239,6 +239,14 @@ fn contains_node_modules_segment(path: &str) -> bool {
     normalized.contains("/node_modules/")
 }
 
+/// type_matches_specifier.go pathIsInPackage: matches whole path components, so the scope `@angular`
+/// covers `@angular/core` but not `@angularlol`.
+fn path_is_in_package(package_path: &str, package_name: &str) -> bool {
+    package_path
+        .strip_prefix(package_name)
+        .is_some_and(|rest| rest.is_empty() || rest.starts_with('/'))
+}
+
 fn type_declared_in_declaration_file(
     package_name: &str,
     declaration_files: &[Option<P<SourceFile>>],
@@ -258,10 +266,13 @@ fn type_declared_in_declaration_file(
         if package_id_name.is_empty() {
             return false;
         }
-        (package_id_name == package_name
-            || package_id_name == types_package_name
-            || package_id_name == format!("@types/{package_name}")
-            || package_id_name == format!("@types/{types_package_name}"))
+        (path_is_in_package(&package_id_name, package_name)
+            || path_is_in_package(
+                package_id_name
+                    .strip_prefix("@types/")
+                    .unwrap_or(&package_id_name),
+                &types_package_name,
+            ))
             && program.is_source_file_from_external_library(declaration)
     })
 }
@@ -429,7 +440,7 @@ fn value_matches_specifier(
     node: P<Node>,
     specifier: &TypeOrValueSpecifier,
     program: &Program,
-    t: Option<P<Type>>,
+    c: &mut Checker,
 ) -> bool {
     let node_name = get_static_name(node);
     if node_name.is_empty() {
@@ -438,26 +449,42 @@ fn value_matches_specifier(
     if !specifier.name.contains(&node_name) {
         return false;
     }
-    if ast::get_source_file_of_node(node).is_none() {
-        return false;
+    if specifier.from == TypeOrValueSpecifierFrom::Name {
+        return true;
     }
-    if specifier.from == TypeOrValueSpecifierFrom::Package {
-        if let Some(symbol) = t.and_then(|t| t.symbol()) {
-            let declarations = symbol.declarations();
-            let declaration_files: Vec<Option<P<SourceFile>>> = declarations
-                .iter()
-                .map(|&d| ast::get_source_file_of_node(d))
-                .collect();
-            return type_declared_in_package_declaration_file(
-                &specifier.package,
-                declarations,
-                &declaration_files,
-                program,
-            );
+    let mut symbol = c.get_symbol_at_location_exported(node);
+    if let Some(value_declaration) = symbol.and_then(|s| s.value_declaration()) {
+        if ast::is_shorthand_property_assignment(value_declaration) {
+            symbol = c.get_shorthand_assignment_value_symbol(Some(value_declaration));
         }
-        return false;
     }
-    true
+    if let Some(declaration) = symbol.and_then(|s| s.value_declaration()) {
+        if ast::is_binding_element(declaration) {
+            let parent = declaration.parent().unwrap();
+            if ast::is_object_binding_pattern(parent)
+                && declaration
+                    .as_binding_element()
+                    .dot_dot_dot_token()
+                    .is_none()
+            {
+                let property_name = declaration
+                    .property_name_or_name()
+                    .map(get_static_name)
+                    .unwrap_or_default();
+                if property_name.is_empty() {
+                    return false;
+                }
+                let source_type = c.get_type_at_location(parent);
+                symbol = c.get_property_of_type(source_type, &property_name);
+            }
+        }
+    }
+    if let Some(s) = symbol {
+        if s.flags.get().intersects(SymbolFlags::Alias) {
+            symbol = Some(c.get_aliased_symbol(s));
+        }
+    }
+    symbol_matches_specifier_name_and_source(symbol, &node_name, specifier, program)
 }
 
 /// type_matches_specifier.go ValueMatchesSomeSpecifier.
@@ -465,9 +492,9 @@ pub fn value_matches_some_specifier(
     node: P<Node>,
     specifiers: &[TypeOrValueSpecifier],
     program: &Program,
-    t: Option<P<Type>>,
+    c: &mut Checker,
 ) -> bool {
     specifiers
         .iter()
-        .any(|s| value_matches_specifier(node, s, program, t))
+        .any(|s| value_matches_specifier(node, s, program, c))
 }

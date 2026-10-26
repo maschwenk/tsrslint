@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Benchmarks tsrslint against stock tsgolint 7.0.2003 on open-source projects, all 60 rules, headless protocol.
+"""Benchmarks tsrslint against stock tsgolint 7.0.2005 on open-source projects, all 61 rules, headless protocol.
 
 See bench/README.md. Typical use:
 
@@ -182,7 +182,7 @@ def ensure_stock(cfg: dict, work: Path) -> Path:
 
 
 def make_payload(p: dict, cwd: Path, work: Path) -> tuple[Path, int, int]:
-    """The payload both binaries get: headless-lint.mjs's (all 60 rules, default options, one config)."""
+    """The payload both binaries get: headless-lint.mjs's (all 61 rules, default options, one config)."""
     out = work / "payloads" / f"{p['name']}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     with open(out, "wb") as f:

@@ -633,6 +633,31 @@ x.statusCode;
 				}],
 			});
 		`},
+		{
+			Code: `import { normalVariable } from './release-port-normal';
+void { normalVariable };`,
+			Files: map[string]string{
+				"release-port-normal.ts": "export const normalVariable = 1;",
+			},
+		},
+		// A circular alias chain must not make the alias walk loop forever.
+		// The cases that import './file' set FileName, so that './file' is the file under test.
+		{Code: `export { x } from './file';`, FileName: "file.ts"},
+		{
+			Code:     `export { default } from './circular-reexport';`,
+			FileName: "file.ts",
+			Files: map[string]string{
+				"circular-reexport.ts": "export { default } from './file';",
+			},
+		},
+		{
+			Code: `import value from './circular-import-a';
+void value;`,
+			Files: map[string]string{
+				"circular-import-a.ts": "import value from './circular-import-b';\nexport default value;",
+				"circular-import-b.ts": "import value from './circular-import-a';\nexport default value;",
+			},
+		},
 	}, []rule_tester.InvalidTestCase{
 		{
 			Tsx: true,
@@ -727,8 +752,7 @@ x.statusCode;
       `,
 			Errors: []rule_tester.InvalidTestCaseError{
 				{
-					// TODO: this should be `deprecatedWithReason`
-					MessageId: "deprecated",
+					MessageId: "deprecatedWithReason",
 				},
 			},
 		},
@@ -2859,6 +2883,177 @@ const jsx = <Foo field={0} />;`,
 					EndColumn: 23,
 				},
 			},
+		},
+		{
+			Code: `import { deprecatedVariable } from './deprecated';
+void { deprecatedVariable };`,
+			Errors: []rule_tester.InvalidTestCaseError{
+				{
+					MessageId: "deprecated",
+					Line:      2,
+					Column:    8,
+					EndColumn: 26,
+				},
+			},
+		},
+		{
+			Code: `import { normalVariable } from './deprecated';
+void { normalVariable };`,
+			Errors: []rule_tester.InvalidTestCaseError{
+				{
+					MessageId: "deprecated",
+					Line:      2,
+					Column:    8,
+					EndColumn: 22,
+				},
+			},
+		},
+		{
+			Code: `import { deprecatedVariable } from './deprecated';
+deprecatedVariable;`,
+			Errors: []rule_tester.InvalidTestCaseError{
+				{
+					MessageId: "deprecated",
+				},
+			},
+		},
+		{
+			Code: `/** @deprecated Use replacementConst instead. */
+const oldConst = 1;
+/** @deprecated Use replacementLet instead. */
+let oldLet: number = 1;
+/** @deprecated Use replacementVar instead. */
+var oldVar = 1;
+oldConst;
+oldLet;
+oldVar;`,
+			Errors: []rule_tester.InvalidTestCaseError{
+				{MessageId: "deprecatedWithReason", Line: 7},
+				{MessageId: "deprecatedWithReason", Line: 8},
+				{MessageId: "deprecatedWithReason", Line: 9},
+			},
+		},
+		{
+			Code: `import { constA, constMultiline, constTyped, letA, constReexported, constInline } from './variable-reasons';
+constA;
+constMultiline();
+constTyped;
+letA;
+constReexported;
+constInline;`,
+			Files: map[string]string{
+				"variable-reasons.ts": `/** @deprecated reason for constA */
+export const constA = 1;
+/**
+ * @deprecated reason for constMultiline
+ */
+export const constMultiline = () => 1;
+/** @deprecated reason for constTyped */
+export const constTyped: number = 1;
+/** @deprecated reason for letA */
+export let letA = 1;
+/** @deprecated reason for constReexported */
+const constReexported = 1;
+export { constReexported };
+export const /** @deprecated reason for constInline */ constInline = 1;`,
+			},
+			Errors: []rule_tester.InvalidTestCaseError{
+				{MessageId: "deprecatedWithReason", Line: 2},
+				{MessageId: "deprecatedWithReason", Line: 3},
+				{MessageId: "deprecatedWithReason", Line: 4},
+				{MessageId: "deprecatedWithReason", Line: 5},
+				{MessageId: "deprecatedWithReason", Line: 6},
+				{MessageId: "deprecatedWithReason", Line: 7},
+			},
+		},
+		{
+			Code: `/** @deprecated Statement reason. */
+const /** @deprecated Inline reason. */ oldValue = 1;
+oldValue;`,
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "deprecatedWithReason", Line: 3}},
+		},
+		{
+			Code: `/** @deprecated Statement reason. */
+const /** @deprecated */ oldValue = 1;
+oldValue;`,
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "deprecated", Line: 3}},
+		},
+		{
+			Code: `import value from './circular-deprecated';
+export default value;
+value;`,
+			FileName: "file.ts",
+			Files: map[string]string{
+				"circular-deprecated.ts": "import value from './file';\n/** @deprecated */\nexport default value;",
+			},
+			Errors: []rule_tester.InvalidTestCaseError{
+				{MessageId: "deprecated", Line: 2},
+				{MessageId: "deprecated", Line: 3},
+			},
+		},
+	})
+}
+
+func TestNoDeprecatedShorthandAllowanceSources(t *testing.T) {
+	t.Parallel()
+	const code = `import { deprecatedValue } from './deprecated';
+void { deprecatedValue };`
+	files := map[string]string{
+		"deprecated.ts": "/** @deprecated */\nexport const deprecatedValue = 1;",
+	}
+	rule_tester.RunRuleTester(fixtures.GetRootDir(), "tsconfig.minimal.json", t, &NoDeprecatedRule, []rule_tester.ValidTestCase{{
+		Code:    code,
+		Files:   files,
+		Options: rule_tester.OptionsFromJSON[NoDeprecatedOptions](`{"allow":[{"from":"file","path":"./deprecated.ts","name":"deprecatedValue"}]}`),
+	}}, []rule_tester.InvalidTestCase{
+		{
+			Code:    code,
+			Files:   files,
+			Options: rule_tester.OptionsFromJSON[NoDeprecatedOptions](`{"allow":[{"from":"file","path":"./file.ts","name":"deprecatedValue"}]}`),
+			Errors:  []rule_tester.InvalidTestCaseError{{MessageId: "deprecated", Line: 2}},
+		},
+		{
+			Code:    code,
+			Files:   files,
+			Options: rule_tester.OptionsFromJSON[NoDeprecatedOptions](`{"allow":[{"from":"file","path":"./missing.ts","name":"deprecatedValue"}]}`),
+			Errors:  []rule_tester.InvalidTestCaseError{{MessageId: "deprecated", Line: 2}},
+		},
+	})
+}
+
+func TestNoDeprecatedDestructuredAllowanceSources(t *testing.T) {
+	t.Parallel()
+	const code = `async function probe() {
+  const { deprecatedValue } = await import('./deprecated');
+}`
+	files := map[string]string{
+		"deprecated.ts": "/** @deprecated */\nexport const deprecatedValue = 1;",
+	}
+	rule_tester.RunRuleTester(fixtures.GetRootDir(), "tsconfig.minimal.json", t, &NoDeprecatedRule, []rule_tester.ValidTestCase{
+		{
+			Code:    code,
+			Files:   files,
+			Options: rule_tester.OptionsFromJSON[NoDeprecatedOptions](`{"allow":[{"from":"file","path":"./deprecated.ts","name":"deprecatedValue"}]}`),
+		},
+		{
+			Code: `async function probe() {
+  const { deprecatedValue: renamed } = await import('./deprecated');
+}`,
+			Files:   files,
+			Options: rule_tester.OptionsFromJSON[NoDeprecatedOptions](`{"allow":[{"from":"file","path":"./deprecated.ts","name":["deprecatedValue","renamed"]}]}`),
+		},
+	}, []rule_tester.InvalidTestCase{
+		{
+			Code:    code,
+			Files:   files,
+			Options: rule_tester.OptionsFromJSON[NoDeprecatedOptions](`{"allow":[{"from":"file","path":"./file.ts","name":"deprecatedValue"}]}`),
+			Errors:  []rule_tester.InvalidTestCaseError{{MessageId: "deprecated", Line: 2}},
+		},
+		{
+			Code:    code,
+			Files:   files,
+			Options: rule_tester.OptionsFromJSON[NoDeprecatedOptions](`{"allow":[{"from":"file","path":"./missing.ts","name":"deprecatedValue"}]}`),
+			Errors:  []rule_tester.InvalidTestCaseError{{MessageId: "deprecated", Line: 2}},
 		},
 	})
 }

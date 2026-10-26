@@ -214,6 +214,12 @@
           "code": "\ndeclare const b1: boolean;\ndeclare const b2: true;\nconst x = b1 \u0026\u0026 b2;\n      "
         },
         {
+          "code": "\nfunction test(foo?: boolean, bar?: boolean) {\n  return (foo \u0026\u0026 'foo') || (bar \u0026\u0026 'bar');\n}\n      "
+        },
+        {
+          "code": "\ndeclare const b1: boolean;\ndeclare const b2: boolean;\nconst x = (b1 \u0026\u0026 'b1') || b2;\n      "
+        },
+        {
           "code": "\nwhile (true) {}\n      ",
           "options": {
             "allowConstantLoopConditions": true
@@ -447,6 +453,36 @@
           "code": "\ndeclare const foo: { bar: { baz?: number; qux: number } };\ntype Key = 'baz' | 'qux';\ndeclare const key: Key;\nfoo.bar[key] ??= 1;\n    "
         },
         {
+          "code": "\ntype Fields = { hello?: number; world?: boolean };\nlet fields: Fields = {};\nfor (const key of ['hello', 'world'] as const) {\n  fields[key] ??= undefined;\n}"
+        },
+        {
+          "code": "\ntype Fields = { hello?: boolean | number; world?: boolean };\nlet fields: Fields = {};\nfor (const key of ['hello', 'world'] as const) {\n  fields[key] ??= undefined;\n}"
+        },
+        {
+          "code": "\ntype Fields = { hello?: number; world?: 1 | 2 | 3 };\nlet fields: Fields = {};\nfor (const key of ['hello', 'world'] as const) {\n  fields[key] ??= undefined;\n}"
+        },
+        {
+          "code": "\ntype Fields = { hello?: 1 | 2 | 4; world?: 1 | 3 | 5 };\nlet fields: Fields = {};\nfor (const key of ['hello', 'world'] as const) {\n  fields[key] ??= undefined;\n}"
+        },
+        {
+          "code": "\ninterface Foo { bizz?: number; buzz?: boolean }\nlet fields: Foo = {};\nfor (const key of ['bizz', 'buzz'] as const) {\n  fields[key] ??= undefined;\n}"
+        },
+        {
+          "code": "\nlet fields: { 0?: number; 1?: boolean } = {};\nfor (const key of [0, 1] as const) {\n  fields[key] ??= undefined;\n}"
+        },
+        {
+          "code": "\ndeclare const a: unique symbol;\ndeclare const b: unique symbol;\nlet fields: { [a]?: number; [b]?: boolean } = {};\nfor (const key of [a, b] as const) {\n  fields[key] ??= undefined;\n}"
+        },
+        {
+          "code": "\ndeclare const sym: unique symbol;\ndeclare const key: 'x' | typeof sym;\ndeclare const fields: { [k: string]: number | undefined; [k: symbol]: boolean | undefined };\nfields[key] ??= undefined;\n"
+        },
+        {
+          "code": "\ndeclare const sym: unique symbol;\ndeclare const key: string | symbol;\ndeclare const fields: { [k: string]: number | undefined; [k: symbol]: boolean | undefined };\nfields[key] ??= undefined;\n"
+        },
+        {
+          "code": "\ndeclare const sym: unique symbol;\ndeclare const key: number | symbol;\ndeclare const fields: { [k: string]: number | undefined; [k: symbol]: boolean | undefined };\nfields[key] ??= undefined;\n"
+        },
+        {
           "code": "\nenum Keys {\n  A = 'A',\n  B = 'B',\n}\ntype Foo = {\n  [Keys.A]: number | null;\n  [Keys.B]: number;\n};\ndeclare const foo: Foo;\ndeclare const key: Keys;\nfoo[key] ??= 1;\n    "
         },
         {
@@ -498,6 +534,12 @@
         },
         {
           "code": "\ndeclare function assert(x: unknown): asserts x;\n\nassert(Math.random() \u003e 0.5);\n      ",
+          "options": {
+            "checkTypePredicates": true
+          }
+        },
+        {
+          "code": "\ndeclare function assertSecond(x: unknown, y: unknown): asserts y;\ndeclare const b: boolean;\nassertSecond(b \u0026\u0026 'b', b);",
           "options": {
             "checkTypePredicates": true
           }
@@ -859,9 +901,9 @@
             {
               "messageId": "comparisonBetweenLiteralTypes",
               "line": 3,
-              "column": 12,
+              "column": 10,
               "endLine": 3,
-              "endColumn": 15,
+              "endColumn": 19,
               "suggestions": []
             }
           ]
@@ -881,9 +923,9 @@
             {
               "messageId": "comparisonBetweenLiteralTypes",
               "line": 3,
-              "column": 7,
+              "column": 5,
               "endLine": 3,
-              "endColumn": 10,
+              "endColumn": 12,
               "suggestions": []
             }
           ]
@@ -966,9 +1008,9 @@
             {
               "messageId": "comparisonBetweenLiteralTypes",
               "line": 8,
-              "column": 7,
+              "column": 5,
               "endLine": 8,
-              "endColumn": 10,
+              "endColumn": 16,
               "suggestions": []
             }
           ]
@@ -1051,9 +1093,9 @@
             {
               "messageId": "noOverlapBooleanExpression",
               "line": 3,
-              "column": 16,
+              "column": 14,
               "endLine": 3,
-              "endColumn": 19,
+              "endColumn": 29,
               "suggestions": []
             },
             {
@@ -1334,7 +1376,12 @@
             },
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\nconst x = [{}] as [{ foo: string }];\nif (x[0]) {\n}\nif (x[0].foo) {\n}\n      "
+                }
+              ]
             }
           ]
         },
@@ -1521,65 +1568,125 @@
           ]
         },
         {
-          "code": "\nlet foo = { bar: true };\nfoo?.bar;\nfoo ?. bar;\nfoo ?.\n  bar;\nfoo\n  ?. bar;\n      ",
+          "code": "\nlet foo = { bar: true };\nfoo?.bar;\nfoo ?. bar;\nfoo ?.\n  bar;\nfoo\n  ?. bar;",
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\nlet foo = { bar: true };\nfoo.bar;\nfoo ?. bar;\nfoo ?.\n  bar;\nfoo\n  ?. bar;"
+                }
+              ]
             },
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\nlet foo = { bar: true };\nfoo?.bar;\nfoo . bar;\nfoo ?.\n  bar;\nfoo\n  ?. bar;"
+                }
+              ]
             },
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\nlet foo = { bar: true };\nfoo?.bar;\nfoo ?. bar;\nfoo .\n  bar;\nfoo\n  ?. bar;"
+                }
+              ]
             },
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\nlet foo = { bar: true };\nfoo?.bar;\nfoo ?. bar;\nfoo ?.\n  bar;\nfoo\n  . bar;"
+                }
+              ]
             }
           ]
         },
         {
-          "code": "\nlet foo = () =\u003e {};\nfoo?.();\nfoo ?. ();\nfoo ?.\n  ();\nfoo\n  ?. ();\n      ",
+          "code": "\nlet foo = () =\u003e {};\nfoo?.();\nfoo ?. ();\nfoo ?.\n  ();\nfoo\n  ?. ();",
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\nlet foo = () =\u003e {};\nfoo();\nfoo ?. ();\nfoo ?.\n  ();\nfoo\n  ?. ();"
+                }
+              ]
             },
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\nlet foo = () =\u003e {};\nfoo?.();\nfoo  ();\nfoo ?.\n  ();\nfoo\n  ?. ();"
+                }
+              ]
             },
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\nlet foo = () =\u003e {};\nfoo?.();\nfoo ?. ();\nfoo \n  ();\nfoo\n  ?. ();"
+                }
+              ]
             },
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\nlet foo = () =\u003e {};\nfoo?.();\nfoo ?. ();\nfoo ?.\n  ();\nfoo\n   ();"
+                }
+              ]
             }
           ]
         },
         {
-          "code": "\nlet foo = () =\u003e {};\nfoo?.(bar);\nfoo ?. (bar);\nfoo ?.\n  (bar);\nfoo\n  ?. (bar);\n      ",
+          "code": "\nlet foo = () =\u003e {};\nfoo?.(bar);\nfoo ?. (bar);\nfoo ?.\n  (bar);\nfoo\n  ?. (bar);",
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\nlet foo = () =\u003e {};\nfoo(bar);\nfoo ?. (bar);\nfoo ?.\n  (bar);\nfoo\n  ?. (bar);"
+                }
+              ]
             },
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\nlet foo = () =\u003e {};\nfoo?.(bar);\nfoo  (bar);\nfoo ?.\n  (bar);\nfoo\n  ?. (bar);"
+                }
+              ]
             },
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\nlet foo = () =\u003e {};\nfoo?.(bar);\nfoo ?. (bar);\nfoo \n  (bar);\nfoo\n  ?. (bar);"
+                }
+              ]
             },
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\nlet foo = () =\u003e {};\nfoo?.(bar);\nfoo ?. (bar);\nfoo ?.\n  (bar);\nfoo\n   (bar);"
+                }
+              ]
             }
           ]
         },
@@ -1589,10 +1696,15 @@
             {
               "messageId": "neverOptionalChain",
               "line": 1,
-              "column": 22,
+              "column": 13,
               "endLine": 1,
-              "endColumn": 24,
-              "suggestions": []
+              "endColumn": 27,
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "const foo = [1, 2, 3][0];"
+                }
+              ]
             }
           ]
         },
@@ -1601,7 +1713,12 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ndeclare const x: { a?: { b: string } };\nx.a?.b;\n      "
+                }
+              ]
             }
           ]
         },
@@ -1610,7 +1727,12 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ndeclare const x: { a: { b?: { c: string } } };\nx.a.b?.c;\n      "
+                }
+              ]
             }
           ]
         },
@@ -1619,7 +1741,12 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\nlet x: { a?: string };\nx.a;\n      "
+                }
+              ]
             }
           ]
         },
@@ -1628,7 +1755,12 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ndeclare const foo: { bar: { baz: { c: string } } } | null;\nfoo?.bar.baz;\n      "
+                }
+              ]
             }
           ]
         },
@@ -1637,7 +1769,12 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ndeclare const foo: { bar?: { baz: { qux: string } } } | null;\nfoo?.bar?.baz.qux;\n      "
+                }
+              ]
             }
           ]
         },
@@ -1646,11 +1783,21 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ndeclare const foo: { bar: { baz: { qux?: () =\u003e {} } } } | null;\nfoo?.bar?.baz.qux?.();\n      "
+                }
+              ]
             },
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ndeclare const foo: { bar: { baz: { qux?: () =\u003e {} } } } | null;\nfoo?.bar.baz?.qux?.();\n      "
+                }
+              ]
             }
           ]
         },
@@ -1659,15 +1806,30 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ndeclare const foo: { bar: { baz: { qux: () =\u003e {} } } } | null;\nfoo?.bar?.baz?.qux();\n      "
+                }
+              ]
             },
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ndeclare const foo: { bar: { baz: { qux: () =\u003e {} } } } | null;\nfoo?.bar?.baz.qux?.();\n      "
+                }
+              ]
             },
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ndeclare const foo: { bar: { baz: { qux: () =\u003e {} } } } | null;\nfoo?.bar.baz?.qux?.();\n      "
+                }
+              ]
             }
           ]
         },
@@ -1676,15 +1838,30 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ntype baz = () =\u003e { qux: () =\u003e {} };\ndeclare const foo: { bar: { baz: baz } } | null;\nfoo?.bar?.baz?.().qux();\n      "
+                }
+              ]
             },
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ntype baz = () =\u003e { qux: () =\u003e {} };\ndeclare const foo: { bar: { baz: baz } } | null;\nfoo?.bar?.baz().qux?.();\n      "
+                }
+              ]
             },
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ntype baz = () =\u003e { qux: () =\u003e {} };\ndeclare const foo: { bar: { baz: baz } } | null;\nfoo?.bar.baz?.().qux?.();\n      "
+                }
+              ]
             }
           ]
         },
@@ -1693,11 +1870,21 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ntype baz = null | (() =\u003e { qux: () =\u003e {} });\ndeclare const foo: { bar: { baz: baz } } | null;\nfoo?.bar?.baz?.().qux();\n      "
+                }
+              ]
             },
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ntype baz = null | (() =\u003e { qux: () =\u003e {} });\ndeclare const foo: { bar: { baz: baz } } | null;\nfoo?.bar.baz?.().qux?.();\n      "
+                }
+              ]
             }
           ]
         },
@@ -1706,11 +1893,21 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ntype baz = null | (() =\u003e { qux: () =\u003e {} } | null);\ndeclare const foo: { bar: { baz: baz } } | null;\nfoo?.bar?.baz?.()?.qux();\n      "
+                }
+              ]
             },
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ntype baz = null | (() =\u003e { qux: () =\u003e {} } | null);\ndeclare const foo: { bar: { baz: baz } } | null;\nfoo?.bar.baz?.()?.qux?.();\n      "
+                }
+              ]
             }
           ]
         },
@@ -1719,7 +1916,12 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ntype Foo = { baz: number };\ntype Bar = { baz: null | string | { qux: string } };\ndeclare const foo: { fooOrBar: Foo | Bar } | null;\nfoo?.fooOrBar.baz?.qux;\n      "
+                }
+              ]
             }
           ]
         },
@@ -1728,7 +1930,12 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ndeclare const x: { a: { b: number } }[];\nx[0].a.b;\n      "
+                }
+              ]
             }
           ]
         },
@@ -1738,10 +1945,15 @@
             {
               "messageId": "neverOptionalChain",
               "line": 7,
-              "column": 11,
+              "column": 1,
               "endLine": 7,
-              "endColumn": 13,
-              "suggestions": []
+              "endColumn": 17,
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ntype Foo = { [key: string]: string; foo: 'foo'; bar: 'bar' } | null;\ntype Key = 'bar' | 'foo';\ndeclare const foo: Foo;\ndeclare const key: Key;\n\nfoo?.[key].trim();\n      "
+                }
+              ]
             }
           ]
         },
@@ -1750,7 +1962,12 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ntype Foo = { [key: string]: string; foo: 'foo'; bar: 'bar' } | null;\ndeclare const foo: Foo;\nconst key = 'bar';\nfoo?.[key].trim();\n      "
+                }
+              ]
             }
           ]
         },
@@ -1759,7 +1976,12 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ninterface Outer {\n  inner?: {\n    [key: string]: string | undefined;\n    bar: 'bar';\n  };\n}\n\nexport function test(outer: Outer): number | undefined {\n  const key = 'bar';\n  return outer.inner?.[key].charCodeAt(0);\n}\n      "
+                }
+              ]
             }
           ]
         },
@@ -1768,7 +1990,12 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ninterface Outer {\n  inner?: {\n    [key: string]: string | undefined;\n    bar: 'bar';\n  };\n}\ntype Bar = 'bar';\n\nfunction Foo(outer: Outer, key: Bar): number | undefined {\n  return outer.inner?.[key].charCodeAt(0);\n}\n      "
+                }
+              ]
             }
           ]
         },
@@ -1827,7 +2054,12 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ninterface Foo {\n  test: string;\n  [key: string]: [string] | undefined;\n}\n\ntype OptionalFoo = Foo | undefined;\ndeclare const foo: OptionalFoo;\nfoo?.test.length;\n      "
+                }
+              ]
             }
           ]
         },
@@ -1872,6 +2104,149 @@
           "errors": [
             {
               "messageId": "alwaysNullish",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const foo: { bar: null };\nfoo.bar ??= null;",
+          "errors": [
+            {
+              "messageId": "alwaysNullish",
+              "line": 3,
+              "column": 1,
+              "endLine": 3,
+              "endColumn": 8,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const foo: Record\u003cstring, undefined\u003e;\ndeclare const key: string;\nfoo[key] ??= undefined;",
+          "errors": [
+            {
+              "messageId": "alwaysNullish",
+              "line": 4,
+              "column": 1,
+              "endLine": 4,
+              "endColumn": 9,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ntype Fields = { hello?: undefined; world?: null };\nlet fields: Fields = {};\nfor (const key of ['hello', 'world'] as const) {\n  fields[key] ??= undefined;\n}",
+          "errors": [
+            {
+              "messageId": "alwaysNullish",
+              "line": 5,
+              "column": 3,
+              "endLine": 5,
+              "endColumn": 14,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ninterface Foo { bizz?: undefined; buzz?: null }\nlet fields: Foo = {};\nfor (const key of ['buzz', 'bizz'] as const) {\n  fields[key] ??= undefined;\n}",
+          "errors": [
+            {
+              "messageId": "alwaysNullish",
+              "line": 5,
+              "column": 3,
+              "endLine": 5,
+              "endColumn": 14,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const obj: { x: number | null };\nif (obj['x'] === null) {\n  obj['x'] ?? 1;\n}",
+          "errors": [
+            {
+              "messageId": "alwaysNullish",
+              "line": 4,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const a: unique symbol;\ndeclare const b: unique symbol;\nlet fields: { [a]?: undefined; [b]?: null } = {};\nfor (const key of [a, b] as const) {\n  fields[key] ??= undefined;\n}",
+          "errors": [
+            {
+              "messageId": "alwaysNullish",
+              "line": 6,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let obj: { x: number | null };\nif (obj['x'] === null) {\n  obj['x'] ??= 1;\n}",
+          "errors": [
+            {
+              "messageId": "alwaysNullish",
+              "line": 4,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let obj: { x: number | null; y: boolean | null };\ndeclare const key: 'x' | 'y';\nif (key === 'x' \u0026\u0026 obj[key] === null) {\n  (obj[key]) ??= 1;\n}",
+          "errors": [
+            {
+              "messageId": "alwaysNullish",
+              "line": 5,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let obj: { x: number | null; y: number | null };\ndeclare const key: 'x' | 'y';\nif (obj[key] === null) {\n  obj[key] ??= null;\n}",
+          "errors": [
+            {
+              "messageId": "alwaysNullish",
+              "line": 5,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let obj: { x: number | null; y: boolean | null };\ndeclare const key: 'x' | 'y';\nif (obj[key] === null) {\n  obj[key] ??= null;\n}",
+          "errors": [
+            {
+              "messageId": "alwaysNullish",
+              "line": 5,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare let obj: { x: number | null; y: boolean | null };\ndeclare const key: 'x' | 'y';\nif (obj[key] === null) {\n  obj[key] ??= null;\n}",
+          "tsconfig": "tsconfig.noUncheckedIndexedAccess.json",
+          "errors": [
+            {
+              "messageId": "alwaysNullish",
+              "line": 5,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const sym: unique symbol;\ndeclare const key: 'x' | typeof sym;\ndeclare const fields: { [k: string]: undefined; [k: symbol]: undefined };\nfields[key] ??= undefined;",
+          "errors": [
+            {
+              "messageId": "alwaysNullish",
+              "line": 5,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const sym: unique symbol;\ndeclare const key: 'x' | typeof sym;\ndeclare const fields: { [k: string]: number | undefined; [k: symbol]: boolean | undefined };\nif (fields[key] === undefined) {\n  fields[key] ??= undefined;\n}",
+          "errors": [
+            {
+              "messageId": "alwaysNullish",
+              "line": 6,
               "suggestions": []
             }
           ]
@@ -1927,7 +2302,12 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ntype Foo = { bar: () =\u003e number } | null;\ndeclare const foo: Foo;\nfoo?.bar().toExponential();\n      "
+                }
+              ]
             }
           ]
         },
@@ -1936,11 +2316,21 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ntype Foo = { bar: null | { baz: () =\u003e { qux: number } } } | null;\ndeclare const foo: Foo;\nfoo?.bar?.baz()?.qux.toExponential();\n      "
+                }
+              ]
             },
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ntype Foo = { bar: null | { baz: () =\u003e { qux: number } } } | null;\ndeclare const foo: Foo;\nfoo?.bar?.baz().qux?.toExponential();\n      "
+                }
+              ]
             }
           ]
         },
@@ -1949,7 +2339,12 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ntype Foo = (() =\u003e number) | null;\ndeclare const foo: Foo;\nfoo?.().toExponential();\n      "
+                }
+              ]
             }
           ]
         },
@@ -1958,7 +2353,12 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ntype Foo = { [key: string]: () =\u003e number } | null;\ndeclare const foo: Foo;\nfoo?.['bar']().toExponential();\n      "
+                }
+              ]
             }
           ]
         },
@@ -1967,7 +2367,12 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ntype Foo = { [key: string]: () =\u003e number } | null;\ndeclare const foo: Foo;\nfoo?.['bar']?.().toExponential();\n      "
+                }
+              ]
             }
           ]
         },
@@ -2150,7 +2555,12 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ntype A = {\n  [name in Lowercase\u003cstring\u003e]?: {\n    [name in Lowercase\u003cstring\u003e]: {\n      a: 1;\n    };\n  };\n};\n\ndeclare const a: A;\n\na.a?.a.a;\n      "
+                }
+              ]
             }
           ]
         },
@@ -2159,15 +2569,30 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ninterface T {\n  [name: Lowercase\u003cstring\u003e]: {\n    [name: Lowercase\u003cstring\u003e]: {\n      [name: Lowercase\u003cstring\u003e]: {\n        value: 'value';\n      };\n    };\n  };\n  [name: Uppercase\u003cstring\u003e]: null | {\n    [name: Uppercase\u003cstring\u003e]: null | {\n      [name: Uppercase\u003cstring\u003e]: null | {\n        VALUE: 'VALUE';\n      };\n    };\n  };\n}\n\ndeclare const t: T;\n\nt.a?.a?.a.value;\n      "
+                }
+              ]
             },
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ninterface T {\n  [name: Lowercase\u003cstring\u003e]: {\n    [name: Lowercase\u003cstring\u003e]: {\n      [name: Lowercase\u003cstring\u003e]: {\n        value: 'value';\n      };\n    };\n  };\n  [name: Uppercase\u003cstring\u003e]: null | {\n    [name: Uppercase\u003cstring\u003e]: null | {\n      [name: Uppercase\u003cstring\u003e]: null | {\n        VALUE: 'VALUE';\n      };\n    };\n  };\n}\n\ndeclare const t: T;\n\nt.a?.a.a?.value;\n      "
+                }
+              ]
             },
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ninterface T {\n  [name: Lowercase\u003cstring\u003e]: {\n    [name: Lowercase\u003cstring\u003e]: {\n      [name: Lowercase\u003cstring\u003e]: {\n        value: 'value';\n      };\n    };\n  };\n  [name: Uppercase\u003cstring\u003e]: null | {\n    [name: Uppercase\u003cstring\u003e]: null | {\n      [name: Uppercase\u003cstring\u003e]: null | {\n        VALUE: 'VALUE';\n      };\n    };\n  };\n}\n\ndeclare const t: T;\n\nt.a.a?.a?.value;\n      "
+                }
+              ]
             }
           ]
         },
@@ -2177,7 +2602,12 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ndeclare const test: Array\u003c{ a?: string }\u003e;\n\nif (test[0]?.a) {\n  test[0].a;\n}\n      "
+                }
+              ]
             }
           ]
         },
@@ -2187,11 +2617,21 @@
           "errors": [
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ndeclare const arr2: Array\u003c{ x: { y: { z: object } } }\u003e;\narr2[42]?.x?.y.z;\n      "
+                }
+              ]
             },
             {
               "messageId": "neverOptionalChain",
-              "suggestions": []
+              "suggestions": [
+                {
+                  "messageId": "suggestRemoveOptionalChain",
+                  "output": "\ndeclare const arr2: Array\u003c{ x: { y: { z: object } } }\u003e;\narr2[42]?.x.y?.z;\n      "
+                }
+              ]
             }
           ]
         },
@@ -2326,6 +2766,107 @@
               "column": 10,
               "endLine": 4,
               "endColumn": 19,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const b1: boolean;\ndeclare const b2: boolean;\nif ((b1 \u0026\u0026 'b1') || b2) {\n}",
+          "errors": [
+            {
+              "messageId": "alwaysTruthy",
+              "line": 4,
+              "column": 12,
+              "endLine": 4,
+              "endColumn": 16,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const b1: boolean;\ndeclare const b2: boolean;\ndo {} while ((b1 \u0026\u0026 'b1') || b2);",
+          "errors": [
+            {
+              "messageId": "alwaysTruthy",
+              "line": 4,
+              "column": 21,
+              "endLine": 4,
+              "endColumn": 25,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const b1: boolean;\ndeclare const b2: boolean;\nfor (; (b1 \u0026\u0026 'b1') || b2;) {}",
+          "errors": [
+            {
+              "messageId": "alwaysTruthy",
+              "line": 4,
+              "column": 15,
+              "endLine": 4,
+              "endColumn": 19,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const b1: boolean;\ndeclare const b2: boolean;\nif (!((b1 \u0026\u0026 'b1') || b2)) {\n}",
+          "errors": [
+            {
+              "messageId": "alwaysTruthy",
+              "line": 4,
+              "column": 14,
+              "endLine": 4,
+              "endColumn": 18,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const b1: boolean;\ndeclare const b2: boolean;\nconst t1 = b1 \u0026\u0026 'b1' \u0026\u0026 b2;",
+          "errors": [
+            {
+              "messageId": "alwaysTruthy",
+              "line": 4,
+              "column": 18,
+              "endLine": 4,
+              "endColumn": 22,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare function assert(x: unknown): asserts x;\ndeclare const b: boolean;\nassert(b \u0026\u0026 'b');",
+          "options": {
+            "checkTypePredicates": true
+          },
+          "errors": [
+            {
+              "messageId": "alwaysTruthy",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare function assert(x: unknown): asserts x;\ndeclare const b: boolean;\ndeclare const c: boolean;\nassert((b \u0026\u0026 'b') || c);",
+          "options": {
+            "checkTypePredicates": true
+          },
+          "errors": [
+            {
+              "messageId": "alwaysTruthy",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare function assertSecond(x: unknown, y: unknown): asserts y;\ndeclare const b: boolean;\nassertSecond(b, b \u0026\u0026 'b');",
+          "options": {
+            "checkTypePredicates": true
+          },
+          "errors": [
+            {
+              "messageId": "alwaysTruthy",
               "suggestions": []
             }
           ]

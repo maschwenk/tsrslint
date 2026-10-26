@@ -25,6 +25,7 @@ use tsrslint::tsconfig::ParseHost;
 #[derive(Deserialize)]
 struct Cases {
     groups: Vec<Group>,
+    #[serde(default)]
     unconverted: Vec<serde_json::Value>,
 }
 
@@ -217,9 +218,15 @@ fn line_col(file: P<SourceFile>, pos: i32) -> (i32, i32) {
 
 /// Runs every converted case of `rule`; returns (passed, failed descriptions, skipped).
 fn run_cases(rule_name: &str) -> (usize, Vec<String>, usize, usize) {
-    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join(format!("tests/cases/{rule_name}.json"));
-    let cases: Cases = serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+    let tests = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("tests");
+    let path = tests.join(format!("cases/{rule_name}.json"));
+    let mut cases: Cases = serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+    // Cases tsgolint's Go tests lack, kept apart so re-extraction cannot drop them (docs/porting.md).
+    let regressions = tests.join(format!("regressions/{rule_name}.json"));
+    if let Ok(text) = std::fs::read_to_string(&regressions) {
+        let extra: Cases = serde_json::from_str(&text).unwrap();
+        cases.groups.extend(extra.groups);
+    }
     let root = fixtures_root();
     let mut passed = 0;
     let mut skipped = 0;
@@ -509,6 +516,7 @@ rule_test!(
 rule_test!(no_unsafe_argument, "no-unsafe-argument");
 rule_test!(no_unsafe_assignment, "no-unsafe-assignment");
 rule_test!(no_unsafe_call, "no-unsafe-call");
+rule_test!(no_unsafe_enum_assignment, "no-unsafe-enum-assignment");
 rule_test!(no_unsafe_enum_comparison, "no-unsafe-enum-comparison");
 rule_test!(no_unsafe_member_access, "no-unsafe-member-access");
 rule_test!(no_unsafe_return, "no-unsafe-return");

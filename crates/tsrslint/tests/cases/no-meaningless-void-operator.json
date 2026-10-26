@@ -9,6 +9,63 @@
         },
         {
           "code": "\nfunction bar(x: never) {\n  void x;\n}\n    "
+        },
+        {
+          "code": "declare let x: number; void (x = 1);"
+        },
+        {
+          "code": "declare let x: number; () =\u003e void (x = 1);"
+        },
+        {
+          "code": "declare let x: number; void (x += 1);"
+        },
+        {
+          "code": "declare let x: number; declare let y: number; void (x = y = 1);"
+        },
+        {
+          "code": "declare let x: string; declare function getValue(): string; void (x = getValue());"
+        },
+        {
+          "code": "declare const obj: { prop: number }; void (obj.prop = 1);"
+        },
+        {
+          "code": "declare let x: number; declare let y: number; void ((x = 1), (y = 2));"
+        },
+        {
+          "code": "declare let x: undefined; () =\u003e void (((x = undefined)));"
+        },
+        {
+          "code": "declare let x: void; declare function fn(): void; void (x = fn());"
+        },
+        {
+          "code": "declare let x: undefined; void (x ??= undefined);"
+        },
+        {
+          "code": "declare let x: undefined; void ((x = undefined) as undefined);"
+        },
+        {
+          "code": "declare let x: undefined; void (\u003cundefined\u003e(x = undefined));"
+        },
+        {
+          "code": "declare let x: undefined; void ((x = undefined) satisfies undefined);"
+        },
+        {
+          "code": "declare let x: undefined; void ((x = undefined), (x = undefined));"
+        },
+        {
+          "code": "declare let x: undefined; void ((x = undefined)!, ((x = undefined) as undefined));"
+        },
+        {
+          "code": "declare let x: undefined; void ((x = undefined)!);",
+          "options": {
+            "checkNever": true
+          }
+        },
+        {
+          "code": "declare let x: never; declare function fail(): never; void (x = fail());",
+          "options": {
+            "checkNever": true
+          }
         }
       ],
       "invalid": [
@@ -69,6 +126,18 @@
               "messageId": "meaninglessVoidOperator",
               "line": 3,
               "column": 1,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "declare let x: undefined; declare function fn(): void; void ((x = undefined), fn());",
+          "output": [
+            "declare let x: undefined; declare function fn(): void;  ((x = undefined), fn());"
+          ],
+          "errors": [
+            {
+              "messageId": "meaninglessVoidOperator",
               "suggestions": []
             }
           ]

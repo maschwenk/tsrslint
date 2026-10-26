@@ -1,4 +1,4 @@
-# Benchmarks tsrslint against stock tsgolint 7.0.2003 on open-source projects (bench/README.md; adapted from
+# Benchmarks tsrslint against stock tsgolint 7.0.2005 on open-source projects (bench/README.md; adapted from
 # maschwenk/tsrs's bench workflow), then publishes the result (bench/publish.py: the table between the bench markers of
 # README.md and the charts bench/*.svg), rewrites the rule table of docs/rules.md (its diagnostics column reads the
 # newest result), and commits them with the results.

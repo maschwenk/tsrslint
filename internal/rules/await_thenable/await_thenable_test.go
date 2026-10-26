@@ -574,6 +574,117 @@ Promise.all([
   Promise.resolve(3),
 ]);
       `},
+		{
+			Code: `
+declare const maybePromises: (number | Promise<number>)[];
+Promise.all(maybePromises);
+      `,
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{"allowMixedPromiseArrays": true}`),
+		},
+		{
+			Code: `
+declare const maybePromises: [number, Promise<number>];
+Promise.all(maybePromises);
+      `,
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{"allowMixedPromiseArrays": true}`),
+		},
+		{
+			Code: `
+declare const maybePromises: number[] | Promise<number>[];
+Promise.all(maybePromises);
+      `,
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{"allowMixedPromiseArrays": true}`),
+		},
+		{
+			Code: `
+Promise.all([1, 2, Promise.resolve(3)]);
+      `,
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{"allowMixedPromiseArrays": true}`),
+		},
+		{
+			Code: `
+declare const maybePromise: number | Promise<number>;
+Promise.all([1, maybePromise]);
+      `,
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{"allowMixedPromiseArrays": true}`),
+		},
+		{
+			Code: `
+Promise.all([]);
+      `,
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{"allowMixedPromiseArrays": true}`),
+		},
+		{
+			Code: `
+Promise.all(1);
+      `,
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{"allowMixedPromiseArrays": true}`),
+		},
+		{
+			Code: `
+declare const input: unknown;
+Promise.all(input);
+      `,
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{"allowMixedPromiseArrays": true}`),
+		},
+		{
+			Code: `
+declare const input: any;
+Promise.all(input);
+      `,
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{"allowMixedPromiseArrays": true}`),
+		},
+		{
+			Code: `
+function test<T>(input: T) {
+  Promise.all(input);
+}
+      `,
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{"allowMixedPromiseArrays": true}`),
+		},
+		{
+			Code: `
+function test<T extends Iterable<number | Promise<number>>>(maybePromises: T) {
+  Promise.all(maybePromises);
+}
+      `,
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{"allowMixedPromiseArrays": true}`),
+		},
+		{
+			Code: `
+declare const maybePromises: ReadonlyArray<number | PromiseLike<number>>;
+Promise.all(maybePromises);
+      `,
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{"allowMixedPromiseArrays": true}`),
+		},
+		{
+			Code: `
+declare const maybePromises: Set<number | Promise<number>>;
+Promise.all(maybePromises);
+      `,
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{"allowMixedPromiseArrays": true}`),
+		},
+		{
+			Code: `
+declare const value: unknown;
+Promise.all([1, value]);
+      `,
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{"allowMixedPromiseArrays": true}`),
+		},
+		{
+			Code: `
+declare const value: any;
+Promise.all([1, value]);
+      `,
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{"allowMixedPromiseArrays": true}`),
+		},
+		{
+			Code: `
+declare const promises: Promise<number>[];
+Promise.all([1, ...promises]);
+      `,
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{"allowMixedPromiseArrays": true}`),
+		},
 	}, []rule_tester.InvalidTestCase{
 		{
 			Code: "await 0;",
@@ -584,7 +695,7 @@ Promise.all([
 					Suggestions: []rule_tester.InvalidTestCaseSuggestion{
 						{
 							MessageId: "removeAwait",
-							Output:    " 0;",
+							Output:    "0;",
 						},
 					},
 				},
@@ -599,7 +710,7 @@ Promise.all([
 					Suggestions: []rule_tester.InvalidTestCaseSuggestion{
 						{
 							MessageId: "removeAwait",
-							Output:    " 'value';",
+							Output:    "'value';",
 						},
 					},
 				},
@@ -614,7 +725,7 @@ Promise.all([
 					Suggestions: []rule_tester.InvalidTestCaseSuggestion{
 						{
 							MessageId: "removeAwait",
-							Output:    "async () =>  (Math.random() > 0.5 ? '' : 0);",
+							Output:    "async () => (Math.random() > 0.5 ? '' : 0);",
 						},
 					},
 				},
@@ -649,7 +760,7 @@ await new NonPromise();
 							MessageId: "removeAwait",
 							Output: `
 class NonPromise extends Array {}
- new NonPromise();
+new NonPromise();
       `,
 						},
 					},
@@ -681,7 +792,7 @@ async function test() {
   }
   const thenable = new IncorrectThenable();
 
-   thenable;
+  thenable;
 }
       `,
 						},
@@ -703,7 +814,7 @@ await callback?.();
 							MessageId: "removeAwait",
 							Output: `
 declare const callback: (() => void) | undefined;
- callback?.();
+callback?.();
       `,
 						},
 					},
@@ -724,7 +835,7 @@ await obj.a?.b?.();
 							MessageId: "removeAwait",
 							Output: `
 declare const obj: { a?: { b?: () => void } };
- obj.a?.b?.();
+obj.a?.b?.();
       `,
 						},
 					},
@@ -745,7 +856,7 @@ await obj?.a.b.c?.();
 							MessageId: "removeAwait",
 							Output: `
 declare const obj: { a: { b: { c?: () => void } } } | undefined;
- obj?.a.b.c?.();
+obj?.a.b.c?.();
       `,
 						},
 					},
@@ -779,7 +890,7 @@ function* yieldNumbers() {
   yield 2;
   yield 3;
 }
-for  (const value of yieldNumbers()) {
+for (const value of yieldNumbers()) {
   console.log(value);
 }
       `,
@@ -811,7 +922,7 @@ function* yieldNumberPromises() {
   yield Promise.resolve(2);
   yield Promise.resolve(3);
 }
-for  (const value of yieldNumberPromises()) {
+for (const value of yieldNumberPromises()) {
   console.log(value);
 }
       `,
@@ -840,7 +951,7 @@ async function foo() {
 							Output: `
 declare const disposable: Disposable;
 async function foo() {
-   using d = disposable;
+  using d = disposable;
 }
       `,
 						},
@@ -868,7 +979,7 @@ async function foo() {
 							MessageId: "removeAwait",
 							Output: `
 async function foo() {
-   using _ = {
+  using _ = {
     async [Symbol.dispose]() {},
   };
 }
@@ -951,7 +1062,7 @@ async function wrapper<T extends number>(value: T) {
 							MessageId: "removeAwait",
 							Output: `
 async function wrapper<T extends number>(value: T) {
-  return  value;
+  return value;
 }
       `,
 						},
@@ -980,7 +1091,7 @@ class C<T> {
 							Output: `
 class C<T> {
   async wrapper<T extends string>(value: T) {
-    return  value;
+    return value;
   }
 }
       `,
@@ -1010,7 +1121,7 @@ class C<R extends number> {
 							Output: `
 class C<R extends number> {
   async wrapper<T extends R>(value: T) {
-    return  value;
+    return value;
   }
 }
       `,
@@ -1334,5 +1445,246 @@ Promise.all([...[1, 2, 3]]);
 				},
 			},
 		},
+		{
+			Code: `
+declare const numbers: number[];
+Promise.all(numbers);
+      `,
+			Errors: []rule_tester.InvalidTestCaseError{
+				{
+					MessageId: "invalidPromiseAggregatorInput",
+					Line:      3,
+					Column:    13,
+					EndLine:   3,
+					EndColumn: 20,
+				},
+			},
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{"allowMixedPromiseArrays": true}`),
+		},
+		{
+			Code: `
+declare const numbers: [number, string];
+Promise.all(numbers);
+      `,
+			Errors: []rule_tester.InvalidTestCaseError{
+				{
+					MessageId: "invalidPromiseAggregatorInput",
+					Line:      3,
+					Column:    13,
+					EndLine:   3,
+					EndColumn: 20,
+				},
+			},
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{"allowMixedPromiseArrays": true}`),
+		},
+		{
+			Code: `
+Promise.all([1, 2]);
+      `,
+			Errors: []rule_tester.InvalidTestCaseError{
+				{
+					MessageId: "invalidPromiseAggregatorInput",
+					Line:      2,
+					Column:    14,
+					EndLine:   2,
+					EndColumn: 15,
+				},
+				{
+					MessageId: "invalidPromiseAggregatorInput",
+					Line:      2,
+					Column:    17,
+					EndLine:   2,
+					EndColumn: 18,
+				},
+			},
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{"allowMixedPromiseArrays": true}`),
+		},
+		{
+			Code: `
+Promise.all('abc');
+      `,
+			Errors: []rule_tester.InvalidTestCaseError{
+				{
+					MessageId: "invalidPromiseAggregatorInput",
+				},
+			},
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{"allowMixedPromiseArrays": true}`),
+		},
+		{
+			Code: `
+declare const numbers: Set<number>;
+Promise.all(numbers);
+      `,
+			Errors: []rule_tester.InvalidTestCaseError{
+				{
+					MessageId: "invalidPromiseAggregatorInput",
+				},
+			},
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{"allowMixedPromiseArrays": true}`),
+		},
+		{
+			Code: `
+function test<T extends Iterable<number>>(numbers: T) {
+  Promise.all(numbers);
+}
+      `,
+			Errors: []rule_tester.InvalidTestCaseError{
+				{
+					MessageId: "invalidPromiseAggregatorInput",
+				},
+			},
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{"allowMixedPromiseArrays": true}`),
+		},
+		{
+			Code: `
+Promise.all([1, Promise.resolve(2)]);
+      `,
+			Errors: []rule_tester.InvalidTestCaseError{
+				{
+					MessageId: "invalidPromiseAggregatorInput",
+				},
+			},
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{}`),
+		},
+		{
+			Code: `
+Promise.all([1, Promise.resolve(2)]);
+      `,
+			Errors: []rule_tester.InvalidTestCaseError{
+				{
+					MessageId: "invalidPromiseAggregatorInput",
+				},
+			},
+			Options: rule_tester.OptionsFromJSON[AwaitThenableOptions](`{"allowMixedPromiseArrays": false}`),
+		},
 	})
+}
+
+func TestRemoveAwaitSyntax(t *testing.T) {
+	t.Parallel()
+	cases := []struct{ code, output string }{
+		{`const test = async () => await { a: 1 } as const;`, `const test = async () => ({ a: 1 }) as const;`},
+		{`async function test() { await { a: 1 }.a + 2; }`, `async function test() { ({ a: 1 }.a) + 2; }`},
+		{`async function test() { (await { a: 1 }); }`, `async function test() { ({ a: 1 }); }`},
+		{`async function test() { await ({ a: 1 }); }`, `async function test() { ({ a: 1 }); }`},
+		{`async function test() { await /* comment */ { a: 1 }; }`, `async function test() { /* comment */ ({ a: 1 }); }`},
+		{`async function test() { const x = await { a: 1 }; }`, `async function test() { const x = { a: 1 }; }`},
+		{`async function test() { await (1 + 2) * 3; }`, `async function test() { (1 + 2) * 3; }`},
+		{`async function test() { await // comment
+  { a: 1 }; }`, `async function test() { // comment
+  ({ a: 1 }); }`},
+	}
+	invalid := make([]rule_tester.InvalidTestCase, 0, len(cases))
+	for _, test := range cases {
+		invalid = append(invalid, rule_tester.InvalidTestCase{Code: test.code, Errors: []rule_tester.InvalidTestCaseError{{MessageId: "await", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "removeAwait", Output: test.output}}}}})
+	}
+	rule_tester.RunRuleTester(fixtures.GetRootDir(), "tsconfig.minimal.json", t, &AwaitThenableRule, nil, invalid)
+}
+
+func TestRemoveAwaitTrivia(t *testing.T) {
+	t.Parallel()
+	rule_tester.RunRuleTester(fixtures.GetRootDir(), "tsconfig.minimal.json", t, &AwaitThenableRule, nil, []rule_tester.InvalidTestCase{
+		{
+			Code:   `async function test() { for await /* comment */ (const value of [1]) {} }`,
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "forAwaitOfNonAsyncIterable", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "convertToOrdinaryFor", Output: `async function test() { for /* comment */ (const value of [1]) {} }`}}}},
+		},
+		{
+			Code:   `declare const disposable: Disposable; async function test() { await /* comment */ using d = disposable; }`,
+			Errors: []rule_tester.InvalidTestCaseError{{MessageId: "awaitUsingOfNonAsyncDisposable", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "removeAwait", Output: `declare const disposable: Disposable; async function test() { /* comment */ using d = disposable; }`}}}},
+		},
+	})
+}
+
+// Regression cases from typescript-eslint/typescript-eslint#12716.
+func TestRemoveAwaitUpstream(t *testing.T) {
+	t.Parallel()
+	cases := []struct{ code, output string }{
+		{`const test = async () => await { a: 1 };`, `const test = async () => ({ a: 1 });`},
+		{`const test = async () => await { a: 1 }.a;`, `const test = async () => ({ a: 1 }.a);`},
+		{`const test = async () => await ({ a: 1 });`, `const test = async () => ({ a: 1 });`},
+		{`const test = async () => (await { a: 1 });`, `const test = async () => ({ a: 1 });`},
+		{`
+declare const cond: boolean;
+const test = async () => (cond ? await { a: 1 } : 2);
+      `, `
+declare const cond: boolean;
+const test = async () => (cond ? { a: 1 } : 2);
+      `},
+		{`const test = async () => await /* comment */ 1;`, `const test = async () => /* comment */ 1;`},
+		{`const test = async () => await /* comment */ { a: 1 };`, `const test = async () => /* comment */ ({ a: 1 });`},
+		{`
+async function test() {
+  await { a: 1 };
+}
+      `, `
+async function test() {
+  ({ a: 1 });
+}
+      `},
+		{`
+async function test() {
+  await function () {};
+}
+      `, `
+async function test() {
+  (function () {});
+}
+      `},
+		{`
+async function test() {
+  await class {};
+}
+      `, `
+async function test() {
+  (class {});
+}
+      `},
+	}
+	invalid := make([]rule_tester.InvalidTestCase, 0, len(cases))
+	for _, test := range cases {
+		invalid = append(invalid, rule_tester.InvalidTestCase{Code: test.code, Errors: []rule_tester.InvalidTestCaseError{{MessageId: "await", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "removeAwait", Output: test.output}}}}})
+	}
+	rule_tester.RunRuleTester(fixtures.GetRootDir(), "tsconfig.minimal.json", t, &AwaitThenableRule, nil, invalid)
+}
+
+func TestRemoveAwaitAsyncFunction(t *testing.T) {
+	t.Parallel()
+	cases := []struct{ code, output string }{
+		{`await async function() {};`, `(async function() {});`},
+		{`await async function named() {};`, `(async function named() {});`},
+		{`await async /* comment */ function() {};`, `(async /* comment */ function() {});`},
+		{`(await async function() {});`, `(async function() {});`},
+		{`const test = async () => await async function() {};`, `const test = async () => async function() {};`},
+	}
+	invalid := make([]rule_tester.InvalidTestCase, 0, len(cases))
+	for _, test := range cases {
+		invalid = append(invalid, rule_tester.InvalidTestCase{Code: test.code, Errors: []rule_tester.InvalidTestCaseError{{MessageId: "await", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "removeAwait", Output: test.output}}}}})
+	}
+	rule_tester.RunRuleTester(fixtures.GetRootDir(), "tsconfig.minimal.json", t, &AwaitThenableRule, nil, invalid)
+}
+
+func TestRemoveAwaitStatementBoundary(t *testing.T) {
+	t.Parallel()
+	cases := []struct{ code, output string }{
+		{"foo()\nawait {};", "foo()\n;({});"},
+		{"foo()\nawait function() {};", "foo()\n;(function() {});"},
+		{"foo()\nawait async function named() {};", "foo()\n;(async function named() {});"},
+		{"foo()\nawait class {};", "foo()\n;(class {});"},
+		{"foo()\nawait (1);", "foo()\n;(1);"},
+		{"foo()\nawait // comment\n {};", "foo()\n;// comment\n ({});"},
+		{"const x = {}\nawait {};", "const x = {}\n;({});"},
+		{"foo(); // comment\nawait {};", "foo(); // comment\n({});"},
+		{"async function test() { foo()\nawait {}; }", "async function test() { foo()\n;({}); }"},
+		{"async function test() { return\nawait {}; }", "async function test() { return\n;({}); }"},
+		{"if (true) foo()\nawait {};", "if (true) foo()\n;({});"},
+		{"switch (x) { case 1: foo()\nawait {}; }", "switch (x) { case 1: foo()\n;({}); }"},
+		{`if (true) await {};`, `if (true) ({});`},
+		{`while (false) await {};`, `while (false) ({});`},
+		{`label: await {};`, `label: ({});`},
+	}
+	invalid := make([]rule_tester.InvalidTestCase, 0, len(cases))
+	for _, test := range cases {
+		invalid = append(invalid, rule_tester.InvalidTestCase{Code: "export {};\n" + test.code, Errors: []rule_tester.InvalidTestCaseError{{MessageId: "await", Suggestions: []rule_tester.InvalidTestCaseSuggestion{{MessageId: "removeAwait", Output: "export {};\n" + test.output}}}}})
+	}
+	rule_tester.RunRuleTester(fixtures.GetRootDir(), "tsconfig.minimal.json", t, &AwaitThenableRule, nil, invalid)
 }

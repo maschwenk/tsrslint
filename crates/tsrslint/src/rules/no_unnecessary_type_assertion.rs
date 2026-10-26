@@ -329,9 +329,14 @@ fn has_same_properties(c: &mut Checker, uncast: P<Type>, cast: P<Type>) -> bool 
     true
 }
 
-fn have_same_type_arguments(c: &mut Checker, uncast: P<Type>, cast: P<Type>) -> bool {
-    let uncast_args = get_type_arguments(c, uncast);
-    let cast_args = get_type_arguments(c, cast);
+fn has_direct_any(t: P<Type>, type_arguments: &[P<Type>]) -> bool {
+    utils::is_type_flag_set(t, TypeFlags::Any)
+        || type_arguments
+            .iter()
+            .any(|&type_argument| utils::is_type_flag_set(type_argument, TypeFlags::Any))
+}
+
+fn have_same_type_arguments(uncast_args: &[P<Type>], cast_args: &[P<Type>]) -> bool {
     uncast_args == cast_args
 }
 
@@ -494,9 +499,6 @@ fn is_type_unchanged(
     if (utils::is_type_flag_set(uncast, TypeFlags::NonPrimitive)
         && !utils::is_type_flag_set(cast, TypeFlags::NonPrimitive))
         || (has_index_signature(c, uncast) != has_index_signature(c, cast))
-        || contains_any(c, uncast)
-        || contains_any(c, cast)
-        || (contains_type_variable(c, cast) && !contains_type_variable(c, uncast))
     {
         return false;
     }
@@ -512,29 +514,48 @@ fn is_type_unchanged(
         return false;
     }
 
+    let uncast_type_arguments = get_type_arguments(c, uncast);
+    let cast_type_arguments = get_type_arguments(c, cast);
+    // Assertions involving direct `any` are not reported and do not require a recursive type walk.
+    if has_direct_any(uncast, uncast_type_arguments) || has_direct_any(cast, cast_type_arguments) {
+        return false;
+    }
+
     if utils::is_intersection_type(cast) && !utils::is_intersection_type(uncast) {
+        if contains_any(c, uncast)
+            || contains_any(c, cast)
+            || (contains_type_variable(c, cast) && !contains_type_variable(c, uncast))
+        {
+            return false;
+        }
+
         let cast_parts = cast.types();
         let other_part = cast_parts.iter().copied().find(|&part| part != uncast);
         if utils::is_type_parameter(uncast) && cast_parts.len() == 2 && cast_parts.contains(&uncast)
         {
             if let Some(other_part) = other_part {
                 if is_empty_object_type(c, other_part) && !contains_type_variable(c, other_part) {
-                    if let Some(constraint) = c.get_base_constraint_of_type(uncast) {
-                        if !utils::is_nullable_type(c, constraint) {
-                            return true;
-                        }
-                    }
+                    let constraint = c.get_base_constraint_of_type(uncast);
+                    return constraint
+                        .is_some_and(|constraint| !utils::is_nullable_type(c, constraint));
                 }
             }
         }
         return false;
     }
 
-    if !has_same_properties(c, uncast, cast) || !have_same_type_arguments(c, uncast, cast) {
+    // Check shape and assignability before recursively walking nested types. Assertions between
+    // incompatible callable types can otherwise traverse very large generic parameter graphs.
+    if !has_same_properties(c, uncast, cast)
+        || !have_same_type_arguments(uncast_type_arguments, cast_type_arguments)
+        || !are_mutually_assignable(c, uncast, cast)
+    {
         return false;
     }
 
-    are_mutually_assignable(c, uncast, cast)
+    !contains_any(c, uncast)
+        && !contains_any(c, cast)
+        && !(contains_type_variable(c, cast) && !contains_type_variable(c, uncast))
 }
 
 fn is_type_any(t: P<Type>) -> bool {
@@ -1001,7 +1022,10 @@ fn has_phantom_type_argument_mismatch(
     is_in_generic_context(c, node)
         && (has_phantom_type_arguments(c, uncast_type)
             || has_phantom_type_arguments(c, contextual_type))
-        && !have_same_type_arguments(c, uncast_type, contextual_type)
+        && !have_same_type_arguments(
+            get_type_arguments(c, uncast_type),
+            get_type_arguments(c, contextual_type),
+        )
 }
 
 fn is_nullish_literal_to_union(node: P<Node>, cast_type: P<Type>) -> bool {
@@ -1365,13 +1389,15 @@ fn create_assertion_fixer(ctx: &mut Ctx, node: P<Node>) -> Vec<RuleFix> {
         {
             statement_start_token = Kind::FunctionKeyword;
         }
-        let needs_parens =
-            is_start_of_expression_statement_needing_parentheses(ctx, node, statement_start_token)
-                || is_start_of_arrow_function_body_needing_parentheses(
-                    ctx,
-                    node,
-                    first_operand_token,
-                );
+        let needs_parens = utils::is_start_of_expression_statement_needing_parentheses(
+            ctx.file,
+            node,
+            statement_start_token,
+        ) || utils::is_start_of_arrow_function_body_needing_parentheses(
+            ctx.file,
+            node,
+            first_operand_token,
+        );
 
         let mut fixes = Vec::new();
         if needs_parens {
@@ -1398,57 +1424,6 @@ fn create_assertion_fixer(ctx: &mut Ctx, node: P<Node>) -> Vec<RuleFix> {
         token_before_as_end = token_before_as_end.max(comment.end());
     }
     vec![ctx.fix_remove_range(token_before_as_end as i32, pos_i32(node.end()))]
-}
-
-/// Matching start positions limits traversal to the beginning of a statement and stops at existing
-/// parentheses.
-fn is_start_of_expression_statement_needing_parentheses(
-    ctx: &Ctx,
-    node: P<Node>,
-    first_token: Kind,
-) -> bool {
-    if first_token != Kind::OpenBraceToken
-        && first_token != Kind::ClassKeyword
-        && first_token != Kind::FunctionKeyword
-    {
-        return false;
-    }
-    let start = ctx.trim(node).0;
-    let mut ancestor = node.parent();
-    while let Some(a) = ancestor {
-        if ctx.trim(a).0 != start {
-            break;
-        }
-        if ast::is_expression_statement(a) {
-            return true;
-        }
-        ancestor = a.parent();
-    }
-    false
-}
-
-fn is_start_of_arrow_function_body_needing_parentheses(
-    ctx: &Ctx,
-    node: P<Node>,
-    first_token: Kind,
-) -> bool {
-    if first_token != Kind::OpenBraceToken {
-        return false;
-    }
-    let mut current = node;
-    while let Some(parent) = current.parent() {
-        if ast::is_parenthesized_expression(parent) {
-            return false;
-        }
-        if ast::is_arrow_function(parent) && parent.body() == Some(current) {
-            return true;
-        }
-        if ctx.trim(parent).0 != ctx.trim(current).0 {
-            return false;
-        }
-        current = parent;
-    }
-    false
 }
 
 // ---- narrowing_assignment.go ----

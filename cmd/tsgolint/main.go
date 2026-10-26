@@ -32,6 +32,7 @@ import (
 	"github.com/typescript-eslint/tsgolint/internal/rules/no_duplicate_type_constituents"
 	"github.com/typescript-eslint/tsgolint/internal/rules/no_floating_promises"
 	"github.com/typescript-eslint/tsgolint/internal/rules/no_for_in_array"
+	"github.com/typescript-eslint/tsgolint/internal/rules/no_generated_empty_object_type"
 	"github.com/typescript-eslint/tsgolint/internal/rules/no_implied_eval"
 	"github.com/typescript-eslint/tsgolint/internal/rules/no_meaningless_void_operator"
 	"github.com/typescript-eslint/tsgolint/internal/rules/no_misused_promises"
@@ -49,6 +50,7 @@ import (
 	"github.com/typescript-eslint/tsgolint/internal/rules/no_unsafe_argument"
 	"github.com/typescript-eslint/tsgolint/internal/rules/no_unsafe_assignment"
 	"github.com/typescript-eslint/tsgolint/internal/rules/no_unsafe_call"
+	"github.com/typescript-eslint/tsgolint/internal/rules/no_unsafe_enum_assignment"
 	"github.com/typescript-eslint/tsgolint/internal/rules/no_unsafe_enum_comparison"
 	"github.com/typescript-eslint/tsgolint/internal/rules/no_unsafe_member_access"
 	"github.com/typescript-eslint/tsgolint/internal/rules/no_unsafe_return"
@@ -171,6 +173,7 @@ var allRules = []rule.Rule{
 	no_duplicate_type_constituents.NoDuplicateTypeConstituentsRule,
 	no_floating_promises.NoFloatingPromisesRule,
 	no_for_in_array.NoForInArrayRule,
+	no_generated_empty_object_type.NoGeneratedEmptyObjectTypeRule,
 	no_implied_eval.NoImpliedEvalRule,
 	no_meaningless_void_operator.NoMeaninglessVoidOperatorRule,
 	no_misused_promises.NoMisusedPromisesRule,
@@ -189,6 +192,7 @@ var allRules = []rule.Rule{
 	no_unsafe_argument.NoUnsafeArgumentRule,
 	no_unsafe_assignment.NoUnsafeAssignmentRule,
 	no_unsafe_call.NoUnsafeCallRule,
+	no_unsafe_enum_assignment.NoUnsafeEnumAssignmentRule,
 	no_unsafe_enum_comparison.NoUnsafeEnumComparisonRule,
 	no_unsafe_member_access.NoUnsafeMemberAccessRule,
 	no_unsafe_return.NoUnsafeReturnRule,

@@ -33,7 +33,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 12,
               "suggestions": []
@@ -46,7 +46,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 20,
+              "column": 1,
               "endLine": 3,
               "endColumn": 29,
               "suggestions": []
@@ -61,7 +61,7 @@
               "line": 3,
               "column": 1,
               "endLine": 3,
-              "endColumn": 9,
+              "endColumn": 10,
               "suggestions": []
             }
           ]
@@ -72,7 +72,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 22,
               "suggestions": []
@@ -85,7 +85,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 12,
+              "column": 1,
               "endLine": 3,
               "endColumn": 20,
               "suggestions": []
@@ -93,7 +93,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 11,
               "suggestions": []
@@ -106,7 +106,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 12,
+              "column": 10,
               "endLine": 3,
               "endColumn": 19,
               "suggestions": []
@@ -119,7 +119,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 69,
               "suggestions": []
@@ -132,7 +132,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 17,
+              "column": 13,
               "endLine": 3,
               "endColumn": 28,
               "suggestions": []
@@ -158,7 +158,7 @@
             {
               "messageId": "unsafeOfAnyTypeAssertion",
               "line": 3,
-              "column": 7,
+              "column": 1,
               "endLine": 3,
               "endColumn": 16,
               "suggestions": []
@@ -171,7 +171,7 @@
             {
               "messageId": "unsafeToAnyTypeAssertion",
               "line": 3,
-              "column": 11,
+              "column": 1,
               "endLine": 3,
               "endColumn": 17,
               "suggestions": []
@@ -184,7 +184,7 @@
             {
               "messageId": "unsafeOfAnyTypeAssertion",
               "line": 3,
-              "column": 7,
+              "column": 1,
               "endLine": 3,
               "endColumn": 18,
               "suggestions": []
@@ -197,7 +197,7 @@
             {
               "messageId": "unsafeOfAnyTypeAssertion",
               "line": 3,
-              "column": 7,
+              "column": 1,
               "endLine": 3,
               "endColumn": 15,
               "suggestions": []
@@ -210,7 +210,7 @@
             {
               "messageId": "unsafeToAnyTypeAssertion",
               "line": 2,
-              "column": 7,
+              "column": 1,
               "endLine": 2,
               "endColumn": 13,
               "suggestions": []
@@ -223,7 +223,7 @@
             {
               "messageId": "unsafeOfAnyTypeAssertion",
               "line": 2,
-              "column": 17,
+              "column": 13,
               "endLine": 2,
               "endColumn": 26,
               "suggestions": []
@@ -236,7 +236,7 @@
             {
               "messageId": "unsafeToAnyTypeAssertion",
               "line": 2,
-              "column": 19,
+              "column": 13,
               "endLine": 2,
               "endColumn": 31,
               "suggestions": []
@@ -262,7 +262,7 @@
             {
               "messageId": "unsafeToAnyTypeAssertion",
               "line": 3,
-              "column": 9,
+              "column": 1,
               "endLine": 3,
               "endColumn": 15,
               "suggestions": []
@@ -275,7 +275,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 10,
+              "column": 1,
               "endLine": 3,
               "endColumn": 18,
               "suggestions": []
@@ -301,7 +301,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 12,
+              "column": 1,
               "endLine": 3,
               "endColumn": 25,
               "suggestions": []
@@ -314,7 +314,7 @@
             {
               "messageId": "unsafeToAnyTypeAssertion",
               "line": 3,
-              "column": 12,
+              "column": 1,
               "endLine": 3,
               "endColumn": 18,
               "suggestions": []
@@ -327,7 +327,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 12,
+              "column": 1,
               "endLine": 3,
               "endColumn": 20,
               "suggestions": []
@@ -362,7 +362,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 2,
-              "column": 14,
+              "column": 11,
               "endLine": 5,
               "endColumn": 2,
               "suggestions": []
@@ -375,7 +375,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 36,
+              "column": 1,
               "endLine": 3,
               "endColumn": 71,
               "suggestions": []
@@ -388,7 +388,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 23,
               "suggestions": []
@@ -417,7 +417,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 14,
               "suggestions": []
@@ -430,7 +430,7 @@
             {
               "messageId": "unsafeOfAnyTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 14,
               "suggestions": []
@@ -443,7 +443,7 @@
             {
               "messageId": "unsafeToAnyTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 11,
               "suggestions": []
@@ -456,7 +456,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 14,
               "suggestions": []
@@ -469,7 +469,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 13,
               "suggestions": []
@@ -501,7 +501,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 14,
               "suggestions": []
@@ -514,7 +514,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 22,
               "suggestions": []
@@ -527,7 +527,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 22,
               "suggestions": []
@@ -540,7 +540,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 14,
               "suggestions": []
@@ -553,7 +553,7 @@
             {
               "messageId": "unsafeOfAnyTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 14,
               "suggestions": []
@@ -566,7 +566,7 @@
             {
               "messageId": "unsafeOfAnyTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 22,
               "suggestions": []
@@ -579,7 +579,7 @@
             {
               "messageId": "unsafeToAnyTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 11,
               "suggestions": []
@@ -592,7 +592,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 14,
               "suggestions": []
@@ -605,7 +605,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 13,
               "suggestions": []
@@ -618,7 +618,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 23,
               "suggestions": []
@@ -650,7 +650,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 21,
               "suggestions": []
@@ -663,7 +663,7 @@
             {
               "messageId": "unsafeOfAnyTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 21,
               "suggestions": []
@@ -676,7 +676,7 @@
             {
               "messageId": "unsafeToAnyTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 18,
               "suggestions": []
@@ -689,7 +689,7 @@
             {
               "messageId": "unsafeToAnyTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 20,
               "suggestions": []
@@ -702,7 +702,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 21,
               "suggestions": []
@@ -715,7 +715,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 3,
+              "column": 1,
               "endLine": 3,
               "endColumn": 20,
               "suggestions": []
@@ -750,7 +750,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 9,
-              "column": 3,
+              "column": 1,
               "endLine": 9,
               "endColumn": 9,
               "suggestions": []
@@ -785,7 +785,7 @@
             {
               "messageId": "unsafeTypeAssertionAssignableToConstraint",
               "line": 4,
-              "column": 31,
+              "column": 17,
               "endLine": 4,
               "endColumn": 35,
               "suggestions": []
@@ -798,7 +798,7 @@
             {
               "messageId": "unsafeTypeAssertionAssignableToConstraint",
               "line": 5,
-              "column": 19,
+              "column": 17,
               "endLine": 5,
               "endColumn": 23,
               "suggestions": []
@@ -811,7 +811,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 5,
-              "column": 33,
+              "column": 27,
               "endLine": 5,
               "endColumn": 49,
               "suggestions": []
@@ -824,7 +824,7 @@
             {
               "messageId": "unsafeTypeAssertionAssignableToConstraint",
               "line": 3,
-              "column": 5,
+              "column": 3,
               "endLine": 3,
               "endColumn": 9,
               "suggestions": []
@@ -837,7 +837,7 @@
             {
               "messageId": "unsafeToUnconstrainedTypeAssertion",
               "line": 3,
-              "column": 5,
+              "column": 3,
               "endLine": 3,
               "endColumn": 9,
               "suggestions": []
@@ -850,7 +850,7 @@
             {
               "messageId": "unsafeTypeAssertionAssignableToConstraint",
               "line": 5,
-              "column": 5,
+              "column": 3,
               "endLine": 5,
               "endColumn": 9,
               "suggestions": []
@@ -863,7 +863,7 @@
             {
               "messageId": "unsafeTypeAssertionAssignableToConstraint",
               "line": 6,
-              "column": 5,
+              "column": 3,
               "endLine": 6,
               "endColumn": 9,
               "suggestions": []
@@ -876,7 +876,7 @@
             {
               "messageId": "unsafeTypeAssertionAssignableToConstraint",
               "line": 3,
-              "column": 5,
+              "column": 3,
               "endLine": 3,
               "endColumn": 9,
               "suggestions": []
@@ -889,7 +889,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 6,
-              "column": 5,
+              "column": 3,
               "endLine": 6,
               "endColumn": 9,
               "suggestions": []
@@ -902,7 +902,7 @@
             {
               "messageId": "unsafeOfAnyTypeAssertion",
               "line": 3,
-              "column": 5,
+              "column": 3,
               "endLine": 3,
               "endColumn": 9,
               "suggestions": []
@@ -915,7 +915,7 @@
             {
               "messageId": "unsafeTypeAssertionAssignableToConstraint",
               "line": 6,
-              "column": 5,
+              "column": 3,
               "endLine": 6,
               "endColumn": 9,
               "suggestions": []
@@ -928,7 +928,7 @@
             {
               "messageId": "unsafeToUnconstrainedTypeAssertion",
               "line": 3,
-              "column": 5,
+              "column": 3,
               "endLine": 3,
               "endColumn": 9,
               "suggestions": []
@@ -941,7 +941,7 @@
             {
               "messageId": "unsafeToUnconstrainedTypeAssertion",
               "line": 3,
-              "column": 5,
+              "column": 3,
               "endLine": 3,
               "endColumn": 9,
               "suggestions": []
@@ -954,7 +954,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 5,
+              "column": 3,
               "endLine": 3,
               "endColumn": 14,
               "suggestions": []
@@ -967,7 +967,7 @@
             {
               "messageId": "unsafeToAnyTypeAssertion",
               "line": 3,
-              "column": 5,
+              "column": 3,
               "endLine": 3,
               "endColumn": 11,
               "suggestions": []
@@ -980,7 +980,7 @@
             {
               "messageId": "unsafeToAnyTypeAssertion",
               "line": 3,
-              "column": 5,
+              "column": 3,
               "endLine": 3,
               "endColumn": 11,
               "suggestions": []
@@ -993,7 +993,7 @@
             {
               "messageId": "unsafeTypeAssertion",
               "line": 3,
-              "column": 5,
+              "column": 3,
               "endLine": 3,
               "endColumn": 17,
               "suggestions": []

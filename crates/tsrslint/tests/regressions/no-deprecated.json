@@ -1,0 +1,18 @@
+{
+  "source": "tsrslint regression cases; expected output from stock tsgolint 7.0.2005",
+  "groups": [
+    {
+      "tsconfig": "tsconfig.minimal.json",
+      "valid": [],
+      "invalid": [
+        {
+          "code": "import { deprecatedVariable, normalVariable } from './deprecated';\nconst obj = { deprecatedVariable, normalVariable };\nconst { deprecatedVariable: a, normalVariable: b } = obj;\nconst [{ deprecatedVariable: c }] = [obj];\nfunction f({ normalVariable: d }: typeof obj) {}",
+          "errors": [
+            { "messageId": "deprecated", "line": 2, "column": 15, "endColumn": 33, "suggestions": [] },
+            { "messageId": "deprecated", "line": 2, "column": 35, "endColumn": 49, "suggestions": [] }
+          ]
+        }
+      ]
+    }
+  ]
+}

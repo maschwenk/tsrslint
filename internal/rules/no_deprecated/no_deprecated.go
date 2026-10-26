@@ -99,6 +99,11 @@ var NoDeprecatedRule = rule.Rule{
 
 		// Helper to extract deprecation reason from a JSDoc deprecated tag
 		getJsDocDeprecationFromNode := func(node *ast.Node) string {
+			// Match IsDeprecatedDeclaration's lookup: variable declarations can
+			// inherit their @deprecated tag from the containing statement.
+			for node != nil && node.Flags&ast.NodeFlagsPossiblyContainsDeprecatedTag == 0 {
+				node = node.Parent
+			}
 			if node == nil {
 				return ""
 			}
@@ -158,7 +163,12 @@ var NoDeprecatedRule = rule.Rule{
 
 			targetSymbol := ctx.TypeChecker.GetAliasedSymbol(symbol)
 
-			for utils.IsSymbolFlagSet(symbol, ast.SymbolFlagsAlias) {
+			// A circular alias chain (for example `export { x } from './a'` in a.ts) never reaches nil or
+			// targetSymbol, so stop at the first alias that has been visited.
+			visited := map[*ast.Symbol]bool{}
+			for utils.IsSymbolFlagSet(symbol, ast.SymbolFlagsAlias) && !visited[symbol] {
+				visited[symbol] = true
+
 				isDeprecated, reason := getJsDocDeprecation(symbol)
 				if isDeprecated {
 					return true, reason
@@ -565,7 +575,7 @@ var NoDeprecatedRule = rule.Rule{
 						// Check shorthand assignment value symbol
 						if propertySymbol != nil && propertySymbol.ValueDeclaration != nil {
 							valueSymbol := checker.Checker_GetShorthandAssignmentValueSymbol(ctx.TypeChecker, propertySymbol.ValueDeclaration)
-							isDeprecated, reason = getJsDocDeprecation(valueSymbol)
+							isDeprecated, reason = searchForDeprecationInAliasesChain(valueSymbol, true)
 							if isDeprecated {
 								return true, reason
 							}
@@ -709,7 +719,7 @@ var NoDeprecatedRule = rule.Rule{
 				// TODO: if type OR value is allowed, skip
 
 				if utils.TypeMatchesSomeSpecifier(ty, opts.Allow, ctx.Program) ||
-					utils.ValueMatchesSomeSpecifier(node, opts.Allow, ctx.Program, ty) {
+					utils.ValueMatchesSomeSpecifier(node, opts.Allow, ctx.Program, ctx.TypeChecker) {
 					return
 				}
 			}

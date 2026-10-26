@@ -249,6 +249,102 @@
         },
         {
           "code": "\ndeclare const maybePromise: Promise\u003cnumber\u003e | number;\n\nPromise.all([\n  maybePromise,\n  Promise.resolve(1),\n  Promise.resolve(2),\n  Promise.resolve(3),\n]);\n      "
+        },
+        {
+          "code": "\ndeclare const maybePromises: (number | Promise\u003cnumber\u003e)[];\nPromise.all(maybePromises);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\ndeclare const maybePromises: [number, Promise\u003cnumber\u003e];\nPromise.all(maybePromises);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\ndeclare const maybePromises: number[] | Promise\u003cnumber\u003e[];\nPromise.all(maybePromises);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\nPromise.all([1, 2, Promise.resolve(3)]);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\ndeclare const maybePromise: number | Promise\u003cnumber\u003e;\nPromise.all([1, maybePromise]);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\nPromise.all([]);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\nPromise.all(1);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\ndeclare const input: unknown;\nPromise.all(input);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\ndeclare const input: any;\nPromise.all(input);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\nfunction test\u003cT\u003e(input: T) {\n  Promise.all(input);\n}\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\nfunction test\u003cT extends Iterable\u003cnumber | Promise\u003cnumber\u003e\u003e\u003e(maybePromises: T) {\n  Promise.all(maybePromises);\n}\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\ndeclare const maybePromises: ReadonlyArray\u003cnumber | PromiseLike\u003cnumber\u003e\u003e;\nPromise.all(maybePromises);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\ndeclare const maybePromises: Set\u003cnumber | Promise\u003cnumber\u003e\u003e;\nPromise.all(maybePromises);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\ndeclare const value: unknown;\nPromise.all([1, value]);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\ndeclare const value: any;\nPromise.all([1, value]);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
+        },
+        {
+          "code": "\ndeclare const promises: Promise\u003cnumber\u003e[];\nPromise.all([1, ...promises]);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          }
         }
       ],
       "invalid": [
@@ -261,7 +357,7 @@
               "suggestions": [
                 {
                   "messageId": "removeAwait",
-                  "output": " 0;"
+                  "output": "0;"
                 }
               ]
             }
@@ -276,7 +372,7 @@
               "suggestions": [
                 {
                   "messageId": "removeAwait",
-                  "output": " 'value';"
+                  "output": "'value';"
                 }
               ]
             }
@@ -291,7 +387,7 @@
               "suggestions": [
                 {
                   "messageId": "removeAwait",
-                  "output": "async () =\u003e  (Math.random() \u003e 0.5 ? '' : 0);"
+                  "output": "async () =\u003e (Math.random() \u003e 0.5 ? '' : 0);"
                 }
               ]
             }
@@ -321,7 +417,7 @@
               "suggestions": [
                 {
                   "messageId": "removeAwait",
-                  "output": "\nclass NonPromise extends Array {}\n new NonPromise();\n      "
+                  "output": "\nclass NonPromise extends Array {}\nnew NonPromise();\n      "
                 }
               ]
             }
@@ -336,7 +432,7 @@
               "suggestions": [
                 {
                   "messageId": "removeAwait",
-                  "output": "\nasync function test() {\n  class IncorrectThenable {\n    then() {}\n  }\n  const thenable = new IncorrectThenable();\n\n   thenable;\n}\n      "
+                  "output": "\nasync function test() {\n  class IncorrectThenable {\n    then() {}\n  }\n  const thenable = new IncorrectThenable();\n\n  thenable;\n}\n      "
                 }
               ]
             }
@@ -351,7 +447,7 @@
               "suggestions": [
                 {
                   "messageId": "removeAwait",
-                  "output": "\ndeclare const callback: (() =\u003e void) | undefined;\n callback?.();\n      "
+                  "output": "\ndeclare const callback: (() =\u003e void) | undefined;\ncallback?.();\n      "
                 }
               ]
             }
@@ -366,7 +462,7 @@
               "suggestions": [
                 {
                   "messageId": "removeAwait",
-                  "output": "\ndeclare const obj: { a?: { b?: () =\u003e void } };\n obj.a?.b?.();\n      "
+                  "output": "\ndeclare const obj: { a?: { b?: () =\u003e void } };\nobj.a?.b?.();\n      "
                 }
               ]
             }
@@ -381,7 +477,7 @@
               "suggestions": [
                 {
                   "messageId": "removeAwait",
-                  "output": "\ndeclare const obj: { a: { b: { c?: () =\u003e void } } } | undefined;\n obj?.a.b.c?.();\n      "
+                  "output": "\ndeclare const obj: { a: { b: { c?: () =\u003e void } } } | undefined;\nobj?.a.b.c?.();\n      "
                 }
               ]
             }
@@ -399,7 +495,7 @@
               "suggestions": [
                 {
                   "messageId": "convertToOrdinaryFor",
-                  "output": "\nfunction* yieldNumbers() {\n  yield 1;\n  yield 2;\n  yield 3;\n}\nfor  (const value of yieldNumbers()) {\n  console.log(value);\n}\n      "
+                  "output": "\nfunction* yieldNumbers() {\n  yield 1;\n  yield 2;\n  yield 3;\n}\nfor (const value of yieldNumbers()) {\n  console.log(value);\n}\n      "
                 }
               ]
             }
@@ -413,7 +509,7 @@
               "suggestions": [
                 {
                   "messageId": "convertToOrdinaryFor",
-                  "output": "\nfunction* yieldNumberPromises() {\n  yield Promise.resolve(1);\n  yield Promise.resolve(2);\n  yield Promise.resolve(3);\n}\nfor  (const value of yieldNumberPromises()) {\n  console.log(value);\n}\n      "
+                  "output": "\nfunction* yieldNumberPromises() {\n  yield Promise.resolve(1);\n  yield Promise.resolve(2);\n  yield Promise.resolve(3);\n}\nfor (const value of yieldNumberPromises()) {\n  console.log(value);\n}\n      "
                 }
               ]
             }
@@ -431,7 +527,7 @@
               "suggestions": [
                 {
                   "messageId": "removeAwait",
-                  "output": "\ndeclare const disposable: Disposable;\nasync function foo() {\n   using d = disposable;\n}\n      "
+                  "output": "\ndeclare const disposable: Disposable;\nasync function foo() {\n  using d = disposable;\n}\n      "
                 }
               ]
             }
@@ -449,7 +545,7 @@
               "suggestions": [
                 {
                   "messageId": "removeAwait",
-                  "output": "\nasync function foo() {\n   using _ = {\n    async [Symbol.dispose]() {},\n  };\n}\n      "
+                  "output": "\nasync function foo() {\n  using _ = {\n    async [Symbol.dispose]() {},\n  };\n}\n      "
                 }
               ]
             }
@@ -509,7 +605,7 @@
               "suggestions": [
                 {
                   "messageId": "removeAwait",
-                  "output": "\nasync function wrapper\u003cT extends number\u003e(value: T) {\n  return  value;\n}\n      "
+                  "output": "\nasync function wrapper\u003cT extends number\u003e(value: T) {\n  return value;\n}\n      "
                 }
               ]
             }
@@ -527,7 +623,7 @@
               "suggestions": [
                 {
                   "messageId": "removeAwait",
-                  "output": "\nclass C\u003cT\u003e {\n  async wrapper\u003cT extends string\u003e(value: T) {\n    return  value;\n  }\n}\n      "
+                  "output": "\nclass C\u003cT\u003e {\n  async wrapper\u003cT extends string\u003e(value: T) {\n    return value;\n  }\n}\n      "
                 }
               ]
             }
@@ -545,7 +641,7 @@
               "suggestions": [
                 {
                   "messageId": "removeAwait",
-                  "output": "\nclass C\u003cR extends number\u003e {\n  async wrapper\u003cT extends R\u003e(value: T) {\n    return  value;\n  }\n}\n      "
+                  "output": "\nclass C\u003cR extends number\u003e {\n  async wrapper\u003cT extends R\u003e(value: T) {\n    return value;\n  }\n}\n      "
                 }
               ]
             }
@@ -798,6 +894,710 @@
               "column": 14,
               "endColumn": 26,
               "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const numbers: number[];\nPromise.all(numbers);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          },
+          "errors": [
+            {
+              "messageId": "invalidPromiseAggregatorInput",
+              "line": 3,
+              "column": 13,
+              "endLine": 3,
+              "endColumn": 20,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const numbers: [number, string];\nPromise.all(numbers);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          },
+          "errors": [
+            {
+              "messageId": "invalidPromiseAggregatorInput",
+              "line": 3,
+              "column": 13,
+              "endLine": 3,
+              "endColumn": 20,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\nPromise.all([1, 2]);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          },
+          "errors": [
+            {
+              "messageId": "invalidPromiseAggregatorInput",
+              "line": 2,
+              "column": 14,
+              "endLine": 2,
+              "endColumn": 15,
+              "suggestions": []
+            },
+            {
+              "messageId": "invalidPromiseAggregatorInput",
+              "line": 2,
+              "column": 17,
+              "endLine": 2,
+              "endColumn": 18,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\nPromise.all('abc');\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          },
+          "errors": [
+            {
+              "messageId": "invalidPromiseAggregatorInput",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const numbers: Set\u003cnumber\u003e;\nPromise.all(numbers);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          },
+          "errors": [
+            {
+              "messageId": "invalidPromiseAggregatorInput",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\nfunction test\u003cT extends Iterable\u003cnumber\u003e\u003e(numbers: T) {\n  Promise.all(numbers);\n}\n      ",
+          "options": {
+            "allowMixedPromiseArrays": true
+          },
+          "errors": [
+            {
+              "messageId": "invalidPromiseAggregatorInput",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\nPromise.all([1, Promise.resolve(2)]);\n      ",
+          "options": {},
+          "errors": [
+            {
+              "messageId": "invalidPromiseAggregatorInput",
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\nPromise.all([1, Promise.resolve(2)]);\n      ",
+          "options": {
+            "allowMixedPromiseArrays": false
+          },
+          "errors": [
+            {
+              "messageId": "invalidPromiseAggregatorInput",
+              "suggestions": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tsconfig": "tsconfig.minimal.json",
+      "valid": [],
+      "invalid": [
+        {
+          "code": "const test = async () =\u003e await { a: 1 } as const;",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "const test = async () =\u003e ({ a: 1 }) as const;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "async function test() { await { a: 1 }.a + 2; }",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "async function test() { ({ a: 1 }.a) + 2; }"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "async function test() { (await { a: 1 }); }",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "async function test() { ({ a: 1 }); }"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "async function test() { await ({ a: 1 }); }",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "async function test() { ({ a: 1 }); }"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "async function test() { await /* comment */ { a: 1 }; }",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "async function test() { /* comment */ ({ a: 1 }); }"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "async function test() { const x = await { a: 1 }; }",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "async function test() { const x = { a: 1 }; }"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "async function test() { await (1 + 2) * 3; }",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "async function test() { (1 + 2) * 3; }"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "async function test() { await // comment\n  { a: 1 }; }",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "async function test() { // comment\n  ({ a: 1 }); }"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tsconfig": "tsconfig.minimal.json",
+      "valid": [],
+      "invalid": [
+        {
+          "code": "async function test() { for await /* comment */ (const value of [1]) {} }",
+          "errors": [
+            {
+              "messageId": "forAwaitOfNonAsyncIterable",
+              "suggestions": [
+                {
+                  "messageId": "convertToOrdinaryFor",
+                  "output": "async function test() { for /* comment */ (const value of [1]) {} }"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "declare const disposable: Disposable; async function test() { await /* comment */ using d = disposable; }",
+          "errors": [
+            {
+              "messageId": "awaitUsingOfNonAsyncDisposable",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "declare const disposable: Disposable; async function test() { /* comment */ using d = disposable; }"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tsconfig": "tsconfig.minimal.json",
+      "valid": [],
+      "invalid": [
+        {
+          "code": "const test = async () =\u003e await { a: 1 };",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "const test = async () =\u003e ({ a: 1 });"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "const test = async () =\u003e await { a: 1 }.a;",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "const test = async () =\u003e ({ a: 1 }.a);"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "const test = async () =\u003e await ({ a: 1 });",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "const test = async () =\u003e ({ a: 1 });"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "const test = async () =\u003e (await { a: 1 });",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "const test = async () =\u003e ({ a: 1 });"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\ndeclare const cond: boolean;\nconst test = async () =\u003e (cond ? await { a: 1 } : 2);\n      ",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "\ndeclare const cond: boolean;\nconst test = async () =\u003e (cond ? { a: 1 } : 2);\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "const test = async () =\u003e await /* comment */ 1;",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "const test = async () =\u003e /* comment */ 1;"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "const test = async () =\u003e await /* comment */ { a: 1 };",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "const test = async () =\u003e /* comment */ ({ a: 1 });"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\nasync function test() {\n  await { a: 1 };\n}\n      ",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "\nasync function test() {\n  ({ a: 1 });\n}\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\nasync function test() {\n  await function () {};\n}\n      ",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "\nasync function test() {\n  (function () {});\n}\n      "
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "\nasync function test() {\n  await class {};\n}\n      ",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "\nasync function test() {\n  (class {});\n}\n      "
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tsconfig": "tsconfig.minimal.json",
+      "valid": [],
+      "invalid": [
+        {
+          "code": "await async function() {};",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "(async function() {});"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "await async function named() {};",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "(async function named() {});"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "await async /* comment */ function() {};",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "(async /* comment */ function() {});"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "(await async function() {});",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "(async function() {});"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "const test = async () =\u003e await async function() {};",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "const test = async () =\u003e async function() {};"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "tsconfig": "tsconfig.minimal.json",
+      "valid": [],
+      "invalid": [
+        {
+          "code": "export {};\nfoo()\nawait {};",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "export {};\nfoo()\n;({});"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "export {};\nfoo()\nawait function() {};",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "export {};\nfoo()\n;(function() {});"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "export {};\nfoo()\nawait async function named() {};",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "export {};\nfoo()\n;(async function named() {});"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "export {};\nfoo()\nawait class {};",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "export {};\nfoo()\n;(class {});"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "export {};\nfoo()\nawait (1);",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "export {};\nfoo()\n;(1);"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "export {};\nfoo()\nawait // comment\n {};",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "export {};\nfoo()\n;// comment\n ({});"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "export {};\nconst x = {}\nawait {};",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "export {};\nconst x = {}\n;({});"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "export {};\nfoo(); // comment\nawait {};",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "export {};\nfoo(); // comment\n({});"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "export {};\nasync function test() { foo()\nawait {}; }",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "export {};\nasync function test() { foo()\n;({}); }"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "export {};\nasync function test() { return\nawait {}; }",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "export {};\nasync function test() { return\n;({}); }"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "export {};\nif (true) foo()\nawait {};",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "export {};\nif (true) foo()\n;({});"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "export {};\nswitch (x) { case 1: foo()\nawait {}; }",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "export {};\nswitch (x) { case 1: foo()\n;({}); }"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "export {};\nif (true) await {};",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "export {};\nif (true) ({});"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "export {};\nwhile (false) await {};",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "export {};\nwhile (false) ({});"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "code": "export {};\nlabel: await {};",
+          "errors": [
+            {
+              "messageId": "await",
+              "suggestions": [
+                {
+                  "messageId": "removeAwait",
+                  "output": "export {};\nlabel: ({});"
+                }
+              ]
             }
           ]
         }

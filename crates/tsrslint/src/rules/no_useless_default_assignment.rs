@@ -1,7 +1,9 @@
 // Port of internal/rules/no_useless_default_assignment/no_useless_default_assignment.go.
 
 use tsrs_ast::{self as ast, Kind, Node};
-use tsrs_checker::{Checker, ContextFlags, Type, TypeFlags};
+use tsrs_checker::{
+    AliasArg, Checker, ContextFlags, ElementFlags, Type, TypeFlags, UnionReduction,
+};
 use tsrs_core::P;
 
 use crate::rule::{
@@ -18,10 +20,9 @@ fn build_no_strict_null_check_message() -> RuleMessage {
 }
 
 fn build_prefer_optional_syntax_message() -> RuleMessage {
-    RuleMessage::with_help(
+    RuleMessage::new(
         "preferOptionalSyntax",
         "Using `= undefined` to make a parameter optional adds unnecessary runtime logic.",
-        "Use the `?` optional syntax instead.",
     )
 }
 
@@ -45,7 +46,11 @@ fn build_useless_default_assignment_with_type_message(
 }
 
 fn build_remove_default_assignment_suggestion_message() -> RuleMessage {
-    RuleMessage::new("removeDefaultAssignment", "Remove the default assignment.")
+    RuleMessage::new("removeDefaultAssignment", "Remove the default value.")
+}
+
+fn build_use_optional_syntax_suggestion_message() -> RuleMessage {
+    RuleMessage::new("useOptionalSyntax", "Use the `?` optional syntax instead.")
 }
 
 fn build_useless_undefined_message(plural_assignment_type: &str) -> RuleMessage {
@@ -350,10 +355,15 @@ fn report_useless_undefined(ctx: &mut Ctx, node: P<Node>, assignment_type: &str)
     let Some(initializer) = node.initializer() else {
         return;
     };
-    ctx.report_node_with_fixes(
+    ctx.report_node_with_suggestions(
         initializer,
         build_useless_undefined_message(&get_plural_assignment_type(assignment_type)),
-        |ctx| vec![build_remove_default_fix(ctx, node)],
+        |ctx| {
+            vec![RuleSuggestion {
+                message: build_remove_default_assignment_suggestion_message(),
+                fixes: vec![build_remove_default_fix(ctx, node)],
+            }]
+        },
     );
 }
 
@@ -361,7 +371,7 @@ fn report_prefer_optional_syntax(ctx: &mut Ctx, node: P<Node>) {
     let Some(initializer) = node.initializer() else {
         return;
     };
-    ctx.report_node_with_fixes(initializer, build_prefer_optional_syntax_message(), |ctx| {
+    ctx.report_node_with_suggestions(initializer, build_prefer_optional_syntax_message(), |ctx| {
         let mut fixes = vec![build_remove_default_fix(ctx, node)];
         if ast::is_parameter_declaration(node) {
             if let Some(name) = node.name() {
@@ -371,7 +381,10 @@ fn report_prefer_optional_syntax(ctx: &mut Ctx, node: P<Node>) {
                 }
             }
         }
-        fixes
+        vec![RuleSuggestion {
+            message: build_use_optional_syntax_suggestion_message(),
+            fixes,
+        }]
     });
 }
 
@@ -458,9 +471,37 @@ fn check_assignment_pattern(ctx: &mut Ctx, node: P<Node>) {
         if element_index < 0 || element_index as usize >= tuple_args.len() {
             return;
         }
-        let arg = tuple_args[element_index as usize];
-        if !can_be_undefined(Some(arg)) {
-            report_useless_default_assignment(ctx, node, "property", Some(arg));
+        let element_index = element_index as usize;
+        let tuple_target = source_type.target().unwrap().as_tuple_type();
+        if element_index >= tuple_target.min_length.get() {
+            return;
+        }
+        let fixed_length = tuple_target.fixed_length();
+        let mut element_types = &tuple_args[element_index..=element_index];
+        if element_index >= fixed_length {
+            // A trailing element cannot reach this position if too many required elements precede it.
+            let mut end = fixed_length;
+            let mut position = end;
+            let element_infos = tuple_target.element_infos();
+            while end < tuple_args.len() && position <= element_index {
+                if element_infos[end]
+                    .tuple_element_flags()
+                    .intersects(ElementFlags::Required)
+                {
+                    position += 1;
+                }
+                end += 1;
+            }
+            element_types = &tuple_args[fixed_length..end];
+        }
+        if !element_types.iter().any(|&t| can_be_undefined(Some(t))) {
+            let element_type = ctx.checker.get_union_type_ex(
+                element_types,
+                UnionReduction::Literal,
+                AliasArg::None,
+                None,
+            );
+            report_useless_default_assignment(ctx, node, "property", Some(element_type));
         }
     }
 }

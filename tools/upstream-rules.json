@@ -1,8 +1,8 @@
 {
   "repository": "https://github.com/oxc-project/tsgolint",
-  "ref": "f69fe736c07178de4ca43abff1ec86599acab672",
-  "date": "2026-10-02",
-  "describe": "v7.0.2003-5-gf69fe73",
+  "ref": "4ebf80fd2b166cba4890c6896220fec4a1462b29",
+  "date": "2026-10-22",
+  "describe": "v7.0.2005",
   "rules": [
     "await-thenable",
     "consistent-return",
@@ -33,6 +33,7 @@
     "no-unsafe-argument",
     "no-unsafe-assignment",
     "no-unsafe-call",
+    "no-unsafe-enum-assignment",
     "no-unsafe-enum-comparison",
     "no-unsafe-member-access",
     "no-unsafe-return",
@@ -65,25 +66,6 @@
     "unbound-method",
     "use-unknown-in-catch-callback-variable"
   ],
-  "added_after_base": {
-    "no-generated-empty-object-type": "since v7.0.2003"
-  },
-  "changed_after_base": {
-    "await-thenable": 1,
-    "no-deprecated": 1,
-    "no-duplicate-type-constituents": 1,
-    "no-meaningless-void-operator": 1,
-    "no-misused-promises": 2,
-    "no-misused-spread": 1,
-    "no-unnecessary-condition": 3,
-    "no-unnecessary-type-assertion": 3,
-    "no-unnecessary-type-parameters": 1,
-    "no-unsafe-return": 1,
-    "no-useless-default-assignment": 2,
-    "only-throw-error": 1,
-    "require-array-sort-compare": 1,
-    "return-await": 1,
-    "strict-void-return": 1,
-    "unbound-method": 1
-  }
+  "added_after_base": {},
+  "changed_after_base": {}
 }

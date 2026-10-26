@@ -1,6 +1,6 @@
 # Porting tsgolint rules to tsrslint
 
-tsrslint ports tsgolint **v7.0.2002** (this repository's Go sources under `internal/`, `cmd/`) to Rust on top of
+tsrslint ports tsgolint **v7.0.2005** (this repository's Go sources under `internal/`, `cmd/`) to Rust on top of
 tsrs (`maschwenk/tsrs`, the Rust port of the TypeScript 7 checker). The Go code is the spec: port behavior,
 messages, ranges, fixes and suggestions exactly, so tsrslint output is byte-for-byte what stock tsgolint reports.
 
@@ -19,7 +19,10 @@ messages, ranges, fixes and suggestions exactly, so tsrslint output is byte-for-
   `internal/rules/<rule>/<rule>_test.go` by `tools/extract_rule_tests` (`GOWORK=off go build`, then
   `extract_rule_tests internal/rules/<rule> crates/tsrslint/tests/cases/<rule>.json`). Cases the extractor cannot
   evaluate statically are listed under `unconverted`.
-- `crates/tsrslint/tests/rule_tests.rs`: runs the cases. One `#[test]` per rule; stubs are skipped.
+- `crates/tsrslint/tests/regressions/<rule>.json`: cases tsgolint's Go tests lack, for a divergence from stock found
+  after porting (same schema; expected output taken from stock tsgolint, not from tsrslint). Re-extraction does not
+  touch them.
+- `crates/tsrslint/tests/rule_tests.rs`: runs both. One `#[test]` per rule; stubs are skipped.
 
 ## Workflow per rule
 
@@ -28,8 +31,17 @@ messages, ranges, fixes and suggestions exactly, so tsrslint output is byte-for-
    text), fixes and suggestions.
 2. `cargo test --release --test rule_tests <rule_snake_name> -- --nocapture` until every converted case passes.
    A case may be skipped only if it is skipped upstream. Do not edit extracted cases to make them pass.
-3. If cases are `unconverted`, convert them (extend the extractor only in your own branch, or dump them at runtime
-   from the Go tests) so the rule is fully covered.
+3. If cases are `unconverted`, convert them so the rule is fully covered. The extractor cannot evaluate cases that
+   Go builds at runtime (`slices.Concat`, helper functions, loops, `fmt.Sprintf`). Dump those from the Go tests and
+   merge them into the extracted file (needs `just init` for the Go build):
+
+   ```sh
+   TSRSLINT_DUMP_CASES=/tmp/cases go test ./internal/rules/<rule>/ -count=1
+   (cd tools/assemble_rule_tests && GOWORK=off go run . /tmp/cases <rule-name> ../../internal/rules/<rule> \
+     ../../crates/tsrslint/tests/cases/<rule-name>.json ../../crates/tsrslint/tests/cases/<rule-name>.json)
+   ```
+
+   Only the unconverted lists change; options in them are the Go option structs as JSON (explicit `false` kept).
 4. `cargo fmt`, no new warnings, and `tools/lint/ratchet.py` passes: no new clippy findings
    ([rust-practices.md](rust-practices.md)).
 

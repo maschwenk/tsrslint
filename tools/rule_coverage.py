@@ -5,11 +5,11 @@
     python3 tools/rule_coverage.py --check docs/rules.md     # exit 1 if the table is stale (CI)
     python3 tools/rule_coverage.py --update-upstream <tsgolint checkout> <ref>   # re-pin tools/upstream-rules.json
 
-Inputs, all in this repository (no network): the rules tsgolint v7.0.2002 has (internal/rules/<rule>/, kept from
+Inputs, all in this repository (no network): the rules tsgolint v7.0.2005 has (internal/rules/<rule>/, kept from
 tsgolint's history), the ported rules (crates/tsrslint/src/rules/mod.rs), their test cases
 (crates/tsrslint/tests/cases/<rule>.json, extracted from tsgolint's Go tests), the newest CI benchmark result
 (bench/results/*.json, written by .github/workflows/bench.yml) for the diagnostics column, and the rule list of a
-pinned upstream tsgolint ref (tools/upstream-rules.json) for rules added after v7.0.2002.
+pinned upstream tsgolint ref (tools/upstream-rules.json) for rules added after v7.0.2005.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ GO_RULES = REPO / "internal" / "rules"
 UPSTREAM = REPO / "tools" / "upstream-rules.json"
 RESULTS = REPO / "bench" / "results"
 START, END = "<!-- rules:start -->", "<!-- rules:end -->"
-BASE_TAG = "v7.0.2002"
+BASE_TAG = "v7.0.2005"
 
 
 def go_rule_dirs(names: list[str]) -> list[str]:

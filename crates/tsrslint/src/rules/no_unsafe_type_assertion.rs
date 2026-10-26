@@ -1,24 +1,24 @@
 // Port of internal/rules/no_unsafe_type_assertion/no_unsafe_type_assertion.go.
 
-use tsrs_ast::{self as ast, Kind, Node};
+use tsrs_ast::{Kind, Node};
 use tsrs_checker::{Checker, ObjectFlags, Type};
 use tsrs_core::P;
 
-use crate::rule::{Ctx, LabeledRange, Listener, Rule, RuleDiagnostic, RuleMessage, RuleVisitor};
-use crate::utils::{self, pos_i32, pos_u32};
+use crate::rule::{Ctx, Listener, Rule, RuleDiagnostic, RuleMessage, RuleVisitor};
+use crate::utils;
 
 fn build_unsafe_of_any_type_assertion_message(t: &str) -> RuleMessage {
     RuleMessage::with_help(
         "unsafeOfAnyTypeAssertion",
         format!("Unsafe assertion from {t} detected."),
-        "Consider using type guards or a safer assertion.",
+        "Use a type guard to check the value before asserting its type.",
     )
 }
 fn build_unsafe_to_any_type_assertion_message(t: &str) -> RuleMessage {
     RuleMessage::with_help(
         "unsafeToAnyTypeAssertion",
         format!("Unsafe assertion to {t} detected."),
-        "Consider using a more specific type to ensure safety.",
+        "Keep the original type or use `unknown` and narrow the value before use.",
     )
 }
 fn build_unsafe_to_unconstrained_type_assertion_message(t: &str) -> RuleMessage {
@@ -49,32 +49,6 @@ fn get_any_type_name(t: P<Type>) -> &'static str {
 
 fn is_object_literal_type(t: P<Type>) -> bool {
     utils::is_object_type(t) && t.object_flags().intersects(ObjectFlags::ObjectLiteral)
-}
-
-fn get_assertion_range(
-    ctx: &Ctx,
-    node: P<Node>,
-    expression: P<Node>,
-    type_annotation: P<Node>,
-) -> (i32, i32) {
-    if ast::is_as_expression(node) {
-        let as_keyword_range =
-            tsrs_scanner::get_scanner_for_source_file(ctx.file, pos_u32(expression.end()))
-                .token_range();
-        return (
-            pos_i32(as_keyword_range.pos()),
-            pos_i32(type_annotation.end()),
-        );
-    }
-    let mut s = tsrs_scanner::get_scanner_for_source_file(ctx.file, pos_u32(node.pos()));
-    let opening_angle_bracket = s.token_range();
-    s.reset_pos(pos_u32(type_annotation.end()));
-    s.scan();
-    let closing_angle_bracket = s.token_range();
-    (
-        pos_i32(opening_angle_bracket.pos()),
-        pos_i32(closing_angle_bracket.end()),
-    )
 }
 
 fn type_label(c: &mut Checker, t: P<Type>) -> String {
@@ -109,33 +83,31 @@ struct Visitor;
 fn report(
     ctx: &mut Ctx,
     node: P<Node>,
-    expression: P<Node>,
-    type_annotation: P<Node>,
     expression_type: P<Type>,
     asserted_type: P<Type>,
-    message: RuleMessage,
+    mut message: RuleMessage,
 ) {
-    let (pos, end) = get_assertion_range(ctx, node, expression, type_annotation);
-    let (ep, ee) = ctx.trim(expression);
-    let (tp, te) = ctx.trim(type_annotation);
+    let (pos, end) = ctx.trim(node);
     let original_type = type_label(ctx.checker, expression_type);
     let asserted = type_label(ctx.checker, asserted_type);
+    let mut help = format!(
+        "The original expression has type `{original_type}`, and the assertion changes it to `{asserted}`."
+    );
+    match message.help.as_deref() {
+        Some(message_help) if !message_help.is_empty() => {
+            help.push(' ');
+            help.push_str(message_help);
+        }
+        _ => help.push_str(
+            " Use a type guard to narrow the value before asserting a more specific type.",
+        ),
+    }
+    message.help = Some(help);
     ctx.report_diagnostic(RuleDiagnostic {
         pos,
         end,
         message,
-        labeled_ranges: vec![
-            LabeledRange {
-                label: format!("Original expression has type `{original_type}`."),
-                pos: ep,
-                end: ee,
-            },
-            LabeledRange {
-                label: format!("Asserted type is `{asserted}`."),
-                pos: tp,
-                end: te,
-            },
-        ],
+        labeled_ranges: vec![],
     });
 }
 
@@ -149,15 +121,7 @@ impl RuleVisitor for Visitor {
         let expression_type = ctx.checker.get_type_at_location(expression);
         let asserted_type = ctx.checker.get_type_at_location(type_annotation);
         let report = |ctx: &mut Ctx, message: RuleMessage| {
-            report(
-                ctx,
-                node,
-                expression,
-                type_annotation,
-                expression_type,
-                asserted_type,
-                message,
-            )
+            report(ctx, node, expression_type, asserted_type, message)
         };
 
         if expression_type == asserted_type {

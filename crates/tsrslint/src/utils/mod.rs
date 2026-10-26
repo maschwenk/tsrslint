@@ -4,6 +4,8 @@
 // New helpers go into the submodule named after the Go file they port (internal/utils/<file>.go;
 // go_utils.rs is utils.go). Everything is re-exported, so callers use crate::utils::name. The helpers
 // above the submodules predate the split; check them before porting a helper again.
+mod r#await;
+pub use r#await::*;
 mod base_type_utils;
 pub use base_type_utils::*;
 mod bfs;
@@ -14,6 +16,8 @@ pub use builtin_symbol_likes::*;
 mod diagnostic_helpers;
 #[expect(unused_imports, reason = "diagnostic_helpers.rs has no helpers yet")]
 pub use diagnostic_helpers::*;
+mod expression_parentheses;
+pub use expression_parentheses::*;
 mod map;
 #[expect(unused_imports, reason = "map.rs has no helpers yet")]
 pub use map::*;
@@ -204,7 +208,6 @@ pub fn is_strong_precedence_node(inner: P<Node>) -> bool {
             inner.kind(),
             Kind::Identifier
                 | Kind::TypeReference
-                | Kind::TypeOperator
                 | Kind::ArrayLiteralExpression
                 | Kind::ObjectLiteralExpression
                 | Kind::PropertyAccessExpression

@@ -1,12 +1,12 @@
 // Port of internal/rules/no_unsafe_assignment/no_unsafe_assignment.go.
 
 use rustc_hash::FxHashMap;
-use tsrs_ast::{self as ast, Kind, Node, SourceFile};
+use tsrs_ast::{self as ast, Kind, Node};
 use tsrs_checker::{Checker, Type};
 use tsrs_core::P;
 
-use crate::rule::{Ctx, LabeledRange, Listener, Rule, RuleDiagnostic, RuleMessage, RuleVisitor};
-use crate::utils::{self, pos_i32, pos_u32};
+use crate::rule::{Ctx, Listener, Rule, RuleDiagnostic, RuleMessage, RuleVisitor};
+use crate::utils;
 
 type Range = (i32, i32);
 
@@ -30,10 +30,10 @@ fn build_any_assignment_this_message(sender: P<Type>) -> RuleMessage {
     RuleMessage::with_help(
         "anyAssignmentThis",
         format!(
-            "Unsafe assignment of an {} value. `this` is typed as `any`.\n",
+            "Unsafe assignment of an {} value. `this` is typed as `any`.",
             format_sender_type(sender)
         ),
-        "You can try to fix this by turning on the `noImplicitThis` compiler option, or adding a `this` parameter to the function.",
+        "Enable `noImplicitThis` or add an explicit `this` parameter to the function.",
     )
 }
 fn build_unsafe_array_pattern_message(sender: P<Type>) -> RuleMessage {
@@ -71,93 +71,65 @@ fn build_unsafe_assignment_message() -> RuleMessage {
 }
 
 fn build_assignment_diagnostic(
-    primary_range: Range,
-    sender_range: Range,
-    receiver_range: Range,
+    report_range: Range,
     sender_type: &str,
     receiver_type: &str,
-    message: RuleMessage,
+    inferred: bool,
+    mut message: RuleMessage,
 ) -> RuleDiagnostic {
-    RuleDiagnostic {
-        pos: primary_range.0,
-        end: primary_range.1,
-        message,
-        labeled_ranges: vec![
-            LabeledRange {
-                label: format!("Assigned value has type `{sender_type}`."),
-                pos: sender_range.0,
-                end: sender_range.1,
-            },
-            LabeledRange {
-                label: format!("Target expects type `{receiver_type}`."),
-                pos: receiver_range.0,
-                end: receiver_range.1,
-            },
-        ],
+    let mut help = if inferred {
+        format!(
+            "Assigned value has type `{sender_type}`, so the target is also inferred as `{receiver_type}`."
+        )
+    } else {
+        format!("Assigned value has type `{sender_type}`; the target has type `{receiver_type}`.")
+    };
+    match message.help.as_deref() {
+        Some(message_help) if !message_help.is_empty() => {
+            help.push(' ');
+            help.push_str(message_help);
+        }
+        _ => help.push_str(" Use a safely typed value or `unknown`, and narrow it before use."),
     }
-}
-
-fn build_this_assignment_diagnostic(
-    primary_range: Range,
-    this_range: Range,
-    receiver_range: Range,
-    this_type: &str,
-    receiver_type: &str,
-    message: RuleMessage,
-) -> RuleDiagnostic {
-    let mut diagnostic = build_assignment_diagnostic(
-        primary_range,
-        this_range,
-        receiver_range,
-        this_type,
-        receiver_type,
+    message.help = Some(help);
+    RuleDiagnostic {
+        pos: report_range.0,
+        end: report_range.1,
         message,
-    );
-    diagnostic.labeled_ranges[0].label = format!("`this` has type `{this_type}`.");
-    diagnostic
+        labeled_ranges: vec![],
+    }
 }
 
 fn build_destructure_diagnostic(
     receiver_range: Range,
-    sender_range: Range,
     sender_type: &str,
     unsafe_type: &str,
-    message: RuleMessage,
+    mut message: RuleMessage,
 ) -> RuleDiagnostic {
+    message.help = Some(format!(
+        "The destructured value has type `{sender_type}`, and this binding receives `{unsafe_type}`. Use a safely typed source or narrow the value before destructuring it."
+    ));
     RuleDiagnostic {
         pos: receiver_range.0,
         end: receiver_range.1,
         message,
-        labeled_ranges: vec![
-            LabeledRange {
-                label: format!("Destructured source provides type `{sender_type}`."),
-                pos: sender_range.0,
-                end: sender_range.1,
-            },
-            LabeledRange {
-                label: format!("This binding receives type `{unsafe_type}`."),
-                pos: receiver_range.0,
-                end: receiver_range.1,
-            },
-        ],
+        labeled_ranges: vec![],
     }
 }
 
 fn build_array_spread_diagnostic(
     spread_range: Range,
-    value_range: Range,
     value_type: &str,
-    message: RuleMessage,
+    mut message: RuleMessage,
 ) -> RuleDiagnostic {
+    message.help = Some(format!(
+        "The spread value has type `{value_type}`. Use a safely typed array or narrow the value before spreading it."
+    ));
     RuleDiagnostic {
         pos: spread_range.0,
         end: spread_range.1,
         message,
-        labeled_ranges: vec![LabeledRange {
-            label: format!("Spread value has type `{value_type}`."),
-            pos: value_range.0,
-            end: value_range.1,
-        }],
+        labeled_ranges: vec![],
     }
 }
 
@@ -166,52 +138,6 @@ fn diagnostic_type_text(c: &mut Checker, t: P<Type>) -> String {
         return "error".to_string();
     }
     utils::type_to_string(c, t)
-}
-
-fn assignment_relation_range(
-    source_file: P<SourceFile>,
-    receiver_node: P<Node>,
-    sender_node: P<Node>,
-) -> Range {
-    let mut s =
-        tsrs_scanner::get_scanner_for_source_file(source_file, pos_u32(receiver_node.end()));
-    let mut colon_range: Option<Range> = None;
-    while s.token() != Kind::EndOfFile && s.token_range().pos() < sender_node.end() {
-        match s.token() {
-            Kind::EqualsToken => {
-                let r = s.token_range();
-                return (pos_i32(r.pos()), pos_i32(r.end()));
-            }
-            Kind::ColonToken => {
-                let r = s.token_range();
-                colon_range = Some((pos_i32(r.pos()), pos_i32(r.end())));
-            }
-            _ => {}
-        }
-        if s.token_range().pos() >= sender_node.pos() {
-            break;
-        }
-        s.scan();
-    }
-    if let Some(r) = colon_range {
-        if r != (0, 0) {
-            return r;
-        }
-    }
-    utils::trim_node_text_range(source_file, receiver_node)
-}
-
-fn local_target_range(
-    source_file: P<SourceFile>,
-    receiver_node: P<Node>,
-    type_annotation_node: Option<P<Node>>,
-) -> Range {
-    if let Some(t) = type_annotation_node {
-        if ast::get_source_file_of_node(t) == Some(source_file) {
-            return utils::trim_node_text_range(source_file, t);
-        }
-    }
-    utils::trim_node_text_range(source_file, receiver_node)
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -301,17 +227,14 @@ struct Visitor {
 fn report_destructure(
     ctx: &mut Ctx,
     receiver_node: P<Node>,
-    sender_node: P<Node>,
     sender_type: P<Type>,
     unsafe_type: &str,
     message: RuleMessage,
 ) {
     let receiver_range = ctx.trim(receiver_node);
-    let sender_range = ctx.trim(sender_node);
     let sender_text = diagnostic_type_text(ctx.checker, sender_type);
     ctx.report_diagnostic(build_destructure_diagnostic(
         receiver_range,
-        sender_range,
         &sender_text,
         unsafe_type,
         message,
@@ -359,7 +282,6 @@ fn check_object_destructure(
                 report_destructure(
                     ctx,
                     property_value,
-                    sender_node,
                     sender_type,
                     &text,
                     build_unsafe_array_pattern_from_tuple_message(sender_type),
@@ -449,7 +371,6 @@ fn check_array_destructure(
         report_destructure(
             ctx,
             receiver_node,
-            sender_node,
             sender_type,
             "any",
             build_unsafe_array_pattern_message(sender_type),
@@ -479,7 +400,6 @@ fn check_array_destructure(
                 report_destructure(
                     ctx,
                     receiver_element,
-                    sender_node,
                     sender_type,
                     &text,
                     build_unsafe_array_pattern_from_tuple_message(sender_type),
@@ -573,8 +493,7 @@ impl Visitor {
         ctx: &mut Ctx,
         receiver_node: P<Node>,
         sender_node: P<Node>,
-        type_annotation_node: Option<P<Node>>,
-        primary_range: Range,
+        reporting_node: P<Node>,
         comp_type: ComparisonType,
     ) -> bool {
         // Fast path: return early when we know that the sender definitely cannot have an `any` type,
@@ -599,16 +518,6 @@ impl Visitor {
 
         if utils::is_type_any_type(sender_type) {
             let receiver_type = get_receiver_type(ctx);
-            let receiver_range = local_target_range(ctx.file, receiver_node, type_annotation_node);
-            let set_inferred_target_label = |ctx: &mut Ctx, diagnostic: &mut RuleDiagnostic| {
-                if comp_type == ComparisonType::None {
-                    diagnostic.labeled_ranges[1].label = format!(
-                        "Target is inferred as `{}`.",
-                        diagnostic_type_text(ctx.checker, receiver_type)
-                    );
-                }
-            };
-
             // handle cases when we assign any ==> unknown.
             if utils::is_type_unknown_type(receiver_type) {
                 return false;
@@ -620,37 +529,31 @@ impl Visitor {
                     let this_type =
                         utils::get_constrained_type_at_location(ctx.checker, this_expression);
                     if utils::is_type_any_type(this_type) {
-                        let this_range = ctx.trim(this_expression);
-                        let this_text = diagnostic_type_text(ctx.checker, this_type);
+                        let report_range = ctx.trim(reporting_node);
+                        let sender_text = diagnostic_type_text(ctx.checker, sender_type);
                         let receiver_text = diagnostic_type_text(ctx.checker, receiver_type);
-                        let mut diagnostic = build_this_assignment_diagnostic(
-                            primary_range,
-                            this_range,
-                            receiver_range,
-                            &this_text,
+                        ctx.report_diagnostic(build_assignment_diagnostic(
+                            report_range,
+                            &sender_text,
                             &receiver_text,
+                            comp_type == ComparisonType::None,
                             build_any_assignment_this_message(sender_type),
-                        );
-                        set_inferred_target_label(ctx, &mut diagnostic);
-                        ctx.report_diagnostic(diagnostic);
+                        ));
                         return true;
                     }
                 }
             }
 
-            let sender_range = ctx.trim(sender_node);
+            let report_range = ctx.trim(reporting_node);
             let sender_text = diagnostic_type_text(ctx.checker, sender_type);
             let receiver_text = diagnostic_type_text(ctx.checker, receiver_type);
-            let mut diagnostic = build_assignment_diagnostic(
-                primary_range,
-                sender_range,
-                receiver_range,
+            ctx.report_diagnostic(build_assignment_diagnostic(
+                report_range,
                 &sender_text,
                 &receiver_text,
+                comp_type == ComparisonType::None,
                 build_any_assignment_message(sender_type),
-            );
-            set_inferred_target_label(ctx, &mut diagnostic);
-            ctx.report_diagnostic(diagnostic);
+            ));
             return true;
         }
 
@@ -669,16 +572,14 @@ impl Visitor {
             return false;
         };
 
-        let sender_range = ctx.trim(sender_node);
-        let receiver_range = local_target_range(ctx.file, receiver_node, type_annotation_node);
+        let report_range = ctx.trim(reporting_node);
         let sender_text = diagnostic_type_text(ctx.checker, sender);
         let receiver_text = diagnostic_type_text(ctx.checker, receiver);
         ctx.report_diagnostic(build_assignment_diagnostic(
-            primary_range,
-            sender_range,
-            receiver_range,
+            report_range,
             &sender_text,
             &receiver_text,
+            false,
             build_unsafe_assignment_message(),
         ));
         true
@@ -689,8 +590,7 @@ impl Visitor {
         ctx: &mut Ctx,
         id: Option<P<Node>>,
         init: Option<P<Node>>,
-        type_annotation_node: Option<P<Node>>,
-        primary_range: Range,
+        reporting_node: P<Node>,
     ) {
         let (Some(id), Some(init)) = (id, init) else {
             return;
@@ -699,8 +599,7 @@ impl Visitor {
             ctx,
             id,
             init,
-            type_annotation_node,
-            primary_range,
+            reporting_node,
             // the variable already has some form of a type to compare against
             ComparisonType::Basic,
         );
@@ -725,15 +624,7 @@ impl RuleVisitor for Visitor {
                     return;
                 };
                 let name = node.name().unwrap();
-                let range = assignment_relation_range(ctx.file, name, initializer);
-                self.check_assignment(
-                    ctx,
-                    name,
-                    initializer,
-                    node.type_node(),
-                    range,
-                    get_comparison_type(node),
-                );
+                self.check_assignment(ctx, name, initializer, node, get_comparison_type(node));
             }
             // ESTree AssignmentExpression, AssignmentPattern
             Listener::Enter(Kind::BinaryExpression) => {
@@ -741,27 +632,13 @@ impl RuleVisitor for Visitor {
                     return;
                 }
                 let expr = node.as_binary_expression();
-                let range = ctx.trim(expr.operator_token);
-                self.check_assignment_full(
-                    ctx,
-                    Some(expr.left),
-                    Some(expr.right.get()),
-                    None,
-                    range,
-                );
+                self.check_assignment_full(ctx, Some(expr.left), Some(expr.right.get()), node);
             }
             // ESTree AssignmentPattern
             Listener::Enter(Kind::BindingElement) | Listener::Enter(Kind::Parameter) => {
                 if let Some(initializer) = node.initializer() {
                     let name = node.name().unwrap();
-                    let range = assignment_relation_range(ctx.file, name, initializer);
-                    self.check_assignment_full(
-                        ctx,
-                        Some(name),
-                        Some(initializer),
-                        node.type_node(),
-                        range,
-                    );
+                    self.check_assignment_full(ctx, Some(name), Some(initializer), node);
                 }
             }
             // ESTree AssignmentPattern
@@ -769,8 +646,7 @@ impl RuleVisitor for Visitor {
                 let assignment = node.as_shorthand_property_assignment();
                 if let Some(initializer) = assignment.object_assignment_initializer() {
                     let name = node.name().unwrap();
-                    let range = assignment_relation_range(ctx.file, name, initializer);
-                    self.check_assignment_full(ctx, Some(name), Some(initializer), None, range);
+                    self.check_assignment_full(ctx, Some(name), Some(initializer), node);
                 }
             }
             Listener::Enter(Kind::VariableDeclaration) => {
@@ -778,15 +654,8 @@ impl RuleVisitor for Visitor {
                     return;
                 };
                 let id = node.name().unwrap();
-                let range = assignment_relation_range(ctx.file, id, init);
-                let mut did_report = self.check_assignment(
-                    ctx,
-                    id,
-                    init,
-                    node.type_node(),
-                    range,
-                    get_comparison_type(node),
-                );
+                let mut did_report =
+                    self.check_assignment(ctx, id, init, node, get_comparison_type(node));
                 if !did_report {
                     did_report = check_array_destructure_helper(ctx, id, init);
                 }
@@ -814,8 +683,7 @@ impl RuleVisitor for Visitor {
                         return;
                     }
                     let name = prop.name().unwrap();
-                    let range = assignment_relation_range(ctx.file, name, init);
-                    self.check_assignment(ctx, name, init, None, range, ComparisonType::Contextual);
+                    self.check_assignment(ctx, name, init, prop, ComparisonType::Contextual);
                 }
             }
             Listener::NotAllowPattern(Kind::ArrayLiteralExpression) => {
@@ -829,11 +697,9 @@ impl RuleVisitor for Visitor {
                         || utils::is_type_any_array_type(rest_type, ctx.checker)
                     {
                         let node_range = ctx.trim(element);
-                        let value_range = ctx.trim(expression);
                         let text = diagnostic_type_text(ctx.checker, rest_type);
                         ctx.report_diagnostic(build_array_spread_diagnostic(
-                            (node_range.0, node_range.0 + 3),
-                            value_range,
+                            node_range,
                             &text,
                             build_unsafe_array_spread_message(rest_type),
                         ));
@@ -851,8 +717,7 @@ impl RuleVisitor for Visitor {
                     return;
                 };
                 let name = node.name().unwrap();
-                let range = assignment_relation_range(ctx.file, name, expr);
-                self.check_assignment(ctx, name, expr, None, range, ComparisonType::Contextual);
+                self.check_assignment(ctx, name, expr, expr, ComparisonType::Contextual);
             }
             _ => {}
         }

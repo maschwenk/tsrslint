@@ -198,6 +198,33 @@ func TestNoUselessDefaultAssignmentRule(t *testing.T) {
 		{
 			Code: "\n      function f(this: void, { bar = 42 }: { bar?: number }) {\n        return bar;\n      }\n    ",
 		},
+		{
+			Code: `declare const commands: [string, ...string[]];
+const [cmd, arg = 'run'] = commands;`,
+		},
+		{
+			Code: `declare const commands: readonly [string, ...string[]];
+const [cmd, arg = 'run'] = commands;`,
+		},
+		{
+			Code: `function run([cmd, arg = 'run']: [string, ...string[]]) {}`,
+		},
+		{
+			Code: `declare const mixed: [boolean, ...number[], string];
+const [a, b, c = 0] = mixed;`,
+		},
+		{
+			Code: `declare const items: [...string[], string | undefined];
+const [first = 'fallback'] = items;`,
+		},
+		{
+			Code: `declare const x: [...string[], number, boolean | undefined];
+const [first, second = 'fallback'] = x;`,
+		},
+		{
+			Code: `declare const x: [...string[], number | undefined, boolean];
+const [first = 'fallback'] = x;`,
+		},
 	}, []rule_tester.InvalidTestCase{
 		{
 			Code: "\n        function Bar({ foo = '' }: { foo: string }) {\n          return foo;\n        }\n      ",
@@ -354,85 +381,103 @@ func TestNoUselessDefaultAssignmentRule(t *testing.T) {
 		},
 		{
 			Code: "\n        function foo(a = undefined) {}\n      ",
-			Output: []string{
-				"\n        function foo(a) {}\n      ",
-			},
 			Errors: []rule_tester.InvalidTestCaseError{
 				{
 					MessageId: "uselessUndefined",
 					Line:      2,
 					Column:    26,
 					EndColumn: 35,
+					Suggestions: []rule_tester.InvalidTestCaseSuggestion{
+						{
+							MessageId: "removeDefaultAssignment",
+							Output:    "\n        function foo(a) {}\n      ",
+						},
+					},
 				},
 			},
 		},
 		{
 			Code: "\n        const { a = undefined } = {};\n      ",
-			Output: []string{
-				"\n        const { a } = {};\n      ",
-			},
 			Errors: []rule_tester.InvalidTestCaseError{
 				{
 					MessageId: "uselessUndefined",
 					Line:      2,
 					Column:    21,
 					EndColumn: 30,
+					Suggestions: []rule_tester.InvalidTestCaseSuggestion{
+						{
+							MessageId: "removeDefaultAssignment",
+							Output:    "\n        const { a } = {};\n      ",
+						},
+					},
 				},
 			},
 		},
 		{
 			Code: "\n        const [a = undefined] = [];\n      ",
-			Output: []string{
-				"\n        const [a] = [];\n      ",
-			},
 			Errors: []rule_tester.InvalidTestCaseError{
 				{
 					MessageId: "uselessUndefined",
 					Line:      2,
 					Column:    20,
 					EndColumn: 29,
+					Suggestions: []rule_tester.InvalidTestCaseSuggestion{
+						{
+							MessageId: "removeDefaultAssignment",
+							Output:    "\n        const [a] = [];\n      ",
+						},
+					},
 				},
 			},
 		},
 		{
 			Code: "\n        function foo({ a = undefined }) {}\n      ",
-			Output: []string{
-				"\n        function foo({ a }) {}\n      ",
-			},
 			Errors: []rule_tester.InvalidTestCaseError{
 				{
 					MessageId: "uselessUndefined",
 					Line:      2,
 					Column:    28,
 					EndColumn: 37,
+					Suggestions: []rule_tester.InvalidTestCaseSuggestion{
+						{
+							MessageId: "removeDefaultAssignment",
+							Output:    "\n        function foo({ a }) {}\n      ",
+						},
+					},
 				},
 			},
 		},
 		{
 			Code: "\n        function myFunction(p1: string, p2: number | undefined = undefined) {\n          console.log(p1, p2);\n        }\n      ",
-			Output: []string{
-				"\n        function myFunction(p1: string, p2?: number | undefined) {\n          console.log(p1, p2);\n        }\n      ",
-			},
 			Errors: []rule_tester.InvalidTestCaseError{
 				{
 					MessageId: "preferOptionalSyntax",
 					Line:      2,
 					Column:    66,
 					EndColumn: 75,
+					Suggestions: []rule_tester.InvalidTestCaseSuggestion{
+						{
+							MessageId: "useOptionalSyntax",
+							Output:    "\n        function myFunction(p1: string, p2?: number | undefined) {\n          console.log(p1, p2);\n        }\n      ",
+						},
+					},
 				},
 			},
 		},
 		{
 			Code: "\n        type SomeType = number | undefined;\n        function f(\n          /* comment */ x /* comment 2 */ : /* comment 3 */ SomeType /* comment 4 */ = /* comment 5 */ undefined,\n        ) {}\n      ",
-			Output: []string{
-				"\n        type SomeType = number | undefined;\n        function f(\n          /* comment */ x? /* comment 2 */ : /* comment 3 */ SomeType,\n        ) {}\n      ",
-			},
 			Errors: []rule_tester.InvalidTestCaseError{
 				{
 					MessageId: "preferOptionalSyntax",
 					Line:      4,
 					Column:    104,
 					EndColumn: 113,
+					Suggestions: []rule_tester.InvalidTestCaseSuggestion{
+						{
+							MessageId: "useOptionalSyntax",
+							Output:    "\n        type SomeType = number | undefined;\n        function f(\n          /* comment */ x? /* comment 2 */ : /* comment 3 */ SomeType,\n        ) {}\n      ",
+						},
+					},
 				},
 			},
 		},
@@ -462,9 +507,6 @@ func TestNoUselessDefaultAssignmentRule(t *testing.T) {
 		{
 			Code:     "\n        function foo(a = undefined) {}\n      ",
 			TSConfig: "tsconfig.unstrict.json",
-			Output: []string{
-				"\n        function foo(a) {}\n      ",
-			},
 			Errors: []rule_tester.InvalidTestCaseError{
 				{
 					MessageId: "noStrictNullCheck",
@@ -476,6 +518,12 @@ func TestNoUselessDefaultAssignmentRule(t *testing.T) {
 					Line:      2,
 					Column:    26,
 					EndColumn: 35,
+					Suggestions: []rule_tester.InvalidTestCaseSuggestion{
+						{
+							MessageId: "removeDefaultAssignment",
+							Output:    "\n        function foo(a) {}\n      ",
+						},
+					},
 				},
 			},
 		},
@@ -563,6 +611,51 @@ func TestNoUselessDefaultAssignmentRule(t *testing.T) {
 					},
 				},
 			},
+		},
+		{
+			Code: `declare const mixed: [boolean, ...number[], string];
+const [a, b = 0] = mixed;`,
+			Errors: []rule_tester.InvalidTestCaseError{{
+				MessageId: "uselessDefaultAssignment",
+				Line:      2,
+				Column:    15,
+				EndColumn: 16,
+				Suggestions: []rule_tester.InvalidTestCaseSuggestion{{
+					MessageId: "removeDefaultAssignment",
+					Output: `declare const mixed: [boolean, ...number[], string];
+const [a, b] = mixed;`,
+				}},
+			}},
+		},
+		{
+			Code: `declare const x: [...string[], number, boolean | undefined];
+const [first = 'fallback'] = x;`,
+			Errors: []rule_tester.InvalidTestCaseError{{
+				MessageId: "uselessDefaultAssignment",
+				Line:      2,
+				Column:    16,
+				EndColumn: 26,
+				Suggestions: []rule_tester.InvalidTestCaseSuggestion{{
+					MessageId: "removeDefaultAssignment",
+					Output: `declare const x: [...string[], number, boolean | undefined];
+const [first] = x;`,
+				}},
+			}},
+		},
+		{
+			Code: `declare const x: [boolean, ...string[], number, boolean | undefined];
+const [head, first = 'fallback'] = x;`,
+			Errors: []rule_tester.InvalidTestCaseError{{
+				MessageId: "uselessDefaultAssignment",
+				Line:      2,
+				Column:    22,
+				EndColumn: 32,
+				Suggestions: []rule_tester.InvalidTestCaseSuggestion{{
+					MessageId: "removeDefaultAssignment",
+					Output: `declare const x: [boolean, ...string[], number, boolean | undefined];
+const [head, first] = x;`,
+				}},
+			}},
 		},
 	})
 }

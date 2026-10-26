@@ -97,6 +97,8 @@ var promiseAggregatorMethods = []string{
 var AwaitThenableRule = rule.Rule{
 	Name: "await-thenable",
 	Run: func(ctx rule.RuleContext, options any) rule.RuleListeners {
+		opts := utils.UnmarshalOptions[AwaitThenableOptions](options, "await-thenable")
+
 		return rule.RuleListeners{
 			ast.KindAwaitExpression: func(node *ast.Node) {
 				awaitArgument := node.AsAwaitExpression().Expression
@@ -110,11 +112,25 @@ var AwaitThenableRule = rule.Rule{
 						buildAwaitMessage(),
 						utils.TrimNodeTextRange(ctx.SourceFile, awaitArgument),
 					), func() []rule.RuleSuggestion {
+						fixes := []rule.RuleFix{rule.RuleFixRemoveRange(utils.GetAwaitTokenRemovalRange(ctx.SourceFile, node.Pos()))}
+						s := scanner.GetScannerForSourceFile(ctx.SourceFile, awaitArgument.Pos())
+						firstToken := s.Token()
+						statementStartToken := firstToken
+						if firstToken == ast.KindAsyncKeyword && s.Scan() == ast.KindFunctionKeyword && !s.HasPrecedingLineBreak() {
+							statementStartToken = ast.KindFunctionKeyword
+						}
+						startsWithParenthesis := firstToken == ast.KindOpenParenToken
+						if utils.IsStartOfArrowFunctionBodyNeedingParentheses(ctx.SourceFile, node, firstToken) ||
+							utils.IsStartOfExpressionStatementNeedingParentheses(ctx.SourceFile, node, statementStartToken) {
+							fixes = append(fixes, rule.RuleFixInsertBefore(ctx.SourceFile, awaitArgument, "("), rule.RuleFixInsertAfter(awaitArgument, ")"))
+							startsWithParenthesis = true
+						}
+						if startsWithParenthesis && needsPrecedingSemicolon(ctx.SourceFile, node) {
+							fixes[0].Text = ";"
+						}
 						return []rule.RuleSuggestion{{
-							Message: buildRemoveAwaitMessage(),
-							FixesArr: []rule.RuleFix{
-								rule.RuleFixRemoveRange(awaitTokenRange),
-							},
+							Message:  buildRemoveAwaitMessage(),
+							FixesArr: fixes,
 						}}
 					})
 				}
@@ -131,6 +147,10 @@ var AwaitThenableRule = rule.Rule{
 
 				argument := expr.Arguments.Nodes[0]
 				if argument == nil {
+					return
+				}
+
+				if opts.AllowMixedPromiseArrays && hasMaybeAwaitableValue(ctx.TypeChecker, argument) {
 					return
 				}
 
@@ -198,7 +218,7 @@ var AwaitThenableRule = rule.Rule{
 						return []rule.RuleSuggestion{{
 							Message: buildConvertToOrdinaryForMessage(),
 							FixesArr: []rule.RuleFix{
-								rule.RuleFixRemove(ctx.SourceFile, stmt.AwaitModifier),
+								rule.RuleFixRemoveRange(utils.GetAwaitTokenRemovalRange(ctx.SourceFile, stmt.AwaitModifier.Pos())),
 							},
 						}}
 					},
@@ -235,7 +255,7 @@ var AwaitThenableRule = rule.Rule{
 						suggestions = append(suggestions, rule.RuleSuggestion{
 							Message: buildRemoveAwaitMessage(),
 							FixesArr: []rule.RuleFix{
-								rule.RuleFixRemoveRange(scanner.GetRangeOfTokenAtPosition(ctx.SourceFile, node.Pos())),
+								rule.RuleFixRemoveRange(utils.GetAwaitTokenRemovalRange(ctx.SourceFile, node.Pos())),
 							},
 						})
 					}
@@ -294,6 +314,18 @@ func isInvalidPromiseAggregatorInput(
 	return false
 }
 
+func hasMaybeAwaitableValue(typeChecker *checker.Checker, node *ast.Node) bool {
+	t := utils.GetConstrainedTypeAtLocation(typeChecker, node)
+	for _, part := range utils.UnionTypeParts(t) {
+		for _, valueType := range getValueTypesOfArrayLike(typeChecker, part) {
+			if !isAlwaysNonAwaitableType(typeChecker, node, valueType) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func getValueTypesOfArrayLike(
 	typeChecker *checker.Checker,
 	t *checker.Type,
@@ -306,9 +338,11 @@ func getValueTypesOfArrayLike(
 		return []*checker.Type{numberIndexType}
 	}
 
-	typeArguments := checker.Checker_getTypeArguments(typeChecker, t)
-	if len(typeArguments) != 0 {
-		return typeArguments[:1]
+	if checker.Type_objectFlags(t)&checker.ObjectFlagsReference != 0 {
+		typeArguments := checker.Checker_getTypeArguments(typeChecker, t)
+		if len(typeArguments) != 0 {
+			return typeArguments[:1]
+		}
 	}
 
 	return nil
