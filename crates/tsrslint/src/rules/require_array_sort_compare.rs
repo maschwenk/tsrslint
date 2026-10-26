@@ -67,7 +67,7 @@ impl RuleVisitor for Visitor {
         }
         if utils::union_type_parts(callee_obj_type)
             .into_iter()
-            .all(|t| ctx.checker.is_array_type(t))
+            .all(|t| ctx.checker.is_array_type(t) || t.is_tuple_type())
         {
             ctx.report_node(node, build_require_compare_message());
         }
