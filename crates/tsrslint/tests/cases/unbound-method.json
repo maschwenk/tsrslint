@@ -8,6 +8,9 @@
           "code": "Promise.resolve().then(console.log);"
         },
         {
+          "code": "\nclass Foo {\n  f = function (this: void) {};\n}\nconst f = new Foo().f;\n    "
+        },
+        {
           "code": "['1', '2', '3'].map(Number.parseInt);"
         },
         {
@@ -643,7 +646,7 @@
           "code": "\nclass Foo extends Number {\n  static parseInt = function (string: string, radix?: number): number {};\n}\nconst foo = Foo;\n['1', '2', '3'].map(foo.parseInt);\n      ",
           "errors": [
             {
-              "messageId": "unbound",
+              "messageId": "unboundWithoutThisAnnotation",
               "line": 6,
               "suggestions": []
             }
@@ -733,7 +736,7 @@
           "code": "\nclass Foo {\n  unbound = function () {};\n}\nconst unbound = new Foo().unbound;\n      ",
           "errors": [
             {
-              "messageId": "unbound",
+              "messageId": "unboundWithoutThisAnnotation",
               "line": 5,
               "suggestions": []
             }
@@ -753,7 +756,7 @@
           "code": "\nclass Foo {\n  unbound = function () {};\n}\nconst { unbound } = new Foo();\n      ",
           "errors": [
             {
-              "messageId": "unbound",
+              "messageId": "unboundWithoutThisAnnotation",
               "line": 5,
               "suggestions": []
             }
@@ -773,7 +776,7 @@
           "code": "\nclass Foo {\n  unbound = function () {};\n}\nlet unbound;\n({ unbound } = new Foo());\n      ",
           "errors": [
             {
-              "messageId": "unbound",
+              "messageId": "unboundWithoutThisAnnotation",
               "line": 6,
               "suggestions": []
             }
@@ -783,7 +786,7 @@
           "code": "\nclass Foo {\n  unbound = function () {};\n}\nfunction foo({ unbound }: Foo = new Foo()) {}\n      ",
           "errors": [
             {
-              "messageId": "unbound",
+              "messageId": "unboundWithoutThisAnnotation",
               "line": 5,
               "suggestions": []
             }
@@ -793,7 +796,7 @@
           "code": "\nclass Foo {\n  unbound = function () {};\n}\ndeclare const bar: Foo;\nfunction foo({ unbound }: Foo = bar) {}\n      ",
           "errors": [
             {
-              "messageId": "unbound",
+              "messageId": "unboundWithoutThisAnnotation",
               "line": 6,
               "suggestions": []
             }
@@ -803,7 +806,7 @@
           "code": "\nclass Foo {\n  unbound = function () {};\n}\ndeclare const bar: Foo;\nfunction foo({ unbound }: Foo = { unbound: () =\u003e {} }) {}\n      ",
           "errors": [
             {
-              "messageId": "unbound",
+              "messageId": "unboundWithoutThisAnnotation",
               "line": 6,
               "suggestions": []
             }
@@ -823,7 +826,7 @@
           "code": "\nclass Foo {\n  unbound = function () {};\n}\nfunction foo({ unbound }: Foo) {}\n      ",
           "errors": [
             {
-              "messageId": "unbound",
+              "messageId": "unboundWithoutThisAnnotation",
               "line": 5,
               "suggestions": []
             }
@@ -833,7 +836,7 @@
           "code": "\nclass Foo {\n  unbound = function () {};\n}\nfunction bar(cb: (arg: Foo) =\u003e void) {}\nbar(({ unbound }) =\u003e {});\n      ",
           "errors": [
             {
-              "messageId": "unbound",
+              "messageId": "unboundWithoutThisAnnotation",
               "line": 6,
               "suggestions": []
             }
@@ -843,7 +846,7 @@
           "code": "\nclass Foo {\n  unbound = function () {};\n}\nfunction bar(cb: (arg: { unbound: () =\u003e void }) =\u003e void) {}\nbar(({ unbound } = new Foo()) =\u003e {});\n      ",
           "errors": [
             {
-              "messageId": "unbound",
+              "messageId": "unboundWithoutThisAnnotation",
               "line": 6,
               "suggestions": []
             }
@@ -853,7 +856,7 @@
           "code": "\nclass Foo {\n  unbound = function () {};\n}\nfor (const { unbound } of [new Foo(), new Foo()]) {\n}\n      ",
           "errors": [
             {
-              "messageId": "unbound",
+              "messageId": "unboundWithoutThisAnnotation",
               "line": 5,
               "suggestions": []
             }
@@ -863,7 +866,7 @@
           "code": "\nclass Foo {\n  unbound = function () {};\n\n  foo({ unbound }: Foo) {}\n}\n      ",
           "errors": [
             {
-              "messageId": "unbound",
+              "messageId": "unboundWithoutThisAnnotation",
               "line": 5,
               "suggestions": []
             }
@@ -873,7 +876,7 @@
           "code": "\nclass Foo {\n  unbound = function () {};\n}\nclass Bar {\n  unbound = function () {};\n}\nfunction foo({ unbound }: Foo | Bar) {}\n      ",
           "errors": [
             {
-              "messageId": "unbound",
+              "messageId": "unboundWithoutThisAnnotation",
               "line": 8,
               "suggestions": []
             }
@@ -883,7 +886,7 @@
           "code": "\nclass Foo {\n  unbound = function () {};\n}\nfunction foo({ unbound }: { unbound: () =\u003e string } | Foo) {}\n      ",
           "errors": [
             {
-              "messageId": "unbound",
+              "messageId": "unboundWithoutThisAnnotation",
               "line": 5,
               "suggestions": []
             }
@@ -893,7 +896,7 @@
           "code": "\nclass Foo {\n  unbound = function () {};\n}\nclass Bar {\n  unbound = () =\u003e {};\n}\nfunction foo({ unbound }: Foo | Bar) {}\n      ",
           "errors": [
             {
-              "messageId": "unbound",
+              "messageId": "unboundWithoutThisAnnotation",
               "line": 8,
               "suggestions": []
             }
@@ -903,7 +906,7 @@
           "code": "\nclass Foo {\n  unbound = function () {};\n}\nconst foo = ({ unbound }: Foo \u0026 { foo: () =\u003e 'bar' }) =\u003e {};\n      ",
           "errors": [
             {
-              "messageId": "unbound",
+              "messageId": "unboundWithoutThisAnnotation",
               "line": 5,
               "suggestions": []
             }
@@ -913,7 +916,7 @@
           "code": "\nclass Foo {\n  unbound = function () {};\n}\nclass Bar {\n  unbound = () =\u003e {};\n}\nconst foo = ({ unbound }: (Foo \u0026 { foo: () =\u003e 'bar' }) | Bar) =\u003e {};\n      ",
           "errors": [
             {
-              "messageId": "unbound",
+              "messageId": "unboundWithoutThisAnnotation",
               "line": 8,
               "suggestions": []
             }
@@ -923,7 +926,7 @@
           "code": "\nclass Foo {\n  unbound = function () {};\n}\nclass Bar {\n  unbound = () =\u003e {};\n}\nconst foo = ({ unbound }: Foo \u0026 Bar) =\u003e {};\n      ",
           "errors": [
             {
-              "messageId": "unbound",
+              "messageId": "unboundWithoutThisAnnotation",
               "line": 8,
               "suggestions": []
             }
@@ -933,7 +936,7 @@
           "code": "\nclass Foo {\n  unbound = function () {};\n\n  other = function () {};\n}\nclass Bar {\n  unbound = () =\u003e {};\n}\nconst foo = ({ unbound, ...rest }: Foo \u0026 Bar) =\u003e {};\n      ",
           "errors": [
             {
-              "messageId": "unbound",
+              "messageId": "unboundWithoutThisAnnotation",
               "line": 10,
               "suggestions": []
             }
@@ -963,7 +966,7 @@
           "code": "\nclass Foo {\n  floor = function () {};\n}\n\nconst { floor } = Math.random() \u003e 0.5 ? new Foo() : Math;\n      ",
           "errors": [
             {
-              "messageId": "unbound",
+              "messageId": "unboundWithoutThisAnnotation",
               "line": 6,
               "suggestions": []
             }
@@ -1109,6 +1112,18 @@
               "line": 8,
               "column": 11,
               "endColumn": 27,
+              "suggestions": []
+            }
+          ]
+        },
+        {
+          "code": "\nclass Foo {\n  unbound = function (this: Foo) {};\n}\nconst unbound = new Foo().unbound;\n      ",
+          "errors": [
+            {
+              "messageId": "unbound",
+              "line": 5,
+              "column": 17,
+              "endColumn": 34,
               "suggestions": []
             }
           ]

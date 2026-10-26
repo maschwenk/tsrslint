@@ -197,16 +197,14 @@ fn check_if_method(symbol: P<Symbol>, ignore_static: bool) -> (bool, bool) {
         return (false, false);
     };
     match value_declaration.kind() {
-        Kind::PropertyDeclaration => {
-            let init = value_declaration.initializer();
-            (init.is_some_and(ast::is_function_expression), true)
-        }
-        Kind::PropertyAssignment => {
-            let assignee = value_declaration.initializer().unwrap();
-            if !ast::is_function_expression(assignee) {
+        Kind::PropertyAssignment | Kind::PropertyDeclaration => {
+            let Some(initializer) = value_declaration
+                .initializer()
+                .filter(|&initializer| ast::is_function_expression(initializer))
+            else {
                 return (false, false);
-            }
-            check_method(assignee, ignore_static)
+            };
+            check_method(initializer, ignore_static)
         }
         Kind::MethodDeclaration | Kind::MethodSignature => {
             check_method(value_declaration, ignore_static)
