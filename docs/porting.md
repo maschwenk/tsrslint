@@ -19,7 +19,10 @@ messages, ranges, fixes and suggestions exactly, so tsrslint output is byte-for-
   `internal/rules/<rule>/<rule>_test.go` by `tools/extract_rule_tests` (`GOWORK=off go build`, then
   `extract_rule_tests internal/rules/<rule> crates/tsrslint/tests/cases/<rule>.json`). Cases the extractor cannot
   evaluate statically are listed under `unconverted`.
-- `crates/tsrslint/tests/rule_tests.rs`: runs the cases. One `#[test]` per rule; stubs are skipped.
+- `crates/tsrslint/tests/regressions/<rule>.json`: cases tsgolint's Go tests lack, for a divergence from stock found
+  after porting (same schema; expected output taken from stock tsgolint, not from tsrslint). Re-extraction does not
+  touch them.
+- `crates/tsrslint/tests/rule_tests.rs`: runs both. One `#[test]` per rule; stubs are skipped.
 
 ## Workflow per rule
 

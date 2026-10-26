@@ -536,6 +536,7 @@ fn check_property_symbols(
     ctx: &mut Ctx,
     property: Option<P<Symbol>>,
     property_symbol: Option<P<Symbol>>,
+    follow_value_aliases: bool,
 ) -> Option<(bool, String)> {
     // Check alias chain first
     let (is_deprecated, reason) =
@@ -553,13 +554,17 @@ fn check_property_symbols(
     if is_deprecated {
         return Some((true, reason));
     }
-    // Check shorthand assignment value symbol
+    // Check shorthand assignment value symbol. Upstream follows its alias chain only for shorthand property
+    // assignments (tsgolint#1235); the destructuring branch checks the value symbol itself.
     if let Some(value_declaration) = property_symbol.and_then(|s| s.value_declaration()) {
         let value_symbol = ctx
             .checker
             .get_shorthand_assignment_value_symbol(Some(value_declaration));
-        let (is_deprecated, reason) =
-            search_for_deprecation_in_aliases_chain(ctx, value_symbol, true);
+        let (is_deprecated, reason) = if follow_value_aliases {
+            search_for_deprecation_in_aliases_chain(ctx, value_symbol, true)
+        } else {
+            get_js_doc_deprecation(ctx, value_symbol)
+        };
         if is_deprecated {
             return Some((true, reason));
         }
@@ -596,7 +601,7 @@ fn get_deprecation_reason(ctx: &mut Ctx, node: P<Node>) -> (bool, String) {
                 }
                 let property = ctx.checker.get_property_of_type(source_type, property_name);
                 let property_symbol = ctx.checker.get_symbol_at_location_exported(node);
-                if let Some(r) = check_property_symbols(ctx, property, property_symbol) {
+                if let Some(r) = check_property_symbols(ctx, property, property_symbol, false) {
                     return r;
                 }
             }
@@ -607,7 +612,7 @@ fn get_deprecation_reason(ctx: &mut Ctx, node: P<Node>) -> (bool, String) {
                 let parent_type = ctx.checker.get_type_at_location(object);
                 let property_symbol = ctx.checker.get_symbol_at_location_exported(node);
                 let property = ctx.checker.get_property_of_type(parent_type, node.text());
-                if let Some(r) = check_property_symbols(ctx, property, property_symbol) {
+                if let Some(r) = check_property_symbols(ctx, property, property_symbol, true) {
                     return r;
                 }
             }
