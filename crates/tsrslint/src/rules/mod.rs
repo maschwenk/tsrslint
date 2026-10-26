@@ -32,6 +32,7 @@ pub mod no_unnecessary_type_parameters;
 pub mod no_unsafe_argument;
 pub mod no_unsafe_assignment;
 pub mod no_unsafe_call;
+pub mod no_unsafe_enum_assignment;
 pub mod no_unsafe_enum_comparison;
 pub mod no_unsafe_member_access;
 pub mod no_unsafe_return;
@@ -94,6 +95,7 @@ pub const RULE_NAMES: &[&str] = &[
     "no-unsafe-argument",
     "no-unsafe-assignment",
     "no-unsafe-call",
+    "no-unsafe-enum-assignment",
     "no-unsafe-enum-comparison",
     "no-unsafe-member-access",
     "no-unsafe-return",
@@ -170,6 +172,7 @@ pub fn create_rule(
         "no-unsafe-argument" => no_unsafe_argument::create(options),
         "no-unsafe-assignment" => no_unsafe_assignment::create(options),
         "no-unsafe-call" => no_unsafe_call::create(options),
+        "no-unsafe-enum-assignment" => no_unsafe_enum_assignment::create(options),
         "no-unsafe-enum-comparison" => no_unsafe_enum_comparison::create(options),
         "no-unsafe-member-access" => no_unsafe_member_access::create(options),
         "no-unsafe-return" => no_unsafe_return::create(options),

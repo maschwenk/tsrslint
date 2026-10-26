@@ -509,6 +509,7 @@ rule_test!(
 rule_test!(no_unsafe_argument, "no-unsafe-argument");
 rule_test!(no_unsafe_assignment, "no-unsafe-assignment");
 rule_test!(no_unsafe_call, "no-unsafe-call");
+rule_test!(no_unsafe_enum_assignment, "no-unsafe-enum-assignment");
 rule_test!(no_unsafe_enum_comparison, "no-unsafe-enum-comparison");
 rule_test!(no_unsafe_member_access, "no-unsafe-member-access");
 rule_test!(no_unsafe_return, "no-unsafe-return");
